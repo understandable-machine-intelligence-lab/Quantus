@@ -6,7 +6,8 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from __future__ import annotations
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -259,71 +260,6 @@ class PixelFlipping(PerturbationMetric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> List[float]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        list
-            The evaluation results.
-        """
-
-        # Reshape attributions.
-        a = a.flatten()
-
-        # Get indices of sorted attributions (descending).
-        a_indices = np.argsort(-a)
-
-        # Prepare lists.
-        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-        preds = [None for _ in range(n_perturbations)]
-        x_perturbed = x.copy()
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-            x_perturbed = self.perturb_func(
-                arr=x_perturbed,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            preds[i_ix] = y_pred_perturb
-
-        if self.return_auc_per_sample:
-            return utils.calculate_auc(preds)
-
-        return preds
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -367,3 +303,52 @@ class PixelFlipping(PerturbationMetric):
         return np.mean(
             [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
         )
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[float | np.ndarray]:
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            # Reshape attributions.
+            a = a.flatten()
+
+            # Get indices of sorted attributions (descending).
+            a_indices = np.argsort(-a)
+
+            # Prepare lists.
+            n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+            preds = [None for _ in range(n_perturbations)]
+            x_perturbed = x.copy()
+
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
+                # Perturb input by indices of attributions.
+                a_ix = a_indices[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ]
+                x_perturbed = self.perturb_func(
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    indexed_axes=self.a_axes,
+                    **self.perturb_func_kwargs,
+                )
+                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(model.predict(x_input)[:, y])
+                preds[i_ix] = y_pred_perturb
+
+            if self.return_auc_per_sample:
+                retval.append(utils.calculate_auc(preds))
+            else:
+                retval.append(preds)
+
+        return retval

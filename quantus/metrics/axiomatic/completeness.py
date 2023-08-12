@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import warn
-from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
@@ -262,51 +261,32 @@ class Completeness(PerturbationMetric):
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
+        *,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> bool:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[bool]:
+        # TODO: vectorize
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            x_baseline = self.perturb_func(
+                arr=x,
+                indices=np.arange(0, x.size),
+                indexed_axes=np.arange(0, x.ndim),
+                **self.perturb_func_kwargs,
+            )
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+            # Predict on input.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(model.predict(x_input)[:, y])
 
-        Returns
-        -------
-           : boolean
-            The evaluation results.
-        """
-        x_baseline = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
-            **self.perturb_func_kwargs,
-        )
+            # Predict on baseline.
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+            y_pred_baseline = float(model.predict(x_input)[:, y])
 
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        # Predict on baseline.
-        x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-        y_pred_baseline = float(model.predict(x_input)[:, y])
-
-        if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
-            return True
-        else:
-            return False
+            retval.append(np.sum(a) == self.output_func(y_pred - y_pred_baseline))
+        return retval

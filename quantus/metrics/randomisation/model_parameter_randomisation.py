@@ -12,26 +12,25 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
     Collection,
-    Iterable,
 )
+
 import numpy as np
 from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts
+from quantus.helpers import warn
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base import Metric
 
 
 class ModelParameterRandomisation(Metric):
@@ -276,6 +275,9 @@ class ModelParameterRandomisation(Metric):
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]
 
+        if a_batch is None:
+            a_batch = self.explain_batch(model, x_batch, y_batch)
+
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
@@ -289,26 +291,19 @@ class ModelParameterRandomisation(Metric):
         )
 
         for layer_name, random_layer_model in model_iterator:
-
             similarity_scores = [None for _ in x_batch]
 
             # Generate an explanation with perturbed model.
-            a_batch_perturbed = self.explain_func(
-                model=random_layer_model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.explain_func_kwargs,
+            a_batch_perturbed = self.explain_batch(
+                random_layer_model,
+                x_batch,
+                y_batch,
             )
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.evaluate_instance(
-                    model=random_layer_model,
-                    x=None,
-                    y=None,
-                    s=None,
-                    a=a_instance,
-                    a_perturbed=a_instance_perturbed,
+                result = self.similarity_func(
+                    a_instance_perturbed.flatten(), a_instance.flatten()
                 )
                 similarity_scores[instance_id] = result
 
@@ -337,49 +332,6 @@ class ModelParameterRandomisation(Metric):
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
-
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        i: integer
-            The evaluation instance.
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
-
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
-
-        # Compute distance measure.
-        return self.similarity_func(a_perturbed.flatten(), a.flatten())
 
     def custom_preprocess(
         self,
@@ -419,7 +371,6 @@ class ModelParameterRandomisation(Metric):
     def compute_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
@@ -438,3 +389,6 @@ class ModelParameterRandomisation(Metric):
         corr_coeffs = list(results.values())
 
         return corr_coeffs
+
+    def evaluate_batch(self, *args, **kwargs):
+        raise RuntimeError("This is unexpected.")

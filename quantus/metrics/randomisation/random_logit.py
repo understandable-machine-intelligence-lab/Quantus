@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -47,7 +47,6 @@ class RandomLogit(Metric):
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.RANDOMISATION
-
 
     def __init__(
         self,
@@ -243,7 +242,6 @@ class RandomLogit(Metric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -258,40 +256,12 @@ class RandomLogit(Metric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
         float
             The evaluation results.
         """
-        # Randomly select off-class labels.
-        np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
-
-        # Explain against a random class.
-        a_perturbed = self.explain_func(
-            model=model.get_model(),
-            inputs=np.expand_dims(x, axis=0),
-            targets=y_off,
-            **self.explain_func_kwargs,
-        )
-
-        # Normalise and take absolute values of the attributions, if True.
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
-
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
-
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
 
     def custom_preprocess(
         self,
@@ -327,3 +297,34 @@ class RandomLogit(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[float]:
+        # TODO: vectorize
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            # Randomly select off-class labels.
+            np.random.seed(self.seed)
+            y_off = np.array(
+                [
+                    np.random.choice(
+                        [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
+                    )
+                ]
+            )
+            # Explain against a random class.
+            a_perturbed = self.explain_batch(
+                model.get_model(),
+                np.expand_dims(x, axis=0),
+                y_off,
+            )
+            retval.append(self.similarity_func(a.flatten(), a_perturbed.flatten()))
+
+        return retval

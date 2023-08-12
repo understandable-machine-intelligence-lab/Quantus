@@ -7,8 +7,7 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import List, Dict
-
+from typing import List, Dict, Final, Mapping, Type
 from quantus.functions.loss_func import *
 from quantus.functions.normalise_func import *
 from quantus.functions.perturb_func import *
@@ -16,7 +15,7 @@ from quantus.functions.similarity_func import *
 from quantus.metrics import *
 
 
-AVAILABLE_METRICS = {
+AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
     "Faithfulness": {
         "Faithfulness Correlation": FaithfulnessCorrelation,
         "Faithfulness Estimate": FaithfulnessEstimate,

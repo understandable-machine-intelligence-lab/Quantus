@@ -5,39 +5,18 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
-import re
-from abc import abstractmethod
-from collections.abc import Sequence
+from abc import ABC
 from typing import (
     Any,
     Callable,
     Dict,
-    Sequence,
     Optional,
-    Tuple,
-    Union,
-    Collection,
-    List,
 )
-import matplotlib.pyplot as plt
-import numpy as np
-from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base import Metric
-from quantus.helpers.enums import (
-    ModelType,
-    DataType,
-    ScoreDirection,
-    EvaluationCategory,
-)
 
 
-class PerturbationMetric(Metric):
+class PerturbationMetric(Metric, ABC):
     """
     Implementation base PertubationMetric class.
 
@@ -51,13 +30,6 @@ class PerturbationMetric(Metric):
         - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "PerturbationMetric"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.NONE
-
 
     def __init__(
         self,
@@ -121,42 +93,10 @@ class PerturbationMetric(Metric):
             **kwargs,
         )
 
+        # TODO: do we really need separate 150+ lines long class just to reuse 4 lines of code?
         # Save perturbation metric attributes.
         self.perturb_func = perturb_func
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
         self.perturb_func_kwargs = perturb_func_kwargs
-
-    @abstractmethod
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        This method needs to be implemented to use __call__().
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError()

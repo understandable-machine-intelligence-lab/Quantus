@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -276,70 +276,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Flatten the attributions.
-        a = a.flatten()
-
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        pred_deltas = []
-        att_sums = []
-
-        # For each test data point, execute a couple of runs.
-        for i_ix in range(self.nr_runs):
-
-            # Randomly mask by subset size.
-            a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            pred_deltas.append(float(y_pred - y_pred_perturb))
-
-            # Sum attributions of the random subset.
-            att_sums.append(np.sum(a[a_ix]))
-
-        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-
-        return similarity
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -377,3 +313,49 @@ class FaithfulnessCorrelation(PerturbationMetric):
         asserts.assert_value_smaller_than_input_size(
             x=x_batch, value=self.subset_size, value_name="subset_size"
         )
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[float]:
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            a = a.flatten()
+
+            # Predict on input.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(model.predict(x_input)[:, y])
+
+            pred_deltas = []
+            att_sums = []
+
+            # For each test data point, execute a couple of runs.
+            for i_ix in range(self.nr_runs):
+                # Randomly mask by subset size.
+                a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=self.a_axes,
+                    **self.perturb_func_kwargs,
+                )
+                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(model.predict(x_input)[:, y])
+                pred_deltas.append(float(y_pred - y_pred_perturb))
+
+                # Sum attributions of the random subset.
+                att_sums.append(np.sum(a[a_ix]))
+
+            similarity = self.similarity_func(a=att_sums, b=pred_deltas)
+
+            retval.append(similarity)
+
+        return retval

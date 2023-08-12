@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     import torch
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
@@ -28,7 +28,7 @@ from quantus.helpers.enums import (
 )
 
 
-class RelativeOutputStability(BatchedPerturbationMetric):
+class RelativeOutputStability(PerturbationMetric):
     """
     Relative Output Stability leverages the stability of an explanation with respect to the change in the output logits.
 
@@ -337,7 +337,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         ros_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
 
         for index in range(self._nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,

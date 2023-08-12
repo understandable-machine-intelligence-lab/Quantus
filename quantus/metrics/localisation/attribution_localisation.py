@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -47,7 +47,6 @@ class AttributionLocalisation(Metric):
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.LOCALISATION
-
 
     def __init__(
         self,
@@ -241,64 +240,6 @@ class AttributionLocalisation(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = s.flatten().astype(bool)
-
-        # Compute ratio.
-        size_bbox = float(np.sum(s))
-        size_data = np.prod(x.shape[1:])
-        ratio = size_bbox / size_data
-
-        # Compute inside/outside ratio.
-        inside_attribution = np.sum(a[s])
-        total_attribution = np.sum(a)
-        inside_attribution_ratio = float(inside_attribution / total_attribution)
-
-        if not ratio <= self.max_size:
-            warn.warn_max_size()
-        if inside_attribution_ratio > 1.0:
-            warn.warn_segmentation(inside_attribution, total_attribution)
-            return np.nan
-        if not self.weighted:
-            return inside_attribution_ratio
-        else:
-            return float(inside_attribution_ratio * ratio)
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -332,3 +273,39 @@ class AttributionLocalisation(Metric):
         """
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+    def evaluate_batch(
+        self, *, x_batch: np.ndarray, a_batch: np.ndarray, s_batch: np.ndarray, **_
+    ) -> List[float]:
+        retval = []
+        for x, a, s in zip(x_batch, a_batch, s_batch):
+            if np.sum(s) == 0:
+                warn.warn_empty_segmentation()
+                retval.append(np.nan)
+                continue
+
+            # Prepare shapes.
+            a = a.flatten()
+            s = s.flatten().astype(bool)
+
+            # Compute ratio.
+            size_bbox = float(np.sum(s))
+            size_data = np.prod(x.shape[1:])
+            ratio = size_bbox / size_data
+
+            # Compute inside/outside ratio.
+            inside_attribution = np.sum(a[s])
+            total_attribution = np.sum(a)
+            inside_attribution_ratio = float(inside_attribution / total_attribution)
+
+            if not ratio <= self.max_size:
+                warn.warn_max_size()
+            if inside_attribution_ratio > 1.0:
+                warn.warn_segmentation(inside_attribution, total_attribution)
+                retval.append(np.nan)
+            elif not self.weighted:
+                retval.append(inside_attribution_ratio)
+            else:
+                retval.append(float(inside_attribution_ratio * ratio))
+
+        return retval

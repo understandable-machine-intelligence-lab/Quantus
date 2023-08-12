@@ -6,13 +6,11 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, no_type_check
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.functions.discretise_func import top_n_sign
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
@@ -234,97 +232,52 @@ class Consistency(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        i: int = None,
-        a_label: np.ndarray = None,
-        y_pred_classes: np.ndarray = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        data_batch = super().batch_preprocess(data_batch)
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        i: int
-            The index of the current instance.
-        a_label: np.ndarray
-            The discretised attribution labels.
-        y_pred_classes: np,ndarray
-            The class predictions of the complete input dataset.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Metric logic.
-        pred_a = y_pred_classes[i]
-        same_a = np.argwhere(a == a_label).flatten()
-        diff_a = same_a[same_a != i]
-        pred_same_a = y_pred_classes[diff_a]
-
-        if len(same_a) == 0:
-            return 0
-        return np.sum(pred_same_a == pred_a) / len(diff_a)
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Dict[str, Any]:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        dictionary[str, np.ndarray]
-            Output dictionary with 'a_label_batch' as key and discretised attributtion labels as value.
-        """
-        # Preprocessing.
-        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
-        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
-
+        model = data_batch["model"]
+        x_batch = data_batch["x_batch"]
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
+
+        a_batch = data_batch["a_batch"]
+        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
+
+        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
+
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        return {
+        custom_batch = {
             "i_batch": np.arange(x_batch.shape[0]),
             "a_label_batch": a_labels,
             "y_pred_classes": y_pred_classes,
         }
+
+        data_batch.update(custom_batch)
+        return data_batch
+    
+    @no_type_check
+    def evaluate_batch(
+        self,
+        *,
+        a_batch: np.ndarray,
+        i_batch: np.ndarray,
+        a_label_batch: np.ndarray,
+        y_pred_classes,
+        **_,
+    ) -> List[float]:
+        # TODO: vectorize
+        retval = []
+        for a, i, a_label in zip(a_batch, i_batch, a_label_batch):
+            pred_a = y_pred_classes[i]
+            same_a = np.argwhere(a == a_label).flatten()
+            diff_a = same_a[same_a != i]
+            pred_same_a = y_pred_classes[diff_a]
+
+            if len(same_a) == 0:
+                retval.append(0.0)
+            else:
+                retval.append(np.sum(pred_same_a == pred_a) / len(diff_a))
+
+        return retval

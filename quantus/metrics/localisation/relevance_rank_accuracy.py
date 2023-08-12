@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -226,60 +226,6 @@ class RelevanceRankAccuracy(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = np.where(s.flatten().astype(bool))[0]
-
-        # Size of the ground truth mask.
-        k = len(s)
-
-        # Sort in descending order.
-        a_sorted = np.argsort(a)[-int(k) :]
-
-        # Calculate hits.
-        hits = len(np.intersect1d(s, a_sorted))
-
-        if hits != 0:
-            rank_accuracy = hits / float(k)
-        else:
-            rank_accuracy = 0.0
-
-        return rank_accuracy
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -313,3 +259,37 @@ class RelevanceRankAccuracy(Metric):
         """
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+    def evaluate_batch(
+        self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
+    ) -> List[float]:
+        retval = []
+
+        for a, s in zip(a_batch, s_batch):
+            # Return np.nan as result if segmentation map is empty.
+            if np.sum(s) == 0:
+                warn.warn_empty_segmentation()
+                retval.append(np.nan)
+                continue
+
+            # Prepare shapes.
+            a = a.flatten()
+            s = np.where(s.flatten().astype(bool))[0]
+
+            # Size of the ground truth mask.
+            k = len(s)
+
+            # Sort in descending order.
+            a_sorted = np.argsort(a)[-int(k) :]
+
+            # Calculate hits.
+            hits = len(np.intersect1d(s, a_sorted))
+
+            if hits != 0:
+                rank_accuracy = hits / float(k)
+            else:
+                rank_accuracy = 0.0
+
+            retval.append(rank_accuracy)
+
+        return retval

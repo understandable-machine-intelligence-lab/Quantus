@@ -9,9 +9,7 @@
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
@@ -230,35 +228,12 @@ class EffectiveComplexity(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> int:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+    def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
+        # TODO: vectorize
+        retval = []
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        for a in a_batch:
+            a = a.flatten()
+            retval.append(int(np.sum(a > self.eps)))
 
-        Returns
-        -------
-        integer
-            The evaluation results.
-        """
-
-        a = a.flatten()
-        return int(np.sum(a > self.eps))
+        return retval

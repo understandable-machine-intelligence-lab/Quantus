@@ -5,7 +5,7 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+from __future__ import annotations
 import itertools
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
@@ -283,13 +283,8 @@ class Continuity(PerturbationMetric):
         )
 
     def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> Dict:
+        self, model: ModelInterface, x: np.ndarray, y: np.ndarray
+    ) -> Dict[str, int | float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -301,10 +296,6 @@ class Continuity(PerturbationMetric):
             The input to be evaluated on an instance-basis.
         y: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -463,3 +454,13 @@ class Continuity(PerturbationMetric):
                 for sample in self.evaluation_scores.keys()
             ]
         )
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        **_,
+    ) -> List[Dict[str, int]]:
+        return [self.evaluate_instance(model, x, y) for x, y in zip(x_batch, y_batch)]

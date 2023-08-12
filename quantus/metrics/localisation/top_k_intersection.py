@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -235,58 +235,6 @@ class TopKIntersection(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ):
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        s = s.astype(bool)
-        top_k_binary_mask = np.zeros(a.shape)
-
-        # Sort and create masks.
-        sorted_indices = np.argsort(a, axis=None)
-        np.put_along_axis(top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None)
-        top_k_binary_mask = top_k_binary_mask.astype(bool)
-
-        # Top-k intersection.
-        tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
-
-        # Concept influence (with size of object normalised tki score).
-        if self.concept_influence:
-            tki = np.prod(s.shape) / np.sum(s) * tki
-
-        return tki
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -323,3 +271,35 @@ class TopKIntersection(Metric):
         asserts.assert_value_smaller_than_input_size(
             x=x_batch, value=self.k, value_name="k"
         )
+
+    def evaluate_batch(
+        self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
+    ) -> List[float]:
+        retval = []
+        for a, s in zip(a_batch, s_batch):
+            if np.sum(s) == 0:
+                warn.warn_empty_segmentation()
+                retval.append(np.nan)
+                continue
+
+            # Prepare shapes.
+            s = s.astype(bool)
+            top_k_binary_mask = np.zeros(a.shape)
+
+            # Sort and create masks.
+            sorted_indices = np.argsort(a, axis=None)
+            np.put_along_axis(
+                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
+            )
+            top_k_binary_mask = top_k_binary_mask.astype(bool)
+
+            # Top-k intersection.
+            tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
+
+            # Concept influence (with size of object normalised tki score).
+            if self.concept_influence:
+                tki = np.prod(s.shape) / np.sum(s) * tki
+
+            retval.append(tki)
+
+        return retval

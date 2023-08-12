@@ -14,7 +14,7 @@ from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -23,7 +23,7 @@ from quantus.helpers.enums import (
 )
 
 
-class InputInvariance(BatchedPerturbationMetric):
+class InputInvariance(PerturbationMetric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -247,6 +247,7 @@ class InputInvariance(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         s_batch: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.

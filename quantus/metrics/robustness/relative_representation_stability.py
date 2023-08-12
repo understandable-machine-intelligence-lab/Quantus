@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
@@ -29,7 +29,7 @@ from quantus.helpers.enums import (
 )
 
 
-class RelativeRepresentationStability(BatchedPerturbationMetric):
+class RelativeRepresentationStability(PerturbationMetric):
     """
     Relative Representation Stability leverages the stability of an explanation with respect
     to the change in the output logits.

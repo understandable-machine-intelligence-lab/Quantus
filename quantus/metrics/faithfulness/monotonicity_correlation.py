@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -275,83 +275,6 @@ class MonotonicityCorrelation(PerturbationMetric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Predict on input x.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-        inv_pred = inv_pred ** 2
-
-        # Reshape attributions.
-        a = a.flatten()
-
-        # Get indices of sorted attributions (ascending).
-        a_indices = np.argsort(a)
-
-        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-        atts = [None for _ in range(n_perturbations)]
-        vars = [None for _ in range(n_perturbations)]
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-
-            y_pred_perturbs = []
-
-            for s_ix in range(self.nr_samples):
-
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
-                )
-                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input)[:, y])
-                y_pred_perturbs.append(y_pred_perturb)
-
-            vars[i_ix] = float(
-                np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2) * inv_pred
-            )
-            atts[i_ix] = float(sum(a[a_ix]))
-
-        return self.similarity_func(a=atts, b=vars)
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -388,3 +311,69 @@ class MonotonicityCorrelation(PerturbationMetric):
             features_in_step=self.features_in_step,
             input_shape=x_batch.shape[2:],
         )
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[float]:
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            # Predict on input x.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(model.predict(x_input)[:, y])
+
+            inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
+            inv_pred = inv_pred**2
+
+            # Reshape attributions.
+            a = a.flatten()
+
+            # Get indices of sorted attributions (ascending).
+            a_indices = np.argsort(a)
+
+            n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+            atts = [None for _ in range(n_perturbations)]
+            vars = [None for _ in range(n_perturbations)]
+
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
+                # Perturb input by indices of attributions.
+                a_ix = a_indices[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ]
+
+                y_pred_perturbs = []
+
+                for s_ix in range(self.nr_samples):
+                    x_perturbed = self.perturb_func(
+                        arr=x,
+                        indices=a_ix,
+                        indexed_axes=self.a_axes,
+                        **self.perturb_func_kwargs,
+                    )
+                    warn.warn_perturbation_caused_no_change(
+                        x=x, x_perturbed=x_perturbed
+                    )
+
+                    # Predict on perturbed input x.
+                    x_input = model.shape_input(
+                        x_perturbed, x.shape, channel_first=True
+                    )
+                    y_pred_perturb = float(model.predict(x_input)[:, y])
+                    y_pred_perturbs.append(y_pred_perturb)
+
+                vars[i_ix] = float(
+                    np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
+                    * inv_pred
+                )
+                atts[i_ix] = float(sum(a[a_ix]))
+
+            retval.append(self.similarity_func(a=atts, b=vars))
+
+        return retval

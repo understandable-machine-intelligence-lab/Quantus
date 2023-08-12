@@ -16,7 +16,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -25,7 +25,7 @@ from quantus.helpers.enums import (
 )
 
 
-class AvgSensitivity(BatchedPerturbationMetric):
+class AvgSensitivity(PerturbationMetric):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 
@@ -51,7 +51,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.ROBUSTNESS
-
 
     def __init__(
         self,
@@ -293,7 +292,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -320,7 +319,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
         for step_id in range(self.nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
@@ -371,7 +369,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-
                 if (
                     self.return_nan_when_prediction_changes
                     and instance_id in changed_prediction_indices

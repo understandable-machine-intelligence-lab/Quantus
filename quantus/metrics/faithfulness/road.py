@@ -6,11 +6,10 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
@@ -268,7 +267,6 @@ class ROAD(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -291,65 +289,6 @@ class ROAD(PerturbationMetric):
            : list
             The evaluation results.
         """
-        # Order indices.
-        ordered_indices = np.argsort(a, axis=None)[::-1]
-
-        results_instance = np.array([None for _ in self.percentages])
-
-        for p_ix, p in enumerate(self.percentages):
-            top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
-
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=top_k_indices,
-                **self.perturb_func_kwargs,
-            )
-
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            class_pred_perturb = np.argmax(model.predict(x_input))
-
-            # Write a boolean into the percentage results.
-            results_instance[p_ix] = int(y == class_pred_perturb)
-
-        # Return list of booleans for each percentage.
-        return results_instance
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        None
-        """
-        # Infer the size of attributions.
-        self.a_size = a_batch[0, :, :].size
 
     def custom_postprocess(
         self,
@@ -386,3 +325,48 @@ class ROAD(PerturbationMetric):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
+
+    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        data_batch = super().batch_preprocess(data_batch)
+        # Infer the size of attributions.
+        self.a_size = data_batch["a_batch"][0, :, :].size
+        return data_batch
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ):
+        retval = []
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+            # Order indices.
+            ordered_indices = np.argsort(a, axis=None)[::-1]
+
+            results_instance = np.array([None for _ in self.percentages])
+
+            for p_ix, p in enumerate(self.percentages):
+                top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
+
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=top_k_indices,
+                    **self.perturb_func_kwargs,
+                )
+
+                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                class_pred_perturb = np.argmax(model.predict(x_input))
+
+                # Write a boolean into the percentage results.
+                results_instance[p_ix] = int(y == class_pred_perturb)
+
+            # Return list of booleans for each percentage.
+            retval.append(results_instance)
+
+        return retval

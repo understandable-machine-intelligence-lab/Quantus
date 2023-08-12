@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 
@@ -218,49 +218,6 @@ class AUC(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: (ModelInteface)
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        : float
-         The evaluation results.
-        """
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = s.flatten().astype(bool)
-
-        fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
-        score = auc(x=fpr, y=tpr)
-
-        return score
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -294,3 +251,24 @@ class AUC(Metric):
         """
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+    def evaluate_batch(
+        self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
+    ) -> List[float]:
+        retval = []
+        # TODO: vectorize
+        for a, s in zip(a_batch, s_batch):
+            if np.sum(s) == 0:
+                warn.warn_empty_segmentation()
+                retval.append(np.nan)
+                continue
+
+            # Prepare shapes.
+            a = a.flatten()
+            s = s.flatten().astype(bool)
+
+            fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
+            score = auc(x=fpr, y=tpr)
+            retval.append(score)
+
+        return retval

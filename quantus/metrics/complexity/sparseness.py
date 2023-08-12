@@ -9,9 +9,7 @@
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
@@ -232,44 +230,23 @@ class Sparseness(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+    def evaluate_batch(
+        self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
+    ) -> List[float]:
+        retval = []
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        for x, a in zip(x_batch, a_batch):
+            if len(x.shape) == 1:
+                newshape = np.prod(x.shape)
+            else:
+                newshape = np.prod(x.shape[1:])
 
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        if len(x.shape) == 1:
-            newshape = np.prod(x.shape)
-        else:
-            newshape = np.prod(x.shape[1:])
+            a = np.array(np.reshape(a, newshape), dtype=np.float64)
+            a += 0.0000001
+            a = np.sort(a)
+            score = (
+                np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)
+            ) / (a.shape[0] * np.sum(a))
+            retval.append(score)
 
-        a = np.array(np.reshape(a, newshape), dtype=np.float64)
-        a += 0.0000001
-        a = np.sort(a)
-        score = (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)) / (
-            a.shape[0] * np.sum(a)
-        )
-        return score
+        return retval

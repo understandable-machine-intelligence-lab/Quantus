@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -15,7 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -24,7 +24,7 @@ from quantus.helpers.enums import (
 )
 
 
-class LocalLipschitzEstimate(BatchedPerturbationMetric):
+class LocalLipschitzEstimate(PerturbationMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -299,7 +299,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
+        **_,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -314,8 +314,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
@@ -327,7 +325,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
         for step_id in range(self.nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,

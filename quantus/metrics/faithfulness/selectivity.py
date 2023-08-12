@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.helpers import plotting
 from quantus.helpers import utils
 from quantus.helpers import warn
@@ -274,7 +273,6 @@ class Selectivity(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -289,8 +287,6 @@ class Selectivity(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -316,7 +312,6 @@ class Selectivity(PerturbationMetric):
             range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
         ]
         for top_left_coords in itertools.product(*axis_iterators):
-
             # Create slice for patch.
             patch_slice = utils.create_patch_slice(
                 patch_size=self.patch_size,
@@ -348,7 +343,6 @@ class Selectivity(PerturbationMetric):
         # Increasingly perturb the input and store the decrease in function value.
         results = np.array([None for _ in range(len(ordered_patches_no_overlap))])
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
-
             # Pad x_perturbed. The mode should depend on the used perturb_func.
             x_perturbed_pad = utils._pad_array(
                 x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
@@ -385,3 +379,17 @@ class Selectivity(PerturbationMetric):
                 for i, curve in enumerate(self.evaluation_scores)
             ]
         )
+
+    def evaluate_batch(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **_,
+    ) -> List[List[float]]:
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
