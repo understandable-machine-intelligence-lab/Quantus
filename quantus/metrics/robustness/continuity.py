@@ -388,8 +388,8 @@ class Continuity(PerturbationMetric):
                 # Sum attributions for patch.
                 patch_sum = float(sum(a_perturbed_patch))
                 results[ix_patch].append(patch_sum)
-
-        return dict(**results)
+        
+        return {k: v for k, v in results.items()}
 
     def custom_preprocess(
         self,
