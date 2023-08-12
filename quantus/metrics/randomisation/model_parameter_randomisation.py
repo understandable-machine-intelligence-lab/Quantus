@@ -14,6 +14,7 @@ from typing import (
     Optional,
     Union,
     Collection,
+    TYPE_CHECKING
 )
 
 import numpy as np
@@ -31,6 +32,14 @@ from quantus.helpers.enums import (
 )
 from quantus.helpers.model.model_interface import ModelInterface, RandomizeAbleModel
 from quantus.metrics.base import Metric
+
+
+if TYPE_CHECKING:
+    
+    from abc import ABC
+    
+    class ModelABC(ModelInterface, RandomizeAbleModel, ABC):
+        pass
 
 
 class ModelParameterRandomisation(Metric):
@@ -270,7 +279,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model: RandomizeAbleModel = data["model"]
+        model: ModelABC = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]

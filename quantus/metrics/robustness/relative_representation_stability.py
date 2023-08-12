@@ -10,10 +10,6 @@ from typing import TYPE_CHECKING, Optional, Callable, Dict, List, Protocol, Sequ
 import numpy as np
 from functools import partial
 
-if TYPE_CHECKING:
-    import tensorflow as tf
-    import torch
-
 
 from quantus.helpers.model.model_interface import ModelInterface, HiddenRepresentationsModel
 from quantus.metrics.base_perturbed import PerturbationMetric
@@ -27,6 +23,16 @@ from quantus.helpers.enums import (
     ScoreDirection,
     EvaluationCategory,
 )
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+    import torch
+    
+    from abc import ABC
+    
+    
+    class ModelABC(ModelInterface, HiddenRepresentationsModel, ABC):
+        pass
 
 
 class RelativeRepresentationStability(PerturbationMetric):
@@ -283,7 +289,7 @@ class RelativeRepresentationStability(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: HiddenRepresentationsModel,
+        model: ModelABC,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,

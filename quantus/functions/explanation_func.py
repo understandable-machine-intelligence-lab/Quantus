@@ -8,7 +8,7 @@
 
 import warnings
 from importlib import util
-from typing import Optional, Union
+from typing import Optional, Union, TypeVar
 
 import numpy as np
 import scipy
@@ -57,6 +57,11 @@ if util.find_spec("tensorflow"):
     import tensorflow as tf
 if util.find_spec("tf_explain"):
     import tf_explain
+
+from quantus.helpers.model.model_interface import SoftmaxTopModel
+
+
+M = TypeVar("M")
 
 
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
@@ -259,8 +264,7 @@ def generate_tf_explanation(
                 category=UserWarning,
             )
             softmax = True
-        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=False)
-        model = wrapped_model.get_softmax_arg_model()
+        model = make_softmax_arg_model(model, softmax, False)
 
     inputs = inputs.reshape(-1, *model.input_shape[1:])
     if not isinstance(targets, np.ndarray):
@@ -487,10 +491,7 @@ def generate_captum_explanation(
             f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
             category=UserWarning,
         )
-        wrapped_model = get_wrapped_model(
-            model, softmax=softmax, channel_first=channel_first
-        )
-        model = wrapped_model.get_softmax_arg_model()
+        model = make_softmax_arg_model(model, softmax, channel_first)
 
     method = kwargs.get("method", "Gradient")
     xai_lib_kwargs = kwargs.get("xai_lib_kwargs", {})
@@ -745,10 +746,7 @@ def generate_zennit_explanation(
             f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
             category=UserWarning,
         )
-        wrapped_model = get_wrapped_model(
-            model, softmax=softmax, channel_first=channel_first
-        )
-        model = wrapped_model.get_softmax_arg_model()
+        model = make_softmax_arg_model(model, softmax, channel_first)
 
     assert 0 not in kwargs.get(
         "reduce_axes", [1]
@@ -854,3 +852,13 @@ def generate_zennit_explanation(
     explanation = np.sum(explanation, **reduce_axes)
 
     return explanation
+
+
+def make_softmax_arg_model(model: M, softmax: bool, channel_first: bool) -> M:
+    wrapped_model: SoftmaxTopModel = get_wrapped_model(
+        model, softmax=softmax, channel_first=channel_first
+    )
+    if not isinstance(model, SoftmaxTopModel):
+        raise ValueError(f"Model must implement SoftmaxTopModel")
+        
+    return wrapped_model.get_softmax_arg_model()

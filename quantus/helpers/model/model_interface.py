@@ -21,6 +21,8 @@ class ModelInterface(ABC, Generic[M]):
     in dedicated ABC, allows for easier extension, since not every metric requires every ABC to be
     overriden.
     """
+    
+    model: M
 
     def __init__(
         self,
@@ -92,15 +94,10 @@ class ModelInterface(ABC, Generic[M]):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def get_model(self) -> M:
-        """
-        Get the original torch/tf model.
-        """
-        raise NotImplementedError
 
-
-class SoftmaxTopModel(ModelInterface):
+class SoftmaxTopModel(ABC):
+    
+    """Only required for builtin XAI methods, only in case softmax arg is provided."""
     
     @abstractmethod
     def get_softmax_arg_model(self) -> M:
@@ -112,7 +109,7 @@ class SoftmaxTopModel(ModelInterface):
         raise NotImplementedError
 
 
-class MeanShiftModel(ModelInterface):
+class MeanShiftModel(ABC):
     
     """Only required for InputInvariance."""
     
@@ -142,7 +139,7 @@ class MeanShiftModel(ModelInterface):
         raise NotImplementedError
 
 
-class RandomizeAbleModel(ModelInterface):
+class RandomizeAbleModel(ABC):
     
     """Only required for ModelParameterRandomisation."""
     
@@ -162,7 +159,7 @@ class RandomizeAbleModel(ModelInterface):
         raise NotImplementedError
     
     
-class HiddenRepresentationsModel(ModelInterface):
+class HiddenRepresentationsModel(ABC):
     
     """Only required for RelativeRepresentationStability."""
     

@@ -9,22 +9,41 @@
 from __future__ import annotations
 
 from typing import Dict, Optional, Tuple, List, Union
+
+import keras
 from keras.layers import Dense
 from keras import activations
 from keras import Model
 from keras.models import clone_model
 import numpy as np
-import tensorflow as tf
 from warnings import warn
 from cachetools import cachedmethod, LRUCache
 import operator
 
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import (
+    ModelInterface,
+    RandomizeAbleModel,
+    HiddenRepresentationsModel,
+    SoftmaxTopModel,
+    MeanShiftModel,
+)
 from quantus.helpers import utils
 
 
-class TensorFlowModel(ModelInterface):
-    """Interface for tensorflow models."""
+class TensorFlowModel(
+    ModelInterface[keras.Model],
+    SoftmaxTopModel,
+    HiddenRepresentationsModel,
+    RandomizeAbleModel,
+    MeanShiftModel,
+):
+    """
+    Interface for (Tensorflow-)Keras models.
+    Despite the name, it does not support raw tf.Module(s).
+    It does not support Keras-Core models.
+    The implementation assumes model created with Sequential of Functional API, and may have rough edges,
+    when used with subclassed model.
+    """
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
     _available_predict_kwargs = [
@@ -81,6 +100,7 @@ class TensorFlowModel(ModelInterface):
         Filter out those, which are supported by Keras API.
         """
         all_kwargs = {**self.model_predict_kwargs, **kwargs}
+        # TODO: warn on invalid kwargs.
         predict_kwargs = {
             k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
         }
@@ -92,7 +112,7 @@ class TensorFlowModel(ModelInterface):
         Checks if the last layer is an instance of tf.keras.layers.Softmax.
         """
         last_layer = self.model.layers[-1]
-        return isinstance(last_layer, tf.keras.layers.Softmax)
+        return isinstance(last_layer, keras.layers.Softmax)
 
     @cachedmethod(operator.attrgetter("cache"))
     def _get_model_with_linear_top(self) -> Model:
@@ -138,7 +158,7 @@ class TensorFlowModel(ModelInterface):
         if output_activation == activations.softmax:
             return self.model
 
-        output_layer = tf.keras.layers.Softmax(axis=-1)(self.model.layers[-1].output)
+        output_layer = keras.layers.Softmax(axis=-1)(self.model.layers[-1].output)
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
 
         return new_model
@@ -217,23 +237,7 @@ class TensorFlowModel(ModelInterface):
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
-
-    def get_model(self):
-        """
-        Get the original tf model.
-        """
-        return self.model
-
-    def state_dict(self):
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.get_weights()
-
-    def load_state_dict(self, original_parameters):
-        """Set model's learnable parameters."""
-        self.model.set_weights(original_parameters)
-
+    
     def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
@@ -252,7 +256,7 @@ class TensorFlowModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
+        original_parameters = self.model
         random_layer_model = clone_model(self.model)
 
         layers = [
@@ -328,7 +332,8 @@ class TensorFlowModel(ModelInterface):
         random_layer_model: Model
             The resulting model with a shifted first layer.
         """
-        original_parameters = self.state_dict()
+        original_parameters = self.model.weights
+        # FIXME: there is no need to clone model (especially a big one)
         new_model = clone_model(self.model)
         new_model.set_weights(original_parameters)
 
@@ -417,3 +422,14 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+    
+    @property
+    def number_of_randomize_able_layers(self) -> int:
+        return len(
+            [
+                _layer
+                for _layer in self.model.layers
+                if len(_layer.get_weights()) > 0
+            ]
+        )
+        

@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 import numpy as np
 
 from quantus.helpers import warn
@@ -21,6 +21,13 @@ from quantus.helpers.enums import (
     ScoreDirection,
     EvaluationCategory,
 )
+
+if TYPE_CHECKING:
+    
+    from abc import ABC
+    
+    class ModelABC(ModelInterface, MeanShiftModel, ABC):
+        pass
 
 
 class InputInvariance(PerturbationMetric):
@@ -242,7 +249,7 @@ class InputInvariance(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: MeanShiftModel,
+        model: ModelABC,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,

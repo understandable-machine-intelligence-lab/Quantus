@@ -23,7 +23,7 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
-
+    
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
     """
@@ -334,7 +334,7 @@ def make_channel_last(x: np.array, channel_first=True):
 
 
 def get_wrapped_model(
-    model,
+    model: Any,
     channel_first: bool,
     softmax: bool,
     device: Optional[str] = None,
@@ -361,6 +361,11 @@ def get_wrapped_model(
     model: ModelInterface
         A wrapped ModelInterface model.
     """
+    if isinstance(model, ModelInterface):
+        # In case user provided custom implementation of ModelInterface, just return it.
+        return model
+    
+    # TODO: verify call signature and make sure we can use default wrappers.
     if util.find_spec("tensorflow"):
         if isinstance(model, tf.keras.Model):
             return TensorFlowModel(
@@ -378,7 +383,9 @@ def get_wrapped_model(
                 device=device,
                 model_predict_kwargs=model_predict_kwargs,
             )
-    raise ValueError("Model needs to be tf.keras.Model or torch.nn.Module.")
+    # TODO: add huggingface & keras_core wrappers.
+    raise ValueError("Could not deduce model framework. Make sure model is a subclass of "
+                     "tf.keras.Model or torch.nn.Module. Alternatively, you can subclass `quantus.ModelInterface`")
 
 
 def blur_at_indices(
