@@ -7,12 +7,18 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import List, Dict, Final, Mapping, Type
+import sys
+from typing import List, Dict, Mapping, Type
 from quantus.functions.loss_func import *
 from quantus.functions.normalise_func import *
 from quantus.functions.perturb_func import *
 from quantus.functions.similarity_func import *
 from quantus.metrics import *
+
+if sys.version_info >= (3, 8):
+    from typing import Final
+else:
+    from typing_extensions import Final
 
 
 AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {

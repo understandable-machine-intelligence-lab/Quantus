@@ -9,6 +9,7 @@ from __future__ import annotations
 import itertools
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
+from collections import defaultdict
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
@@ -302,7 +303,7 @@ class Continuity(PerturbationMetric):
         dict
             The evaluation results.
         """
-        results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
+        results = defaultdict(lambda: [])
 
         for step in range(self.nr_steps):
 
@@ -388,7 +389,7 @@ class Continuity(PerturbationMetric):
                 patch_sum = float(sum(a_perturbed_patch))
                 results[ix_patch].append(patch_sum)
 
-        return results
+        return dict(**results)
 
     def custom_preprocess(
         self,
