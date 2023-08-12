@@ -337,13 +337,7 @@ class AvgSensitivity(PerturbationMetric):
                 else []
             )
 
-            x_input = model.shape_input(
-                x=x_perturbed,
-                shape=x_batch.shape,
-                channel_first=True,
-                batched=True,
-            )
-
+           
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(
                     x=x_instance,
@@ -351,21 +345,7 @@ class AvgSensitivity(PerturbationMetric):
                 )
 
             # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x_input,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed,
-                    **self.normalise_func_kwargs,
-                )
-
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):

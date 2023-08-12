@@ -297,12 +297,7 @@ class InputInvariance(PerturbationMetric):
         )
 
         # Generate explanation based on shifted input x.
-        a_shifted = self.explain_func(
-            model=shifted_model,
-            inputs=x_shifted,
-            targets=y_batch,
-            **self.explain_func_kwargs,
-        )
+        a_shifted = self.explain_batch(shifted_model, x_shifted, y_batch)
 
         # Compute the invaraince.
         score = np.all(
