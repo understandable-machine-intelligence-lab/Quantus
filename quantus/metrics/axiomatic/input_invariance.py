@@ -11,7 +11,7 @@ import numpy as np
 
 from quantus.helpers import warn
 from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface, MeanShiftModel
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
 from quantus.metrics.base_perturbed import PerturbationMetric
@@ -242,7 +242,7 @@ class InputInvariance(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: ModelInterface,
+        model: MeanShiftModel,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
@@ -346,3 +346,6 @@ class InputInvariance(PerturbationMetric):
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
+        
+        if not isinstance(model, MeanShiftModel):
+            raise ValueError("Model wrapper must implement MeanShiftModel")

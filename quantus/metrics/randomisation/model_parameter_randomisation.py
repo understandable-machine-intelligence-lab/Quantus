@@ -29,7 +29,7 @@ from quantus.helpers.enums import (
     ScoreDirection,
     EvaluationCategory,
 )
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface, RandomizeAbleModel
 from quantus.metrics.base import Metric
 
 
@@ -270,7 +270,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model = data["model"]
+        model: RandomizeAbleModel = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]
@@ -282,7 +282,7 @@ class ModelParameterRandomisation(Metric):
         self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
-        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
+        n_layers = model.number_of_randomize_able_layers
 
         model_iterator = tqdm(
             model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
@@ -367,6 +367,8 @@ class ModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
+        if not isinstance(model, RandomizeAbleModel):
+            raise ValueError("Model wrapper must implement RandomizeAbleModel.")
 
     def compute_correlation_per_sample(
         self,

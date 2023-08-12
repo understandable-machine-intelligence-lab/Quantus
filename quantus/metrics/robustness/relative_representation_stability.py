@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List, Protocol, Sequence, runtime_checkable
 import numpy as np
 from functools import partial
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     import torch
 
 
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface, HiddenRepresentationsModel
 from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
@@ -310,7 +310,7 @@ class RelativeRepresentationStability(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: ModelInterface,
+        model: HiddenRepresentationsModel,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
@@ -402,3 +402,7 @@ class RelativeRepresentationStability(PerturbationMetric):
             result = [self.aggregate_func(result)]
 
         return result
+    
+    def custom_preprocess(self, model: ModelInterface, *kwargs):
+        if not isinstance(model, HiddenRepresentationsModel):
+            raise ValueError("Model wrapper must implement HiddenRepresentationsModel")
