@@ -779,6 +779,11 @@ class Metric:
         return self.all_evaluation_scores
 
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Does computationally heavy pre-processing on batch level to avoid OOM.
+        By default, will only generate explanations if missing, in case metric requires custom
+        data, it must be overriden in respective metric.
+        """
         x_batch = data_batch["x_batch"]
 
         a_batch = data_batch.get("a_batch")
