@@ -803,7 +803,7 @@ class Metric:
         y_batch: np.ndarray,
     ) -> np.ndarray:
         """
-        
+
         Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
         This method should primarily be used if you need to generate additional explanation
         in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.

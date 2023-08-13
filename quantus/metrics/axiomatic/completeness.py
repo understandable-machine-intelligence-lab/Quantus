@@ -270,13 +270,12 @@ class Completeness(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[bool]:
-        
         """
-        
+
         Checks if sum of attributions is equal to the difference between original prediction and
         prediction on baseline value.
 
-        
+
         Parameters
         ----------
         model: ModelInterface
@@ -292,13 +291,13 @@ class Completeness(PerturbationMetric):
 
         Returns
         -------
-        
+
         scores_batch:
             List of booleans.
-        
+
 
         """
-        
+
         # TODO: vectorize
         scores_batch = []
         for x, y, a in zip(x_batch, y_batch, a_batch):

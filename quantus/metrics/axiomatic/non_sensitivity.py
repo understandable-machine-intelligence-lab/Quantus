@@ -311,11 +311,10 @@ class NonSensitivity(PerturbationMetric):
         a_batch: np.ndarray,
         **kwargs,
     ) -> List[int]:
-        
         """
-        
+
         Count the number of features in each explanation, for which model is not sensitive.
-        
+
         Parameters
         ----------
         model: ModelInterface
@@ -326,18 +325,18 @@ class NonSensitivity(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-            
+
         kwargs:
             Unused.
 
         Returns
         -------
-        
+
         scores_batch:
             List of integers.
 
         """
-        
+
         scores_batch = []
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -373,6 +372,8 @@ class NonSensitivity(PerturbationMetric):
                     vars.append(np.var(preds))
 
             non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
-            scores_batch.append(len(non_features_vars.symmetric_difference(non_features)))
+            scores_batch.append(
+                len(non_features_vars.symmetric_difference(non_features))
+            )
 
         return scores_batch

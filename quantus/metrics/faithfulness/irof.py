@@ -261,7 +261,7 @@ class IROF(PerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
-    
+
     def evaluate_instance(
         self,
         model: ModelInterface,
@@ -311,7 +311,6 @@ class IROF(PerturbationMetric):
         x_prev_perturbed = x
 
         for i_ix, s_ix in enumerate(s_indices):
-
             # Perturb input by indices of attributions.
             a_ix = np.nonzero((segments == s_ix).flatten())[0]
 

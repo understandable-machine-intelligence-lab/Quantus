@@ -324,9 +324,9 @@ class FaithfulnessCorrelation(PerturbationMetric):
         **_,
     ) -> List[float]:
         """
-        
+
         TODO: what does it compute?
-        
+
         Parameters
         ----------
         model: ModelInterface
@@ -342,7 +342,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         Returns
         -------
-        
+
         scores_batch:
             List of floats.
 

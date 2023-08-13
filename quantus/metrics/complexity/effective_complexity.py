@@ -230,20 +230,20 @@ class EffectiveComplexity(Metric):
 
     def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
         """
-        
+
         Count how many attributions exceed the threshold `eps`
-        
+
         Parameters
         ----------
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-            
+
         _:
             Unused
 
         Returns
         -------
-        
+
         scores_batch:
             List of integers.
 

@@ -310,9 +310,9 @@ class FaithfulnessEstimate(PerturbationMetric):
         **_,
     ):
         """
-        
+
         TODO: what does it compute?
-        
+
         Parameters
         ----------
         model: ModelInterface
@@ -328,7 +328,7 @@ class FaithfulnessEstimate(PerturbationMetric):
 
         Returns
         -------
-        
+
         scores_batch:
             List of floats.
 

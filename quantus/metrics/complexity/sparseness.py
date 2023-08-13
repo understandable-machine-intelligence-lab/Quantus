@@ -233,11 +233,10 @@ class Sparseness(Metric):
     def evaluate_batch(
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
     ) -> List[float]:
-        
         """
-        
+
         TODO: what does it compute?
-        
+
         Parameters
         ----------
         x_batch: np.ndarray
@@ -249,12 +248,12 @@ class Sparseness(Metric):
 
         Returns
         -------
-        
+
         scores_batch:
             List of floats.
 
         """
-        
+
         scores_batch = []
         # TODO: vectorize
 
