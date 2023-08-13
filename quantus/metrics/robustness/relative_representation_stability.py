@@ -349,8 +349,10 @@ class RelativeRepresentationStability(PerturbationMetric):
             )
             rrs_batch[index] = rrs
             # If perturbed input caused change in prediction, then it's RRS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
-            
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
+
             if len(changed_prediction_indices) != 0:
                 rrs_batch[index, changed_prediction_indices] = np.nan
 

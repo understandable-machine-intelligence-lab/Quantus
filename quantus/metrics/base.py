@@ -802,27 +802,28 @@ class Metric:
         return data_batch
 
     def explain_batch(
-        self, model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
     ) -> np.ndarray:
         """
-        
+
         Parameters
         -------
-        
+
         model:
         x_batch:
         y_batch:
         batched:
             If set to false, will np.expand_dims inputs.
-        
-        
+
+
         Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
         This method should primarily be used if you need to generate additional explanation during
         in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
-        
-        
+
+
         It will do few things:
         - call model.shape_input
         - unwrap model
@@ -831,7 +832,7 @@ class Metric:
         - (optionally) normalize a_batch
         - (optionally) take np.abs of a_batch
         """
-        
+
         if isinstance(model, ModelInterface):
             # Sometimes the model is our wrapper, but sometimes raw Keras/Torch model.
             x_batch = model.shape_input(

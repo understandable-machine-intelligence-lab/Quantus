@@ -334,7 +334,9 @@ class LocalLipschitzEstimate(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(

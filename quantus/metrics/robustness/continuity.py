@@ -9,7 +9,6 @@ from __future__ import annotations
 import itertools
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
-from collections import defaultdict
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
@@ -303,10 +302,9 @@ class Continuity(PerturbationMetric):
         dict
             The evaluation results.
         """
-        results = defaultdict(lambda: [])
+        results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
 
         for step in range(self.nr_steps):
-
             # Generate explanation based on perturbed input x.
             dx_step = (step + 1) * self.dx
             x_perturbed = self.perturb_func(
@@ -318,9 +316,14 @@ class Continuity(PerturbationMetric):
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
-            prediction_changed = len(
-                self.changed_prediction_indices(model, np.expand_dims(x, 0), x_input)
-            ) != 0
+            prediction_changed = (
+                len(
+                    self.changed_prediction_indices(
+                        model, np.expand_dims(x, 0), x_input
+                    )
+                )
+                != 0
+            )
             # Taking the first element, since a_perturbed will be expanded to a batch dimension
             # not expected by the current index management functions.
             a_perturbed = self.explain_batch(model, x_input, np.expand_dims(y, 0))[0]
@@ -361,7 +364,7 @@ class Continuity(PerturbationMetric):
                 # Sum attributions for patch.
                 patch_sum = float(np.sum(a_perturbed_patch))
                 results[ix_patch].append(patch_sum)
-        
+
         return {k: v for k, v in results.items()}
 
     def custom_preprocess(

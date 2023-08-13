@@ -268,8 +268,6 @@ class PointingGame(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
-        
-        
         retval = []
         for a, s in zip(a_batch, s_batch):
             if np.sum(s) == 0:
@@ -291,5 +289,5 @@ class PointingGame(Metric):
                 hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
 
             retval.append(hit)
-        
+
         return retval

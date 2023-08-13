@@ -6,13 +6,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from abc import ABC
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Optional,
-    List
-)
+from typing import Any, Callable, Dict, Optional, List
 import warnings
 
 import numpy as np
@@ -105,18 +99,14 @@ class PerturbationMetric(Metric, ABC):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
         self.perturb_func_kwargs = perturb_func_kwargs
-    
+
     def changed_prediction_indices(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            x_perturbed: np.ndarray
+        self, model: ModelInterface, x_batch: np.ndarray, x_perturbed: np.ndarray
     ) -> List[int]:
-        
         """
         Find indices in batch, for which predicted label has changed after applying perturbation.
         If metric has no `return_nan_when_prediction_changes` attribute, or it is False, will return empty list.
-        
+
         Parameters
         ----------
         model:
@@ -127,24 +117,26 @@ class PerturbationMetric(Metric, ABC):
 
         Returns
         -------
-        
+
         changed_idx:
             List of indices in batch, for which predicted label has changed afer.
 
         """
-        
+
         if hasattr(self, "return_nan_when_prediction_changes"):
             attr_name = "return_nan_when_prediction_changes"
         elif hasattr(self, "_return_nan_when_prediction_changes"):
             attr_name = "_return_nan_when_prediction_changes"
         else:
-            warnings.warn("Called changed_prediction_indices(), from a metric, "
-                          "without `return_nan_when_prediction_changes` instance attribute, this is unexpected.")
+            warnings.warn(
+                "Called changed_prediction_indices(), from a metric, "
+                "without `return_nan_when_prediction_changes` instance attribute, this is unexpected."
+            )
             return []
-            
+
         if not getattr(self, attr_name):
             return []
-        
+
         labels_before = model.predict(x_batch).argmax(axis=-1)
         labels_after = model.predict(x_perturbed).argmax(axis=-1)
         changed_idx = np.reshape(np.argwhere(labels_before != labels_after), -1)

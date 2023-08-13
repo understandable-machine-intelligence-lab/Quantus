@@ -335,7 +335,7 @@ class Focus(Metric):
             :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_a
-    
+
     @no_type_check
     def evaluate_batch(
         self,
