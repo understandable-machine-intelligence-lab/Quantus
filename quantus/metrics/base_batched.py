@@ -18,17 +18,19 @@ class BatchedMetric(Metric, abc.ABC):
 
     """Alias to quantus.Metric, will be removed in next major release."""
 
-    def __subclasscheck__(self, subclass):
+    def __new__(cls, *args, **kwargs):
         warnings.warn(
             "BatchedMetric was deprecated, since it is just an alias to Metric. Please subclass Metric directly."
         )
+        super().__new__(*args, **kwargs)
 
 
 class BatchedPerturbationMetric(PerturbationMetric, abc.ABC):
     """Alias to quantus.PerturbationMetric, will be removed in next major release."""
 
-    def __subclasscheck__(self, subclass):
+    def __new__(cls, *args, **kwargs):
         warnings.warn(
             "BatchedPerturbationMetric was deprecated, "
             "since it is just an alias to Metric. Please subclass PerturbationMetric directly."
         )
+        super().__new__(*args, **kwargs)

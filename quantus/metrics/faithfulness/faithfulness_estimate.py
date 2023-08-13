@@ -309,7 +309,31 @@ class FaithfulnessEstimate(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ):
-        rerval = []
+        """
+
+        TODO: what does it compute?
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused.
+
+        Returns
+        -------
+
+        scores_batch:
+            List of floats.
+
+        """
+        scores_batch = []
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
             # Flatten the attributions.
@@ -350,6 +374,6 @@ class FaithfulnessEstimate(PerturbationMetric):
                 att_sums[i_ix] = np.sum(a[a_ix])
 
             similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-            rerval.append(similarity)
+            scores_batch.append(similarity)
 
-        return rerval
+        return scores_batch

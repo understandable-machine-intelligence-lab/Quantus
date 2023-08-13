@@ -403,12 +403,7 @@ class Metric:
 
             # Normalise with specified keyword arguments if requested.
             if self.normalise:
-                # TODO: what is this signature?
-                a_batch = self.normalise_func(
-                    a_batch,
-                    normalise_axes=list(range(np.ndim(a_batch)))[1:],
-                    **self.normalise_func_kwargs,
-                )
+                a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
 
             # Take absolute if requested.
             if self.abs:
@@ -784,6 +779,11 @@ class Metric:
         return self.all_evaluation_scores
 
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Does computationally heavy pre-processing on batch level to avoid OOM.
+        By default, will only generate explanations if missing, in case metric requires custom
+        data, it must be overriden in respective metric.
+        """
         x_batch = data_batch["x_batch"]
 
         a_batch = data_batch.get("a_batch")
@@ -802,36 +802,34 @@ class Metric:
         return data_batch
 
     def explain_batch(
-        self, model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
     ) -> np.ndarray:
         """
-        
+
+        Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
+        This method should primarily be used if you need to generate additional explanation
+        in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
+
         Parameters
         -------
-        
+
         model:
         x_batch:
         y_batch:
-        batched:
-            If set to false, will np.expand_dims inputs.
-        
-        
-        Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
-        This method should primarily be used if you need to generate additional explanation during
-        in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
-        
-        
+
+
         It will do few things:
-        - call model.shape_input
-        - unwrap model
-        - call explain_func
-        - expand attribution channel
-        - (optionally) normalize a_batch
-        - (optionally) take np.abs of a_batch
+            - call model.shape_input
+            - unwrap model
+            - call explain_func
+            - expand attribution channel
+            - (optionally) normalize a_batch
+            - (optionally) take np.abs of a_batch
         """
-        
+
         if isinstance(model, ModelInterface):
             # Sometimes the model is our wrapper, but sometimes raw Keras/Torch model.
             x_batch = model.shape_input(

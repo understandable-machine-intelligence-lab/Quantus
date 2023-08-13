@@ -228,8 +228,28 @@ class Complexity(Metric):
     def evaluate_batch(
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
     ) -> List[float]:
+        """
+
+        TODO: what does it compute?
+
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused.
+
+        Returns
+        -------
+
+        scores_batch:
+            List of floats.
+
+        """
         # TODO: vectorize
-        retval = []
+        scores_batch = []
         for x, a in zip(x_batch, a_batch):
             if len(x.shape) == 1:
                 newshape = np.prod(x.shape)
@@ -237,6 +257,6 @@ class Complexity(Metric):
                 newshape = np.prod(x.shape[1:])
 
             a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
-            retval.append(scipy.stats.entropy(pk=a))
+            scores_batch.append(scipy.stats.entropy(pk=a))
 
-        return retval
+        return scores_batch

@@ -337,7 +337,6 @@ class AvgSensitivity(PerturbationMetric):
                 else []
             )
 
-           
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(
                     x=x_instance,

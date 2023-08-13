@@ -262,6 +262,80 @@ class IROF(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Predict on x.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        # Segment image.
+        segments = utils.get_superpixel_segments(
+            img=np.moveaxis(x, 0, -1).astype("double"),
+            segmentation_method=self.segmentation_method,
+        )
+        nr_segments = len(np.unique(segments))
+        asserts.assert_nr_segments(nr_segments=nr_segments)
+
+        # Calculate average attribution of each segment.
+        att_segs = np.zeros(nr_segments)
+        for i, s in enumerate(range(nr_segments)):
+            att_segs[i] = np.mean(a[:, segments == s])
+
+        # Sort segments based on the mean attribution (descending order).
+        s_indices = np.argsort(-att_segs)
+
+        preds = []
+        x_prev_perturbed = x
+
+        for i_ix, s_ix in enumerate(s_indices):
+            # Perturb input by indices of attributions.
+            a_ix = np.nonzero((segments == s_ix).flatten())[0]
+
+            x_perturbed = self.perturb_func(
+                arr=x_prev_perturbed,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            warn.warn_perturbation_caused_no_change(
+                x=x_prev_perturbed, x_perturbed=x_perturbed
+            )
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+
+            # Normalise the scores to be within range [0, 1].
+            preds.append(float(y_pred_perturb / y_pred))
+            x_prev_perturbed = x_perturbed
+
+        # Calculate the area over the curve (AOC) score.
+        aoc = len(preds) - utils.calculate_auc(np.array(preds))
+        return aoc
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -310,55 +384,7 @@ class IROF(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[float]:
-        retval = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Predict on x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input)[:, y])
-
-            # Segment image.
-            segments = utils.get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                segmentation_method=self.segmentation_method,
-            )
-            nr_segments = len(np.unique(segments))
-            asserts.assert_nr_segments(nr_segments=nr_segments)
-
-            # Calculate average attribution of each segment.
-            att_segs = np.zeros(nr_segments)
-            for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[:, segments == s])
-
-            # Sort segments based on the mean attribution (descending order).
-            s_indices = np.argsort(-att_segs)
-
-            preds = []
-            x_prev_perturbed = x
-
-            for i_ix, s_ix in enumerate(s_indices):
-                # Perturb input by indices of attributions.
-                a_ix = np.nonzero((segments == s_ix).flatten())[0]
-
-                x_perturbed = self.perturb_func(
-                    arr=x_prev_perturbed,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
-                )
-                warn.warn_perturbation_caused_no_change(
-                    x=x_prev_perturbed, x_perturbed=x_perturbed
-                )
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input)[:, y])
-
-                # Normalise the scores to be within range [0, 1].
-                preds.append(float(y_pred_perturb / y_pred))
-                x_prev_perturbed = x_perturbed
-
-            # Calculate the area over the curve (AOC) score.
-            aoc = len(preds) - utils.calculate_auc(np.array(preds))
-            retval.append(aoc)
-
-        return retval
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
