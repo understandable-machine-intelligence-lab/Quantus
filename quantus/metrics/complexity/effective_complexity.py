@@ -229,11 +229,30 @@ class EffectiveComplexity(Metric):
         )
 
     def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
+        """
+        
+        Count how many attributions exceed the threshold `eps`
+        
+        Parameters
+        ----------
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+            
+        _:
+            Unused
+
+        Returns
+        -------
+        
+        scores_batch:
+            List of integers.
+
+        """
         # TODO: vectorize
-        retval = []
+        scores_batch = []
 
         for a in a_batch:
             a = a.flatten()
-            retval.append(int(np.sum(a > self.eps)))
+            scores_batch.append(int(np.sum(a > self.eps)))
 
-        return retval
+        return scores_batch

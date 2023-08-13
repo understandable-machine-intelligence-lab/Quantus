@@ -403,12 +403,7 @@ class Metric:
 
             # Normalise with specified keyword arguments if requested.
             if self.normalise:
-                # TODO: what is this signature?
-                a_batch = self.normalise_func(
-                    a_batch,
-                    normalise_axes=list(range(np.ndim(a_batch)))[1:],
-                    **self.normalise_func_kwargs,
-                )
+                a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
 
             # Take absolute if requested.
             if self.abs:
@@ -808,6 +803,10 @@ class Metric:
         y_batch: np.ndarray,
     ) -> np.ndarray:
         """
+        
+        Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
+        This method should primarily be used if you need to generate additional explanation
+        in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
 
         Parameters
         -------
@@ -815,22 +814,15 @@ class Metric:
         model:
         x_batch:
         y_batch:
-        batched:
-            If set to false, will np.expand_dims inputs.
-
-
-        Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
-        This method should primarily be used if you need to generate additional explanation during
-        in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
 
 
         It will do few things:
-        - call model.shape_input
-        - unwrap model
-        - call explain_func
-        - expand attribution channel
-        - (optionally) normalize a_batch
-        - (optionally) take np.abs of a_batch
+            - call model.shape_input
+            - unwrap model
+            - call explain_func
+            - expand attribution channel
+            - (optionally) normalize a_batch
+            - (optionally) take np.abs of a_batch
         """
 
         if isinstance(model, ModelInterface):

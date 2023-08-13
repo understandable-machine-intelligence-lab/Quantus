@@ -270,8 +270,37 @@ class Completeness(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[bool]:
+        
+        """
+        
+        Checks if sum of attributions is equal to the difference between original prediction and
+        prediction on baseline value.
+
+        
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused kwargs.
+
+        Returns
+        -------
+        
+        scores_batch:
+            List of booleans.
+        
+
+        """
+        
         # TODO: vectorize
-        retval = []
+        scores_batch = []
         for x, y, a in zip(x_batch, y_batch, a_batch):
             x_baseline = self.perturb_func(
                 arr=x,
@@ -288,5 +317,5 @@ class Completeness(PerturbationMetric):
             x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
             y_pred_baseline = float(model.predict(x_input)[:, y])
 
-            retval.append(np.sum(a) == self.output_func(y_pred - y_pred_baseline))
-        return retval
+            scores_batch.append(np.sum(a) == self.output_func(y_pred - y_pred_baseline))
+        return scores_batch

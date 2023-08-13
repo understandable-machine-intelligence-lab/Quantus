@@ -281,6 +281,105 @@ class Infidelity(PerturbationMetric):
             device=device,
             **kwargs,
         )
+    
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        results = []
+
+        for _ in range(self.n_perturb_samples):
+
+            sub_results = []
+
+            for patch_size in self.perturb_patch_sizes:
+
+                pred_deltas = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                a_sums = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                x_perturbed = x.copy()
+                pad_width = patch_size - 1
+
+                for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
+
+                    for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
+
+                        # Perturb input patch-wise.
+                        x_perturbed_pad = utils._pad_array(
+                            x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
+                        )
+                        patch_slice = utils.create_patch_slice(
+                            patch_size=patch_size,
+                            coords=[top_left_x, top_left_y],
+                        )
+
+                        x_perturbed_pad = self.perturb_func(
+                            arr=x_perturbed_pad,
+                            indices=patch_slice,
+                            indexed_axes=self.a_axes,
+                            **self.perturb_func_kwargs,
+                        )
+
+                        # Remove padding.
+                        x_perturbed = utils._unpad_array(
+                            x_perturbed_pad, pad_width, padded_axes=self.a_axes
+                        )
+
+                        # Predict on perturbed input x_perturbed.
+                        x_input = model.shape_input(
+                            x_perturbed, x.shape, channel_first=True
+                        )
+                        warn.warn_perturbation_caused_no_change(
+                            x=x, x_perturbed=x_input
+                        )
+                        y_pred_perturb = float(model.predict(x_input)[:, y])
+
+                        x_diff = x - x_perturbed
+                        a_diff = np.dot(
+                            np.repeat(a, repeats=self.nr_channels, axis=0), x_diff
+                        )
+
+                        pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
+                        a_sums[i_x][i_y] = np.sum(a_diff)
+
+                assert callable(self.loss_func)
+                sub_results.append(
+                    self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
+                )
+
+            results.append(np.mean(sub_results))
+
+        return np.mean(results)
 
     def custom_preprocess(
         self,
@@ -323,83 +422,9 @@ class Infidelity(PerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **kwargs,
-    ) -> List[List[float]]:
-        # TODO: can we get rid of any for-loop?
-        retval = []
-
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input)[:, y])
-
-            results = []
-
-            for _ in range(self.n_perturb_samples):
-                sub_results = []
-
-                for patch_size in self.perturb_patch_sizes:
-                    pred_deltas = np.zeros(
-                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                    )
-                    a_sums = np.zeros(
-                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                    )
-                    x_perturbed = x.copy()
-                    pad_width = patch_size - 1
-
-                    for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
-                        for i_y, top_left_y in enumerate(
-                            range(0, x.shape[2], patch_size)
-                        ):
-                            # Perturb input patch-wise.
-                            x_perturbed_pad = utils._pad_array(
-                                x_perturbed,
-                                pad_width,
-                                mode="edge",
-                                padded_axes=self.a_axes,
-                            )
-                            patch_slice = utils.create_patch_slice(
-                                patch_size=patch_size,
-                                coords=[top_left_x, top_left_y],
-                            )
-
-                            x_perturbed_pad = self.perturb_func(
-                                arr=x_perturbed_pad,
-                                indices=patch_slice,
-                                indexed_axes=self.a_axes,
-                                **self.perturb_func_kwargs,
-                            )
-
-                            # Remove padding.
-                            x_perturbed = utils._unpad_array(
-                                x_perturbed_pad, pad_width, padded_axes=self.a_axes
-                            )
-
-                            # Predict on perturbed input x_perturbed.
-                            x_input = model.shape_input(
-                                x_perturbed, x.shape, channel_first=True
-                            )
-                            warn.warn_perturbation_caused_no_change(
-                                x=x, x_perturbed=x_input
-                            )
-                            y_pred_perturb = float(model.predict(x_input)[:, y])
-
-                            x_diff = x - x_perturbed
-                            a_diff = np.dot(
-                                np.repeat(a, repeats=self.nr_channels, axis=0), x_diff
-                            )
-
-                            pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
-                            a_sums[i_x][i_y] = np.sum(a_diff)
-
-                    assert callable(self.loss_func)
-                    sub_results.append(
-                        self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
-                    )
-
-                results.append(np.mean(sub_results))
-
-            retval.append(results)
-
-        return retval
+        **_,
+    ) -> List[float]:
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

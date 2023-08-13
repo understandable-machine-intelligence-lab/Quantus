@@ -233,7 +233,30 @@ class Sparseness(Metric):
     def evaluate_batch(
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
     ) -> List[float]:
-        retval = []
+        
+        """
+        
+        TODO: what does it compute?
+        
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused.
+
+        Returns
+        -------
+        
+        scores_batch:
+            List of floats.
+
+        """
+        
+        scores_batch = []
+        # TODO: vectorize
 
         for x, a in zip(x_batch, a_batch):
             if len(x.shape) == 1:
@@ -247,6 +270,6 @@ class Sparseness(Metric):
             score = (
                 np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)
             ) / (a.shape[0] * np.sum(a))
-            retval.append(score)
+            scores_batch.append(score)
 
-        return retval
+        return scores_batch
