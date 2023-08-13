@@ -6,10 +6,9 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Tuple, List, Union, TypeVar, Generic, Mapping, Sequence, Generator
+from typing import Tuple, List, Union, Mapping, Sequence, Generator, TypeVar, Generic
 
 import numpy as np
-
 
 M = TypeVar("M")
 
@@ -18,11 +17,8 @@ class ModelInterface(ABC, Generic[M]):
     """
     ModelInterface standardizes access to different frameworks APIs.
     While it may seem counterintuitive at first, but separating each desired functionality
-    in dedicated ABC, allows for easier extension, since not every metric requires every ABC to be
-    overriden.
+    in dedicated ABC, allows for easier extension, since not every metric requires every ABC to be overriden.
     """
-    
-    model: M
 
     def __init__(
         self,
@@ -90,15 +86,18 @@ class ModelInterface(ABC, Generic[M]):
             Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape if None.
         batched:
-        
+
         """
         raise NotImplementedError
-
-
-class SoftmaxTopModel(ABC):
     
+    def unwrap(self) -> M:
+        return self.model
+
+    
+class SoftmaxTopModel(ABC, Generic[M]):
+
     """Only required for builtin XAI methods, only in case softmax arg is provided."""
-    
+
     @abstractmethod
     def get_softmax_arg_model(self) -> M:
         """
@@ -109,10 +108,10 @@ class SoftmaxTopModel(ABC):
         raise NotImplementedError
 
 
-class MeanShiftModel(ABC):
-    
+class MeanShiftModel(ABC, Generic[M]):
+
     """Only required for InputInvariance."""
-    
+
     @abstractmethod
     def add_mean_shift_to_first_layer(
         self,
@@ -139,30 +138,32 @@ class MeanShiftModel(ABC):
         raise NotImplementedError
 
 
-class RandomizeAbleModel(ABC):
-    
+class RandomizeAbleModel(ABC, Generic[M]):
+
     """Only required for ModelParameterRandomisation."""
-    
-    @abstractmethod
+
     @property
+    @abstractmethod
     def number_of_randomize_able_layers(self) -> int:
         """The only purpose of this property is to avoid materializing full generator in memory."""
         raise NotImplementedError
-    
+
     @abstractmethod
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42) -> Generator[Tuple[str, M], None, None]:
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, M], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
         set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
         """
         raise NotImplementedError
-    
-    
+
+
 class HiddenRepresentationsModel(ABC):
-    
+
     """Only required for RelativeRepresentationStability."""
-    
+
     @abstractmethod
     def get_hidden_representations(
         self,
@@ -194,4 +195,3 @@ class HiddenRepresentationsModel(ABC):
             2D tensor with shape (batch_size, None)
         """
         raise NotImplementedError
-    

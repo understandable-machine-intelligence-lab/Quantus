@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple, List, Union
+from typing import Dict, Tuple, List, Union, Sequence, Generator
 
 import keras
 from keras.layers import Dense
@@ -32,17 +32,15 @@ from quantus.helpers import utils
 
 class TensorFlowModel(
     ModelInterface[keras.Model],
-    SoftmaxTopModel,
+    SoftmaxTopModel[keras.Model],
     HiddenRepresentationsModel,
-    RandomizeAbleModel,
-    MeanShiftModel,
+    RandomizeAbleModel[keras.Model],
+    MeanShiftModel[keras.Model],
 ):
     """
-    Interface for (Tensorflow-)Keras models.
+    Wrapper for (Tensorflow-)Keras models.
     Despite the name, it does not support raw tf.Module(s).
     It does not support Keras-Core models.
-    The implementation assumes model created with Sequential of Functional API, and may have rough edges,
-    when used with subclassed model.
     """
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
@@ -55,13 +53,14 @@ class TensorFlowModel(
         "workers",
         "use_multiprocessing",
     ]
+    model: keras.Model
 
     def __init__(
         self,
-        model: Model,
+        model: keras.Model,
         channel_first: bool = True,
         softmax: bool = False,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        model_predict_kwargs: Dict[str, ...] | None = None,
     ):
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
@@ -115,7 +114,7 @@ class TensorFlowModel(
         return isinstance(last_layer, keras.layers.Softmax)
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_linear_top(self) -> Model:
+    def _get_model_with_linear_top(self) -> keras.Model:
         """
         In a case model has a softmax on top, and we want linear,
         we have to rebuild the model and replace top with linear activation.
@@ -143,7 +142,7 @@ class TensorFlowModel(
         return new_model
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_softmax_top(self) -> Model:
+    def _get_model_with_softmax_top(self) -> keras.Model:
         """
         In a case model has a linear activation in the last layer,
         and we want softmax, we have to rebuild the model and replace top with
@@ -163,7 +162,7 @@ class TensorFlowModel(
 
         return new_model
 
-    def get_softmax_arg_model(self) -> Model:
+    def get_softmax_arg_model(self) -> keras.Model:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation in the last layer and softmax=false,
@@ -204,9 +203,9 @@ class TensorFlowModel(
         self,
         x: np.ndarray,
         shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
+        channel_first: bool | None = None,
         batched: bool = False,
-    ):
+    ) -> np.ndarray:
         """
         Reshape input into model-expected input.
 
@@ -237,8 +236,10 @@ class TensorFlowModel(
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
-    
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[keras.Model, None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -256,7 +257,7 @@ class TensorFlowModel(
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.model
+        original_parameters = self.model.weights
         random_layer_model = clone_model(self.model)
 
         layers = [
@@ -278,7 +279,7 @@ class TensorFlowModel(
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
-        self, layer_names: Tuple, layer_indices: Tuple
+        self, layer_names: Tuple[str, ...], layer_indices: Tuple[int, ...]
     ) -> Model:
         """
         Build a keras model, which outputs the internal representation of layers,
@@ -311,9 +312,9 @@ class TensorFlowModel(
     @cachedmethod(operator.attrgetter("cache"))
     def add_mean_shift_to_first_layer(
         self,
-        input_shift: Union[int, float],
-        shape: tuple,
-    ):
+        input_shift: int | float,
+        shape: Tuple[int, ...],
+    ) -> keras.Model:
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
         the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
@@ -361,11 +362,10 @@ class TensorFlowModel(
     def get_hidden_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: Sequence[str] | None = None,
+        layer_indices: Sequence[int] | None = None,
         **kwargs,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -422,14 +422,9 @@ class TensorFlowModel(
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
-    
+
     @property
     def number_of_randomize_able_layers(self) -> int:
         return len(
-            [
-                _layer
-                for _layer in self.model.layers
-                if len(_layer.get_weights()) > 0
-            ]
+            [_layer for _layer in self.model.layers if len(_layer.get_weights()) > 0]
         )
-        

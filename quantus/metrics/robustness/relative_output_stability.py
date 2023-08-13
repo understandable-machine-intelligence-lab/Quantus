@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
-from functools import partial
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -19,7 +18,6 @@ from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -300,9 +298,6 @@ class RelativeOutputStability(PerturbationMetric):
 
         """
         batch_size = x_batch.shape[0]
-        _explain_func = partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
         # Execute forward pass on provided inputs.
         logits = model.predict(x_batch)
 

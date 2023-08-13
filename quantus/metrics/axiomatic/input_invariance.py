@@ -5,7 +5,7 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+from __future__ import annotations
 from typing import Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 import numpy as np
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     
     from abc import ABC
     
-    class ModelABC(ModelInterface, MeanShiftModel, ABC):
+    class InputInvarianceCompatibleModel(ModelInterface, MeanShiftModel, ABC):
         pass
 
 
@@ -249,7 +249,7 @@ class InputInvariance(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: ModelABC,
+        model: InputInvarianceCompatibleModel,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,

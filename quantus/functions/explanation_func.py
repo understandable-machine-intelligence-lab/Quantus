@@ -858,7 +858,7 @@ def make_softmax_arg_model(model: M, softmax: bool, channel_first: bool) -> M:
     wrapped_model: SoftmaxTopModel = get_wrapped_model(
         model, softmax=softmax, channel_first=channel_first
     )
-    if not isinstance(model, SoftmaxTopModel):
+    if not isinstance(wrapped_model, SoftmaxTopModel):
         raise ValueError(f"Model must implement SoftmaxTopModel")
         
     return wrapped_model.get_softmax_arg_model()

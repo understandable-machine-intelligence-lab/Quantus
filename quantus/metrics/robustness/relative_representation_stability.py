@@ -6,23 +6,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List
+
 import numpy as np
-from functools import partial
 
-
-from quantus.helpers.model.model_interface import ModelInterface, HiddenRepresentationsModel
-from quantus.metrics.base_perturbed import PerturbationMetric
-from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.model.model_interface import ModelInterface, HiddenRepresentationsModel
+from quantus.helpers.warn import warn_parameterisation
+from quantus.metrics.base_perturbed import PerturbationMetric
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -31,7 +29,7 @@ if TYPE_CHECKING:
     from abc import ABC
     
     
-    class ModelABC(ModelInterface, HiddenRepresentationsModel, ABC):
+    class RISCompatibleModel(ModelInterface, HiddenRepresentationsModel, ABC):
         pass
 
 
@@ -289,7 +287,7 @@ class RelativeRepresentationStability(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        model: ModelABC,
+        model: RISCompatibleModel,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
@@ -369,6 +367,6 @@ class RelativeRepresentationStability(PerturbationMetric):
 
         return result
     
-    def custom_preprocess(self, model: ModelInterface, *kwargs):
+    def custom_preprocess(self, model: ModelInterface, **kwargs):
         if not isinstance(model, HiddenRepresentationsModel):
             raise ValueError("Model wrapper must implement HiddenRepresentationsModel")

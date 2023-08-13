@@ -838,7 +838,7 @@ class Metric:
                 channel_first=True,
                 batched=True,
             )
-            model = model.get_model()
+            model = model.unwrap()
 
         a_batch = self.explain_func(
             model=model, inputs=x_batch, targets=y_batch, **self.explain_func_kwargs

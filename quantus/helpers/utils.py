@@ -23,7 +23,7 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
-    
+
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
     """

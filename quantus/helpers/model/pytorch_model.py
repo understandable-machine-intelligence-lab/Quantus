@@ -5,30 +5,46 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+from __future__ import annotations
 
+import operator
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List, Union
-from cachetools import cachedmethod, LRUCache
-import operator
+from typing import Any, Tuple, List, Union, Generator, Sequence, Mapping
 
 import numpy as np
 import torch
+import torch.nn as nn
+from cachetools import cachedmethod, LRUCache
 
 from quantus.helpers import utils
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import (
+    ModelInterface,
+    SoftmaxTopModel,
+    RandomizeAbleModel,
+    HiddenRepresentationsModel,
+    MeanShiftModel,
+)
 
 
-class PyTorchModel(ModelInterface):
+class PyTorchModel(
+    ModelInterface[nn.Module],
+    HiddenRepresentationsModel,
+    RandomizeAbleModel[nn.Module],
+    SoftmaxTopModel[nn.Module],
+    MeanShiftModel[nn.Module],
+):
     """Interface for torch models."""
+
+    model: nn.Module
 
     def __init__(
         self,
-        model,
+        model: nn.Module,
         channel_first: bool = True,
         softmax: bool = False,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        device: Optional[str] = None,
+        model_predict_kwargs: Mapping[str, Any] | None = None,
+        device: str | torch.device | None = None,
     ):
         """
         Initialisation of PyTorchModel class.
@@ -65,7 +81,7 @@ class PyTorchModel(ModelInterface):
         return isinstance(last_layer, torch.nn.Softmax)
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_linear_top(self) -> torch.nn:
+    def _get_model_with_linear_top(self) -> nn.Module:
         """
         In a case model has a softmax on top, and we want linear,
         we have to rebuild the model and replace top with linear activation.
@@ -76,7 +92,7 @@ class PyTorchModel(ModelInterface):
 
         return torch.nn.Sequential(*(list(self.model.children())[:-1]))
 
-    def get_softmax_arg_model(self) -> torch.nn:
+    def get_softmax_arg_model(self) -> nn.Module:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation as the last layer and softmax=false,
@@ -91,7 +107,7 @@ class PyTorchModel(ModelInterface):
 
         return self.model
 
-    def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
+    def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.ndarray:
         """
         Predict on the given input.
 
@@ -127,11 +143,11 @@ class PyTorchModel(ModelInterface):
 
     def shape_input(
         self,
-        x: np.array,
+        x: np.ndarray,
         shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
+        channel_first: bool | None = None,
         batched: bool = False,
-    ) -> np.array:
+    ) -> np.ndarray:
         """
         Reshape input into model expected input.
 
@@ -164,19 +180,9 @@ class PyTorchModel(ModelInterface):
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
 
-    def get_model(self) -> torch.nn:
-        """
-        Get the original torch model.
-        """
-        return self.model
-
-    def state_dict(self) -> dict:
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.state_dict()
-
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[nn.Module, None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -194,7 +200,7 @@ class PyTorchModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
+        original_parameters = self.model.state_dict()
         random_layer_model = deepcopy(self.model)
 
         modules = [
@@ -218,7 +224,7 @@ class PyTorchModel(ModelInterface):
         mean: float,
         std: float,
         noise_type: str = "multiplicative",
-    ) -> torch.nn:
+    ) -> nn.Module:
         """
         Sample a model by means of adding normally distributed noise.
 
@@ -238,7 +244,7 @@ class PyTorchModel(ModelInterface):
         """
 
         distribution = torch.distributions.normal.Normal(loc=mean, scale=std)
-        original_parameters = self.state_dict()
+        original_parameters = self.model.state_dict()
         model_copy = deepcopy(self.model)
         model_copy.load_state_dict(original_parameters)
 
@@ -259,9 +265,9 @@ class PyTorchModel(ModelInterface):
 
     def add_mean_shift_to_first_layer(
         self,
-        input_shift: Union[int, float],
-        shape: tuple,
-    ):
+        input_shift: int | float,
+        shape: Tuple[int, ...],
+    ) -> nn.Module:
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
         the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
@@ -281,7 +287,6 @@ class PyTorchModel(ModelInterface):
             The resulting model with a shifted first layer.
         """
         with torch.no_grad():
-
             new_model = deepcopy(self.model)
 
             modules = [l for l in new_model.named_modules()]
@@ -305,10 +310,9 @@ class PyTorchModel(ModelInterface):
     def get_hidden_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: Sequence[str] | None = None,
+        layer_indices: Sequence[int] | None = None,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -391,3 +395,13 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @property
+    def number_of_randomize_able_layers(self) -> int:
+        return len(
+            [
+                l
+                for l in self.model.named_modules()
+                if (hasattr(l[1], "reset_parameters"))
+            ]
+        )

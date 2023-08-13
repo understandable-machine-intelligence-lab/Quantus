@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     
     from abc import ABC
     
-    class ModelABC(ModelInterface, RandomizeAbleModel, ABC):
+    class MPRCompatibleModel(ModelInterface, RandomizeAbleModel, ABC):
         pass
 
 
@@ -279,7 +279,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model: ModelABC = data["model"]
+        model: MPRCompatibleModel = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]

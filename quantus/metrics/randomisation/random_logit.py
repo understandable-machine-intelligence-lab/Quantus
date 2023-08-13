@@ -321,7 +321,7 @@ class RandomLogit(Metric):
             )
             # Explain against a random class.
             a_perturbed = self.explain_batch(
-                model.get_model(),
+                model,
                 np.expand_dims(x, axis=0),
                 y_off,
             )
