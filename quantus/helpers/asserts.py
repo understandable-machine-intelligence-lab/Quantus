@@ -6,41 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+
 from typing import Callable, Tuple, Sequence, Union
-
 import numpy as np
-
-
-def attributes_check(metric):
-    """
-    Basic check of all the metrics, passed as a decorator.
-
-    Parameters
-    ----------
-    metric: base.Metric class
-        The metric class.
-
-    Returns
-    -------
-    base.Metric class
-        The metric class.
-
-    """
-    attr = metric.__dict__
-    if "abs" in attr:
-        if not bool(attr["abs"]):
-            raise TypeError("The 'abs' must be a bool.")
-    if "normalise" in attr:
-        assert bool(attr["normalise"]), "The 'normalise' must be a bool."
-    if "return_aggregate" in attr:
-        assert bool(attr["return_aggregate"]), "The 'return_aggregate' must be a bool."
-    if "disable_warnings" in attr:
-        assert bool(attr["disable_warnings"]), "The 'disable_warnings' must be a bool."
-    if "display_progressbar" in attr:
-        assert bool(
-            attr["display_progressbar"]
-        ), "The 'display_progressbar' must be a bool."
-    return metric
 
 
 def assert_features_in_step(

@@ -52,7 +52,6 @@ class Consistency(Metric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.ROBUSTNESS
 
-    @asserts.attributes_check
     def __init__(
         self,
         discretise_func: Optional[Callable] = None,

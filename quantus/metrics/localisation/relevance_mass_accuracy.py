@@ -48,7 +48,6 @@ class RelevanceMassAccuracy(Metric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.LOCALISATION
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool = False,

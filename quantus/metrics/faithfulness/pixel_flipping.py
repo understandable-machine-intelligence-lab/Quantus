@@ -53,7 +53,6 @@ class PixelFlipping(PerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.FAITHFULNESS
 
-    @asserts.attributes_check
     def __init__(
         self,
         features_in_step: int = 1,
