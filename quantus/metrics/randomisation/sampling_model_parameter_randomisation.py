@@ -52,9 +52,9 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
     @asserts.attributes_check
     def __init__(
         self,
-        n_perturbations: int = 3,
-        perturbation_noise_level: float = 0.1,
-        n_randomisations: int = 1,
+        n_noisy_models: int = 3,
+        ng_std_level: Optional[float] = None,
+        n_random_models: int = 1,
         similarity_func: Callable = None,
         layer_order: str = "independent",
         seed: int = None,
@@ -110,9 +110,9 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
             Keyword arguments.
         """
 
-        self.n_perturbations = n_perturbations
-        self.perturbation_noise_level = perturbation_noise_level
-        self.n_randomisations = n_randomisations
+        self.n_noisy_models = n_noisy_models
+        self.ng_std_level = ng_std_level
+        self.n_random_models = n_random_models
 
         # Set seed for reproducibility
         if seed is not None:
@@ -240,6 +240,16 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
 
+        if self.ng_std_level is None:
+            try:
+                self.compute_noise_level_model(model=model, x_batch=x_batch, y_batch=y_batch)
+            except:
+                self.ng_std_level = 0.1
+                print(
+                    f"Unable to compute the noise level algorithmically based on the heuristic from the original"
+                    f" paper by Bykov et al., (2021). Defaulting to a ng_std_level "
+                    f"of {self.ng_std_level}.")
+
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
@@ -270,22 +280,22 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         # Get randomisable layers
         randomisable_layers = model.get_randomisable_layer_names(order=self.layer_order)
 
-        with tqdm(total=len(randomisable_layers)*self.n_perturbations*self.n_randomisations, disable=not self.display_progressbar) as pbar:
-            for randomisation in range(self.n_randomisations):
+        with tqdm(total=len(randomisable_layers)*self.n_noisy_models*self.n_random_models, disable=not self.display_progressbar) as pbar:
+            for randomisation_id in range(self.n_random_models):
                 for l, layer_name in enumerate(randomisable_layers):
                     similarity_scores = [None for _ in x_batch]
                     a_batch_perturbed_draws = []
                     _, random_layer_model = model.get_random_model_until_layer(order=self.layer_order, layer_name=layer_name)
 
                     # Generate self.num_draws perturbed models and explanations for each layer
-                    for perturb in range(self.n_perturbations):
+                    for perturb in range(self.n_noisy_models):
                         # model_iterator = model_iterators[draw]
                         # layer_name, random_layer_model = next(x for x in model_iterator)
                         random_layer_model_draw = deepcopy(random_layer_model)
 
                         # Keep last perturbation as the original
-                        if perturb != self.n_perturbations - 1:
-                            model.perturb_model_weights(random_layer_model_draw, std=self.perturbation_noise_level)
+                        if perturb != self.n_noisy_models - 1:
+                            model.perturb_model_weights(random_layer_model_draw, std=self.ng_std_level)
 
                         # Generate an explanation with perturbed model.
                         a_batch_perturbed_draws.append(self.explain_func(
@@ -298,7 +308,7 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
                     a_batch_perturbed = np.mean(a_batch_perturbed_draws, axis=0)
 
                     # Get id for storage
-                    if attributions_path is not None and randomisation == self.n_randomisations-1:
+                    if attributions_path is not None and randomisation_id == self.n_random_models-1:
                         savepath = os.path.join(attributions_path, f"{l}-{layer_name}")
                         os.makedirs(savepath, exist_ok=True)
                         last_id = 0
@@ -354,3 +364,77 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
+
+    def compute_noise_level_model(self, model, x_batch: np.array, y_batch: np.array):
+        """
+        Compute the noise level for a given model and input batch that results in a 5% accuracy drop.
+
+        Parameters
+        ----------
+        self: object
+            An instance of the current class.
+        model: object
+            A trained classification model.
+        x_batch: np.ndarray
+            A numpy array of input data samples of shape `(batch_size, channels, height, width)`.
+        y_batch: np.ndarray
+            A numpy array of integer labels of shape `(batch_size,)`.
+
+        Returns
+        -------
+        std_drop : float
+            The noise level (std) that results in a 5% accuracy drop.
+        """
+
+        # Wrap model into ModelInterface of Quantus.
+        model_original = utils.get_wrapped_model(
+            model=model,
+            channel_first=self.channel_first,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
+        )
+
+        # Compute predictions of the original model
+        preds_original = np.argmax(model_original.predict(x_batch), axis=1)
+        acc_original = np.mean(np.equal(y_batch.astype(int), preds_original.astype(int)).astype(int))
+
+        # Target accuracy after a 5% drop
+        acc_target = acc_original - 0.05
+
+        std = 0.01
+        std_drop = None
+
+        while std_drop is None:
+
+            # Perturb model.
+            model_perturbed = model_original.sample(
+                mean=1.0, std=std, noise_type="multiplicative"
+            )
+
+            # Wrap model into ModelInterface of Quantus.
+            model_perturbed = utils.get_wrapped_model(
+                model=model_perturbed,
+                channel_first=self.channel_first,
+                softmax=self.softmax,
+                device=self.device,
+                model_predict_kwargs=self.model_predict_kwargs,
+            )
+
+            # Predict with the perturbed model.
+            preds_perturbed = np.argmax(model_perturbed.predict(x_batch), axis=1)
+
+            # Calculate fraction of similar predictions.
+            acc_perturbed = np.mean(np.equal(preds_original.astype(int), preds_perturbed.astype(int)).astype(int))
+
+            # If the accuracy drops by 5%, set std_drop and break.
+            if acc_perturbed <= acc_target:
+                std_drop = std
+                break
+            else:
+                std += 0.01
+
+        if self.debug:
+            print(f"The current model experiences a 5% drop in accuracy with a std of {std_drop:.4f}.")
+
+        return std_drop
