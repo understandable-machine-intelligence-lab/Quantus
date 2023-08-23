@@ -3,12 +3,12 @@
 seed="$1"
 
 data="imagenet"
-model="resnet18"
-xai_methodname="gradient"
+model="vgg16"
+xai_methodname="lrp-zplus"
 eval_metricname="mptc"
 xai_n_noisedraws=1
 xai_noiselevel=0.0
-eval_layer_order="bottom_up"
+eval_layer_order="top_down"
 smpr_n_perturbations=1
 smpr_perturbation_noiselevel=0.1
 smpr_n_randomizations=1

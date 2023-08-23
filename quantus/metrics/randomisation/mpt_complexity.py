@@ -341,13 +341,12 @@ class MPT_Complexity(Metric):
                     a=a_instance,
                     a_perturbed=a_instance_perturbed,
                 )
-                entropy_scores.append(score)
+                entropy_scores[instance_id] = score
 
                 if attributions_path is not None:
                     np.save(os.path.join(savepath, f"input_{last_id+instance_id}.npy"), x_batch[instance_id])
                     np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
                     np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
-
 
             # Save entropy scores in a result dictionary.
             self.entropy_model_randomised[layer_name] = entropy_scores
@@ -361,6 +360,8 @@ class MPT_Complexity(Metric):
             s_batch=s_batch,
         )
 
+        # TODO: incorporate other scores?
+        self.evaluation_scores = self.entropy_model_randomised
         if self.return_sample_entropy:
             self.evaluation_scores = self.compute_entropy_per_sample()
 

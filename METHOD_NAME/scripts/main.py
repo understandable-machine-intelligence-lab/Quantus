@@ -39,6 +39,14 @@ XAI_METHODS = {
             "canonizer_kwargs": {},
             "composite_kwargs": {},
         },
+        "smoothgrad": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+        },
         "lrp-epsilon": {
             "xai_lib": "zennit",
             "attributor": zattr.SmoothGrad,
@@ -78,7 +86,7 @@ QUALITY_FUNCTIONS = {
     "entropy": quantus.functions.complexity_func.entropy
 }
 
-def plot_model_parameter_randomisation_experiment(
+def plot_smpr_experiment(
     results,
     *args,
     **kwargs,
@@ -105,6 +113,44 @@ def plot_model_parameter_randomisation_experiment(
             for rand in results[method][layer]:
                 for sample in rand:
                     scores[layer].append(sample)
+
+        ax.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
+
+    ax.set_xticklabels(layers, rotation=90)
+    ax.legend()
+
+    fig.subplots_adjust(left=0.2, right=0.95, bottom=0.2, top=0.95, wspace=0, hspace=0)
+    
+    if kwargs.get("file_name", None) is not None:
+        fig.savefig(kwargs.get("file_name", None))
+    #plt.show()
+
+def plot_mptc_experiment(
+    results,
+    *args,
+    **kwargs,
+) -> None:
+
+    import matplotlib as mpl
+    import matplotlib.font_manager as font_manager
+    mpl.rcParams['font.family']='serif'
+    cmfont = font_manager.FontProperties(fname=mpl.get_data_path() + '/fonts/ttf/cmr10.ttf')
+    mpl.rcParams['font.serif']=cmfont.get_name()
+    mpl.rcParams['mathtext.fontset']='cm'
+    mpl.rcParams['axes.unicode_minus']=False
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({'font.size': 15})
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6))
+    ax.set_ylabel(kwargs.get("quality_func", "Score"))
+    ax.set_xlabel("Layers")
+    #ax.set_ylim([0, 1])
+
+    for method in results.keys():
+        layers = list(results[method].keys())
+        scores: Dict[Any, Any] = {k: [] for k in layers}
+        for layer in layers:
+            for sample in results[method][layer]:
+                scores[layer].append(sample)
 
         ax.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
 
@@ -178,6 +224,7 @@ def main():
 @click.option("--shuffle", type=bool, default=False, required=False)
 @click.option("--seed", type=int, default=None, required=False)
 @click.option("--wandb-key", type=str, default="", required=False)
+@click.option("--wandb-projectname", type=str, default="", required=False)
 @click.option("--use-wandb", type=bool, default=True, required=False)
 def randomization(
         save_path,
@@ -200,6 +247,7 @@ def randomization(
         shuffle,
         seed,
         wandb_key,
+        wandb_projectname,
         use_wandb
 ):
     """
@@ -227,7 +275,7 @@ def randomization(
     wandb.init(
         id=id,
         resume="allow",
-        project="denoise-sanity-checks",
+        project=wandb_projectname,
         dir=wandbpath,
         config={
             "dataset_name": dataset_name,
@@ -277,7 +325,7 @@ def randomization(
     )
 
     print(f"Number of Samples in Dataset: {len(dataset.samples)}")
-    dataset.samples = dataset.samples[:1000]
+    dataset.samples = dataset.samples[:32]
     print(f"Reduced of Samples in Dataset: {len(dataset.samples)}")
 
     # Prepare dataloaders
@@ -323,7 +371,7 @@ def randomization(
                 nr_samples = mptc_nr_samples,
                 seed = seed,
                 return_sample_entropy = False,
-                abs = False,
+                abs = True,
                 normalise = True,
                 normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
                 return_aggregate = False,
@@ -382,32 +430,47 @@ def randomization(
     with open(resultsfile, "w") as jsonfile:
         json.dump(results, jsonfile)
 
-    for metric, m_results in results.items():
-        if eval_metricname == "smpr":
-            plot_model_parameter_randomisation_experiment(
+    print(results)
+
+    if eval_metricname == "smpr":
+        for metric, m_results in results.items():
+            plot_smpr_experiment(
                 m_results,
                 similarity_score = "SSIM",
                 file_name = os.path.join(save_path, f"{metric}.svg")
             )
-        elif eval_metricname == "mptc":
-            plot_model_parameter_randomisation_experiment(
+            for method in m_results.keys():
+                layers = list(m_results[method].keys())
+                for l, layer in enumerate(layers):
+                    scores = []
+                    for rand in m_results[method][layer]:
+                        for sample in rand:
+                            scores.append(sample)
+                    wandb.log({
+                        "layer": layer,
+                        "layer_id": l,
+                        "mean-score": np.mean(scores),
+                        "std-score": np.std(scores)
+                    })
+    elif eval_metricname == "mptc":
+        for metric, m_results in results.items():
+            plot_mptc_experiment(
                 m_results,
-                similarity_score = "Entropy",
+                quality_func = "Entropy",
                 file_name = os.path.join(save_path, f"{metric}.svg")
             )
-        for method in m_results.keys():
-            layers = list(m_results[method].keys())
-            for l, layer in enumerate(layers):
-                scores = []
-                for rand in m_results[method][layer]:
-                    for sample in rand:
+            for method in m_results.keys():
+                layers = list(m_results[method].keys())
+                for l, layer in enumerate(layers):
+                    scores = []
+                    for sample in m_results[method][layer]:
                         scores.append(sample)
-                wandb.log({
-                    "layer": layer,
-                    "layer_id": l,
-                    "mean-score": np.mean(scores),
-                    "std-score": np.std(scores)
-                })
+                    wandb.log({
+                        "layer": layer,
+                        "layer_id": l,
+                        "mean-score": np.mean(scores),
+                        "std-score": np.std(scores)
+                    })
 
 
 

@@ -31,6 +31,8 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
         A floating point of MSE.
     """
 
+    assert (a >= 0).all(), "Entropy computation requires non-negative attributions"
+
     if len(x.shape) == 1:
         newshape = np.prod(x.shape)
     else:
