@@ -152,7 +152,10 @@ class MPT_Complexity(Metric):
         self.return_sample_entropy = return_sample_entropy
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
-        self.evaluation_scores = {}
+        self.entropy_random = np.array([])
+        self.entropy_model_original = np.array([])
+        self.entropy_model_randomised = {}
+        self.entropy_model_randomised_full = np.array([])
 
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -302,6 +305,7 @@ class MPT_Complexity(Metric):
         self.entropy_random = np.zeros((self.nr_samples))
         self.entropy_model_original = np.zeros((a_batch.shape[0]))
         self.entropy_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
+        self.entropy_model_randomised_full = np.zeros((a_batch.shape[0]))
 
         # Compute the entropy of a uniformly sampled explanation.
         a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
@@ -351,6 +355,16 @@ class MPT_Complexity(Metric):
             # Save entropy scores in a result dictionary.
             self.entropy_model_randomised[layer_name] = entropy_scores
 
+        # Generate an explanation with perturbed model.
+        a_batch_perturbed_full = self.explain_func(
+            model=random_layer_model,
+            inputs=x_batch,
+            targets=y_batch,
+            **self.explain_func_kwargs,
+        )
+        for a_ix, a_random in enumerate(a_batch_perturbed_full):
+            self.entropy_model_randomised_full[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
+
         # Call post-processing.
         self.custom_postprocess(
             model=model,
@@ -367,12 +381,11 @@ class MPT_Complexity(Metric):
 
         if self.return_aggregate:
             assert self.return_sample_entropy, (
-                "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute the aggregate."
+                "You must set 'return_sample_entropy' to True in order to compute the aggregate."
             )
-            self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
+            self.entropy_model_randomised_full = [self.aggregate_func(self.entropy_model_randomised_full)]
 
-        self.all_evaluation_scores.append(self.evaluation_scores)
+        self.all_evaluation_scores.append(self.entropy_model_randomised_full)
 
         return self.evaluation_scores
 
