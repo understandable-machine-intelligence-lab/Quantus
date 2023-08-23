@@ -19,6 +19,8 @@ from zennit import image as zimage
 from zennit import composites as zcomp
 
 import quantus
+print(quantus.__file__)
+
 from models import models
 from data import dataloaders, datasets, transforms
 from attribution import zennit_utils as zutils
@@ -72,14 +74,24 @@ XAI_METHODS = {
         },
     }
 
+QUALITY_FUNCTIONS = {
+    "entropy": quantus.functions.complexity_func.entropy
+}
+
 def plot_model_parameter_randomisation_experiment(
     results,
     *args,
     **kwargs,
 ) -> None:
 
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['font.sans-serif'] = 'CMU Serif'
+    import matplotlib as mpl
+    import matplotlib.font_manager as font_manager
+    mpl.rcParams['font.family']='serif'
+    cmfont = font_manager.FontProperties(fname=mpl.get_data_path() + '/fonts/ttf/cmr10.ttf')
+    mpl.rcParams['font.serif']=cmfont.get_name()
+    mpl.rcParams['mathtext.fontset']='cm'
+    mpl.rcParams['axes.unicode_minus']=False
+    import matplotlib.pyplot as plt
     plt.rcParams.update({'font.size': 15})
     fig, ax = plt.subplots(1, 1, figsize=(9, 6))
     ax.set_ylabel(kwargs.get("similarity_metric", "Score"))
@@ -146,41 +158,49 @@ def main():
     pass
 
 @main.command(name="evaluate-randomisation")
+@click.argument("save-path", type=click.Path(), required=True)
 @click.argument("dataset-name", type=str, required=True)
 @click.argument("data-path", type=click.Path(), required=True)
 @click.argument("labelmap-path", type=click.Path(), required=True)
 @click.argument("model-name", type=str, required=True)
 @click.argument("xai-methodname", type=str, required=True)
-@click.argument("xai-n-noisedraws", type=int, required=True)
-@click.argument("xai-noiselevel", type=float, required=True)
-@click.argument("eval-layerorder", type=str, required=True)
-@click.argument("eval-n-perturbations", type=int, required=True)
-@click.argument("eval-perturbation-noiselevel", type=float, required=True)
-@click.argument("eval-n-randomizations", type=int, required=True)
-@click.argument("save-path", type=click.Path(), required=True)
+@click.argument("eval-metricname", type=str, required=True)
+@click.option("--xai-n-noisedraws", type=int, default=1, required=False)
+@click.option("--xai-noiselevel", type=float, default=0.0, required=False)
+@click.option("--eval-layerorder", type=str, default="bottom_up", required=False)
+@click.option("--smpr-n-perturbations", type=int, default=1, required=False)
+@click.option("--smpr-perturbation-noiselevel", type=float, default=0.1, required=False)
+@click.option("--smpr-n-randomizations", type=int, default=1, required=False)
+@click.option("--mptc-quality-func", type=str, default="entropy", required=False)
+@click.option("--mptc-nr-samples", type=int, default=10, required=False)
 @click.option("--use-cpu", type=bool, default=False, required=False)
 @click.option("--batch-size", type=int, default=32, required=False)
 @click.option("--shuffle", type=bool, default=False, required=False)
 @click.option("--seed", type=int, default=None, required=False)
 @click.option("--wandb-key", type=str, default="", required=False)
+@click.option("--use-wandb", type=bool, default=True, required=False)
 def randomization(
+        save_path,
         dataset_name,
         data_path,
         labelmap_path,
         model_name,
         xai_methodname,
+        eval_metricname,
         xai_n_noisedraws,
         xai_noiselevel,
         eval_layerorder,
-        eval_n_perturbations,
-        eval_perturbation_noiselevel,
-        eval_n_randomizations,
-        save_path,
+        smpr_n_perturbations,
+        smpr_perturbation_noiselevel,
+        smpr_n_randomizations,
+        mptc_quality_func,
+        mptc_nr_samples,
         use_cpu,
         batch_size,
         shuffle,
         seed,
         wandb_key,
+        use_wandb
 ):
     """
     Evaluate
@@ -191,6 +211,12 @@ def randomization(
     os.makedirs(save_path, exist_ok=True)
     wandbpath = os.path.join(save_path, "wandb")
     os.makedirs(wandbpath, exist_ok=True)
+
+    # Use Wandb?
+    if not use_wandb:
+        os.environ["WANDB_MODE"] = "disabled"
+    else:
+        os.environ["WANDB_MODE"] = "enabled"
 
     # Set wandb key
     if wandb_key is not None:
@@ -209,10 +235,13 @@ def randomization(
             "xai_methodname": xai_methodname,
             "xai_n_noisedraws": xai_n_noisedraws,
             "xai_noiselevel": xai_noiselevel,
+            "eval_metricname": eval_metricname,
             "eval_layer_order": eval_layerorder,
-            "eval_n_perturbations": eval_n_perturbations,
-            "eval_perturbation_noiselevel": eval_perturbation_noiselevel,
-            "eval_n_randomizations": eval_n_randomizations,
+            "smpr_n_perturbations": smpr_n_perturbations,
+            "smpr_perturbation_noiselevel": smpr_perturbation_noiselevel,
+            "smpr_n_randomizations": smpr_n_randomizations,
+            "mptc_quality_func": mptc_quality_func,
+            "mptc_nr_samples": mptc_nr_samples,
             "use_cpu": use_cpu,
             "batch_size": batch_size,
             "shuffle": shuffle,
@@ -266,25 +295,47 @@ def randomization(
     model.eval()
 
     # Prepare Quantus Eval
-    metrics = {
-        f"SMPR-perturb_{eval_n_perturbations}_{eval_perturbation_noiselevel}-random_{eval_n_randomizations}": quantus.ModelParameterRandomisationSampling(
-            n_perturbations = eval_n_perturbations,
-            perturbation_noise_level = eval_perturbation_noiselevel,
-            n_randomisations = eval_n_randomizations,
-            similarity_func = quantus.similarity_func.ssim,
-            layer_order = eval_layerorder,
-            seed = seed,
-            return_sample_correlation = False,
-            abs = False,
-            normalise = True,
-            normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
-            return_aggregate = False,
-            aggregate_func = None,
-            default_plot_func = None,
-            disable_warnings = False,
-            display_progressbar = False,
-        ),
-    }
+    if eval_metricname == "smpr":
+        metrics = {
+            f"SMPR": quantus.ModelParameterRandomisationSampling(
+                n_perturbations = smpr_n_perturbations,
+                perturbation_noise_level = smpr_perturbation_noiselevel,
+                n_randomisations = smpr_n_randomizations,
+                similarity_func = quantus.similarity_func.ssim,
+                layer_order = eval_layerorder,
+                seed = seed,
+                return_sample_correlation = False,
+                abs = False,
+                normalise = True,
+                normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
+                return_aggregate = False,
+                aggregate_func = None,
+                default_plot_func = None,
+                disable_warnings = False,
+                display_progressbar = False,
+            ),
+        }
+    elif eval_metricname == "mptc":
+        metrics = {
+            f"MPTC": quantus.MPT_Complexity(
+                quality_func = QUALITY_FUNCTIONS[mptc_quality_func],
+                layer_order = eval_layerorder,
+                nr_samples = mptc_nr_samples,
+                seed = seed,
+                return_sample_entropy = False,
+                abs = False,
+                normalise = True,
+                normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
+                return_aggregate = False,
+                aggregate_func = None,
+                default_plot_func = None,
+                disable_warnings = False,
+                display_progressbar = False,
+            ),
+        }
+    else:
+        metrics = {}
+        raise ValueError("Please provide a valid eval_metricname")
 
     xai_attributor_kwargs = {
         "n_iter": xai_n_noisedraws,
@@ -303,7 +354,6 @@ def randomization(
     for i, (batch, labels) in enumerate(loader):
 
         print("Evaluating Batch {}/{}".format(i+1, len(loader)))
-        print(device)
 
         batch_results = quantus.evaluate(
             metrics = metrics,
@@ -333,11 +383,18 @@ def randomization(
         json.dump(results, jsonfile)
 
     for metric, m_results in results.items():
-        plot_model_parameter_randomisation_experiment(
-            m_results,
-            similarity_score = "SSIM",
-            file_name = os.path.join(save_path, f"{metric}.svg")
-        )
+        if eval_metricname == "smpr":
+            plot_model_parameter_randomisation_experiment(
+                m_results,
+                similarity_score = "SSIM",
+                file_name = os.path.join(save_path, f"{metric}.svg")
+            )
+        elif eval_metricname == "mptc":
+            plot_model_parameter_randomisation_experiment(
+                m_results,
+                similarity_score = "Entropy",
+                file_name = os.path.join(save_path, f"{metric}.svg")
+            )
         for method in m_results.keys():
             layers = list(m_results[method].keys())
             for l, layer in enumerate(layers):

@@ -15,6 +15,7 @@ from quantus.functions.explanation_func import explain
 
 # Expose quantus.<function-class>.<function-name> to the user.
 from quantus.functions import *
+from quantus.functions import complexity_func
 
 # Expose quantus.<metric> to the user.
 from quantus.metrics import *

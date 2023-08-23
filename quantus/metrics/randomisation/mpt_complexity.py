@@ -17,8 +17,10 @@ from typing import (
     Collection,
     Iterable,
 )
+import os
 import numpy as np
 from tqdm.auto import tqdm
+import torch
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
@@ -127,6 +129,19 @@ class MPT_Complexity(Metric):
             **kwargs,
         )
 
+        # Set seed for reproducibility
+        if seed is not None:
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            os.environ['PYTHONHASHSEED'] = str(seed)
+
+            #torch.backends.cudnn.benchmark = False
+            #torch.backends.cudnn.deterministic = True
+            #torch.backends.cudnn.enabled = False
+
         # Save metric-specific attributes.
         if quality_func is None:
             quality_func = entropy
@@ -134,7 +149,6 @@ class MPT_Complexity(Metric):
         self.quality_func = quality_func
         self.layer_order = layer_order
         self.nr_samples = nr_samples
-        self.seed = seed
         self.return_sample_entropy = return_sample_entropy
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
@@ -171,6 +185,7 @@ class MPT_Complexity(Metric):
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
+        attributions_path: str = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -278,7 +293,7 @@ class MPT_Complexity(Metric):
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
 
         model_iterator = tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
+            model.get_random_layer_generator(order=self.layer_order),
             total=n_layers,
             disable=not self.display_progressbar,
         )
@@ -289,7 +304,7 @@ class MPT_Complexity(Metric):
         self.entropy_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
 
         # Compute the entropy of a uniformly sampled explanation.
-        a_batch_random = np.random.rand(size=(self.nr_samples, *a_batch[1:]))
+        a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
         for a_ix, a_random in enumerate(a_batch_random):
             self.entropy_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
 
@@ -305,6 +320,17 @@ class MPT_Complexity(Metric):
                 **self.explain_func_kwargs,
             )
 
+            # Get id for storage
+            if attributions_path is not None:
+                savepath = os.path.join(attributions_path, f"{l_ix}-{layer_name}")
+                os.makedirs(savepath, exist_ok=True)
+                last_id = 0
+                for fname in os.listdir(savepath):
+                    if "original_attribution_" in fname:
+                        id = int(fname.split("original_attribution_")[1].split(".")[0]) > last_id
+                        if id > last_id:
+                            last_id = id
+
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
                 score = self.evaluate_instance(
@@ -316,6 +342,12 @@ class MPT_Complexity(Metric):
                     a_perturbed=a_instance_perturbed,
                 )
                 entropy_scores.append(score)
+
+                if attributions_path is not None:
+                    np.save(os.path.join(savepath, f"input_{last_id+instance_id}.npy"), x_batch[instance_id])
+                    np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
+                    np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
+
 
             # Save entropy scores in a result dictionary.
             self.entropy_model_randomised[layer_name] = entropy_scores
