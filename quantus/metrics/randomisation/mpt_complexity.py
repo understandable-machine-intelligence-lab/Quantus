@@ -302,14 +302,21 @@ class MPT_Complexity(Metric):
         )
 
         # Initialise arrays.
-        self.entropy_random = np.zeros((self.nr_samples))
+        self.entropy_random = np.zeros((self.nr_samples))  # Random explanation
         self.entropy_model_original = np.zeros((a_batch.shape[0]))
-        self.entropy_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
-        self.entropy_model_randomised_full = np.zeros((a_batch.shape[0]))
+        self.entropy_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0])) # Partially perturbed model
+        self.entropy_model_randomised_full = np.zeros((a_batch.shape[0])) # Fully perturbed model
 
         # Compute the entropy of a uniformly sampled explanation.
         a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
         for a_ix, a_random in enumerate(a_batch_random):
+
+            if self.normalise:
+                a_random = self.normalise_func(a_random, **self.normalise_func_kwargs)
+
+            if self.abs:
+                a_random = np.abs(a_random)
+
             self.entropy_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
@@ -363,6 +370,13 @@ class MPT_Complexity(Metric):
             **self.explain_func_kwargs,
         )
         for a_ix, a_random in enumerate(a_batch_perturbed_full):
+
+            if self.normalise:
+                a_random = self.normalise_func(a_random, **self.normalise_func_kwargs)
+
+            if self.abs:
+                a_random = np.abs(a_random)
+
             self.entropy_model_randomised_full[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
 
         # Call post-processing.

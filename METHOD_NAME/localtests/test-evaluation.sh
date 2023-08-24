@@ -4,7 +4,7 @@ seed="$1"
 
 data="imagenet"
 model="vgg16"
-xai_methodname="lrp-zplus"
+xai_methodname="gradient"
 eval_metricname="mptc"
 xai_n_noisedraws=1
 xai_noiselevel=0.0

@@ -263,8 +263,6 @@ def randomization(
     # Use Wandb?
     if not use_wandb:
         os.environ["WANDB_MODE"] = "disabled"
-    else:
-        os.environ["WANDB_MODE"] = "enabled"
 
     # Set wandb key
     if wandb_key is not None:
@@ -325,7 +323,7 @@ def randomization(
     )
 
     print(f"Number of Samples in Dataset: {len(dataset.samples)}")
-    dataset.samples = dataset.samples[:32]
+    dataset.samples = dataset.samples[:1000]
     print(f"Reduced of Samples in Dataset: {len(dataset.samples)}")
 
     # Prepare dataloaders

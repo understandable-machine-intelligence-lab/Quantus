@@ -22,6 +22,7 @@ for model in "${models[@]}"; do
         if [ ${xai_methodname} == "smoothgrad" ]; then
             xai_n_noisedraws=50
             xai_noiselevel=0.1
+        fi;
         for eval_layer_order in "${eval_layer_orders[@]}"; do
 
             python ../scripts/main.py evaluate-randomisation \

@@ -30,8 +30,37 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
     float:
         A floating point of MSE.
     """
-
     assert (a >= 0).all(), "Entropy computation requires non-negative attributions"
+
+    if len(x.shape) == 1:
+        newshape = np.prod(x.shape)
+    else:
+        newshape = np.prod(x.shape[1:])
+
+    a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
+
+    return scipy.stats.entropy(pk=a)
+
+def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
+    """
+    Calculate discrete entropy of explanations with n_bins equidistant spaced bins
+
+    Parameters
+    ----------
+    a: np.ndarray
+        Array to calculate entropy on.
+    x: np.ndarray
+        Array to compute shape.
+    kwargs: optional
+            Keyword arguments.
+        n_bins: int
+            Number of bins. default is 100.
+
+    Returns
+    -------
+    float:
+        Discrete Entropy.
+    """
 
     if len(x.shape) == 1:
         newshape = np.prod(x.shape)
