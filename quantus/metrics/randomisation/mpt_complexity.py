@@ -26,7 +26,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.complexity_func import entropy
+#from quantus.functions.scores_func import *
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -61,11 +61,11 @@ class MPT_Complexity(Metric):
 
     def __init__(
         self,
-        quality_func: Callable = None,
+        quality_func: Optional[Callable] = None,
         layer_order: str = "bottom_up",
         nr_samples: int = 10,
         seed: int = 42,
-        return_sample_entropy: bool = False,
+        return_sample_complexity: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -88,7 +88,7 @@ class MPT_Complexity(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_entropy: boolean
+        return_sample_complexity: boolean
             Indicates whether return one float per sample, representing the average
             correlation coefficient across the layers for that sample.
         abs: boolean
@@ -144,18 +144,17 @@ class MPT_Complexity(Metric):
 
         # Save metric-specific attributes.
         if quality_func is None:
-            quality_func = entropy
+            quality_func = gini_coeffiient
 
         self.quality_func = quality_func
         self.layer_order = layer_order
         self.nr_samples = nr_samples
-        self.return_sample_entropy = return_sample_entropy
+        self.return_sample_complexity = return_sample_complexity
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
-        self.entropy_random = np.array([])
-        self.entropy_model_original = np.array([])
-        self.entropy_model_randomised = {}
-        self.entropy_model_randomised_full = np.array([])
+        self.scores_expl_random = np.array([])
+        self.scores_expl_constant = np.array([])
+        self.scores_expl_model_randomised = {}
 
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -287,6 +286,12 @@ class MPT_Complexity(Metric):
             device=device,
         )
 
+        # Initialise arrays.
+        self.scores_expl_random = np.zeros((self.nr_samples))
+        self.scores_expl_constant = np.zeros((self.nr_samples))
+        self.scores_expl_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
+
+        # Get model and data.
         model = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
@@ -294,27 +299,50 @@ class MPT_Complexity(Metric):
 
         # Get number of iterations from number of layers.
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
-
         model_iterator = tqdm(
             model.get_random_layer_generator(order=self.layer_order),
             total=n_layers,
             disable=not self.display_progressbar,
         )
 
-        # Initialise arrays.
-        self.entropy_random = np.zeros((self.nr_samples))
-        self.entropy_model_original = np.zeros((a_batch.shape[0]))
-        self.entropy_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
-        self.entropy_model_randomised_full = np.zeros((a_batch.shape[0]))
-
-        # Compute the entropy of a uniformly sampled explanation.
+        # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
         a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
         for a_ix, a_random in enumerate(a_batch_random):
-            self.entropy_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
+            self.scores_expl_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
+
+        # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
+        #a_batch_constant = np.zeros_like(*(self.nr_samples, *a_batch.shape[1:]))
+        #for a_ix, a_batch_const in enumerate(a_batch_constant):
+        #    self.scores_expl_constant[a_ix] = self.quality_func(a=a_batch_const, x=x_batch[0])
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
-            entropy_scores = [None for _ in x_batch]
+            if l_ix == 0:
+
+                # Generate an explanation with perturbed model.
+                a_batch_original = self.explain_func(
+                    model=model.get_model(),
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **self.explain_func_kwargs,
+                )
+
+                # Normalise with specified keyword arguments if requested.
+                if self.normalise:
+                    a_batch_original = self.normalise_func(
+                        a=a_batch_original,
+                        normalise_axes=list(range(np.ndim(data["a_batch"])))[1:],
+                        **self.normalise_func_kwargs,
+                    )
+
+                # Take absolute if requested.
+                if self.abs:
+                    a_batch_original = np.abs(a_batch_original)
+
+                for a_ix, a_ori in enumerate(a_batch_original):
+                    self.scores_expl_model_randomised["orig"] = self.quality_func(a=np.abs(a_ori), x=x_batch[0])
+
+            scores_expl_model_randomised_scores = [None for _ in x_batch]
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -345,25 +373,16 @@ class MPT_Complexity(Metric):
                     a=a_instance,
                     a_perturbed=a_instance_perturbed,
                 )
-                entropy_scores[instance_id] = score
+                scores_expl_model_randomised_scores.append(score)
 
                 if attributions_path is not None:
                     np.save(os.path.join(savepath, f"input_{last_id+instance_id}.npy"), x_batch[instance_id])
                     np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
                     np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
 
-            # Save entropy scores in a result dictionary.
-            self.entropy_model_randomised[layer_name] = entropy_scores
 
-        # Generate an explanation with perturbed model.
-        a_batch_perturbed_full = self.explain_func(
-            model=random_layer_model,
-            inputs=x_batch,
-            targets=y_batch,
-            **self.explain_func_kwargs,
-        )
-        for a_ix, a_random in enumerate(a_batch_perturbed_full):
-            self.entropy_model_randomised_full[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
+            # Save scores_expl_model_randomised scores in a result dictionary.
+            self.scores_expl_model_randomised[layer_name] = scores_expl_model_randomised_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -374,18 +393,16 @@ class MPT_Complexity(Metric):
             s_batch=s_batch,
         )
 
-        # TODO: incorporate other scores?
-        self.evaluation_scores = self.entropy_model_randomised
-        if self.return_sample_entropy:
-            self.evaluation_scores = self.compute_entropy_per_sample()
+        if self.return_sample_complexity:
+            self.evaluation_scores = self.recompute_scores_per_sample()
 
         if self.return_aggregate:
-            assert self.return_sample_entropy, (
-                "You must set 'return_sample_entropy' to True in order to compute the aggregate."
+            assert self.return_sample_complexity, (
+                "You must set 'return_sample_complexity' to True in order to compute the aggregate."
             )
-            self.entropy_model_randomised_full = [self.aggregate_func(self.entropy_model_randomised_full)]
+            self.scores_expl_model_randomised = [self.aggregate_func(self.scores_expl_model_randomised)]
 
-        self.all_evaluation_scores.append(self.entropy_model_randomised_full)
+        self.all_evaluation_scores.append(self.scores_expl_model_randomised)
 
         return self.evaluation_scores
 
@@ -467,7 +484,7 @@ class MPT_Complexity(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def compute_entropy_per_sample(
+    def recompute_scores_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
