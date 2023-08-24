@@ -36,7 +36,7 @@ from quantus.helpers.enums import (
 )
 
 
-class MPT_Complexity(Metric):
+class eMPRT(Metric):
     """
     Implementation of the NAME by AUTHOR et. al., 2023.
 
@@ -65,7 +65,7 @@ class MPT_Complexity(Metric):
         layer_order: str = "bottom_up",
         nr_samples: int = 10,
         seed: int = 42,
-        return_sample_complexity: bool = False,
+        return_sample_quality: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -88,7 +88,7 @@ class MPT_Complexity(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_complexity: boolean
+        return_sample_quality: boolean
             Indicates whether return one float per sample, representing the average
             correlation coefficient across the layers for that sample.
         abs: boolean
@@ -149,7 +149,7 @@ class MPT_Complexity(Metric):
         self.quality_func = quality_func
         self.layer_order = layer_order
         self.nr_samples = nr_samples
-        self.return_sample_complexity = return_sample_complexity
+        self.return_sample_quality = return_sample_quality
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.scores_expl_random = np.array([])
@@ -393,12 +393,12 @@ class MPT_Complexity(Metric):
             s_batch=s_batch,
         )
 
-        if self.return_sample_complexity:
+        if self.return_sample_quality:
             self.evaluation_scores = self.recompute_scores_per_sample()
 
         if self.return_aggregate:
-            assert self.return_sample_complexity, (
-                "You must set 'return_sample_complexity' to True in order to compute the aggregate."
+            assert self.return_sample_quality, (
+                "You must set 'return_sample_quality' to True in order to compute the aggregate."
             )
             self.scores_expl_model_randomised = [self.aggregate_func(self.scores_expl_model_randomised)]
 
