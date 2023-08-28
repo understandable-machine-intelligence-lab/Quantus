@@ -60,7 +60,6 @@ class Infidelity(PerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.FAITHFULNESS
 
-    @asserts.attributes_check
     def __init__(
         self,
         loss_func: Union[str, Callable] = "mse",

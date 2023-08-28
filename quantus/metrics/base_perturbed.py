@@ -58,7 +58,7 @@ class PerturbationMetric(Metric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.NONE
 
-    @asserts.attributes_check
+
     def __init__(
         self,
         abs: bool,
