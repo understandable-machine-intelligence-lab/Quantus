@@ -81,10 +81,11 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
         Array to calculate entropy on.
     x: np.ndarray
         Array to compute shape.
-    n_bins: int
-        Number of bins. default is 100.
     kwargs: optional
         Keyword arguments.
+
+        n_bins: int
+            Number of bins. default is 100.
     
     Returns
     -------
@@ -92,11 +93,8 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
         Discrete Entropy.
     """
 
-    if len(x.shape) == 1:
-        newshape = np.prod(x.shape)
-    else:
-        newshape = np.prod(x.shape[1:])
+    n_bins = kwargs.get("n_bins", 100)
+    
+    histogram, bins = np.histogram(a, bins=n_bins)
 
-    a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
-
-    return scipy.stats.entropy(pk=a)
+    return scipy.stats.entropy(pk=histogram)
