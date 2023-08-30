@@ -207,3 +207,30 @@ def titanic_dataset():
     Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_model_softmax_not_last():
+    '''
+    Model with a softmax layer not last in the list of modules. Used to test the logic of pytorch_model.py,
+    method get_softmax_arg_model (see the method's documentation).
+    '''
+    model = torch.nn.Sequential(
+        torch.nn.Flatten(),
+        torch.nn.Softmax(),
+        torch.nn.Linear(28 * 28, 10),
+    )
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_model_softmax():
+    '''
+    Model with a softmax layer last in the list of modules. Used to test the logic of pytorch_model.py,
+    method get_softmax_arg_model (see the method's documentation).
+    '''
+    model = torch.nn.Sequential(
+        LeNet(),
+        torch.nn.Softmax(),
+    )
+    return model
