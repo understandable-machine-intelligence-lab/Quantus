@@ -317,12 +317,9 @@ class Continuity(PerturbationMetric):
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
             prediction_changed = (
-                len(
-                    self.changed_prediction_indices(
-                        model, np.expand_dims(x, 0), x_input
-                    )
-                )
-                != 0
+                self.return_nan_when_prediction_changes
+                and model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
+                != model.predict(x_input).argmax(axis=-1)[0]
             )
             # Taking the first element, since a_perturbed will be expanded to a batch dimension
             # not expected by the current index management functions.
@@ -361,11 +358,19 @@ class Continuity(PerturbationMetric):
                 # not expected by the current index management functions.
                 # a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
+                if self.normalise:
+                    a_perturbed_patch = self.normalise_func(
+                        a_perturbed_patch.flatten(), **self.normalise_func_kwargs
+                    )
+
+                if self.abs:
+                    a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
+
                 # Sum attributions for patch.
-                patch_sum = float(np.sum(a_perturbed_patch))
+                patch_sum = float(sum(a_perturbed_patch))
                 results[ix_patch].append(patch_sum)
 
-        return {k: v for k, v in results.items()}
+        return results
 
     def custom_preprocess(
         self,
