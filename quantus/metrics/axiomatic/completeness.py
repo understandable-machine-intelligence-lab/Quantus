@@ -261,6 +261,52 @@ class Completeness(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> bool:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+           : boolean
+            The evaluation results.
+        """
+        x_baseline = self.perturb_func(
+            arr=x,
+            indices=np.arange(0, x.size),
+            indexed_axes=np.arange(0, x.ndim),
+            **self.perturb_func_kwargs,
+        )
+
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        # Predict on baseline.
+        x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+        y_pred_baseline = float(model.predict(x_input)[:, y])
+
+        if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
+            return True
+        else:
+            return False
+
     def evaluate_batch(
         self,
         *,
@@ -268,53 +314,11 @@ class Completeness(PerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
-    ) -> List[bool]:
-        """
-
-        Checks if sum of attributions is equal to the difference between original prediction and
-        prediction on baseline value.
-
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInterface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        _:
-            Unused kwargs.
-
-        Returns
-        -------
-
-        scores_batch:
-            List of booleans.
-
-
-        """
-
-        # TODO: vectorize
-        scores_batch = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            x_baseline = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
-                **self.perturb_func_kwargs,
-            )
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input)[:, y])
-
-            # Predict on baseline.
-            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-            y_pred_baseline = float(model.predict(x_input)[:, y])
-
-            scores_batch.append(np.sum(a) == self.output_func(y_pred - y_pred_baseline))
-        return scores_batch
+        s_batch: np.ndarray,
+        **kwargs,
+    ):
+        # TODO. For performance gains, replace the for loop below with vectorisation.
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

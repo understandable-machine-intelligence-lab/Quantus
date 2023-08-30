@@ -265,6 +265,65 @@ class NonSensitivity(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> int:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        integer
+            The evaluation results.
+        """
+        a = a.flatten()
+
+        non_features = set(list(np.argwhere(a).flatten() < self.eps))
+
+        vars = []
+        for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
+            preds = []
+            a_ix = a[
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+            ].astype(int)
+
+            for _ in range(self.n_samples):
+                # Perturb input by indices of attributions.
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=self.a_axes,
+                    **self.perturb_func_kwargs,
+                )
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturbed = float(model.predict(x_input)[:, y])
+
+                preds.append(y_pred_perturbed)
+                vars.append(np.var(preds))
+
+        non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
+
+        return len(non_features_vars.symmetric_difference(non_features))
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -337,43 +396,7 @@ class NonSensitivity(PerturbationMetric):
 
         """
 
-        scores_batch = []
-
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            a = a.flatten()
-
-            non_features = set(list(np.argwhere(a).flatten() < self.eps))
-
-            vars = []
-            for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
-                preds = []
-                a_ix = a[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ].astype(int)
-
-                for _ in range(self.n_samples):
-                    # Perturb input by indices of attributions.
-                    x_perturbed = self.perturb_func(
-                        arr=x,
-                        indices=a_ix,
-                        indexed_axes=self.a_axes,
-                        **self.perturb_func_kwargs,
-                    )
-
-                    # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, x.shape, channel_first=True
-                    )
-                    y_pred_perturbed = float(model.predict(x_input)[:, y])
-
-                    preds.append(y_pred_perturbed)
-                    vars.append(np.var(preds))
-
-            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
-            scores_batch.append(
-                len(non_features_vars.symmetric_difference(non_features))
-            )
-
-        return scores_batch
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
