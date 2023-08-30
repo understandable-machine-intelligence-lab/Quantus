@@ -232,6 +232,42 @@ class Consistency(Metric):
             **kwargs,
         )
 
+    @staticmethod
+    def evaluate_instance(
+        a: np.ndarray,
+        i: int = None,
+        a_label: np.ndarray = None,
+        y_pred_classes: np.ndarray = None,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        i: int
+            The index of the current instance.
+        a_label: np.ndarray
+            The discretised attribution labels.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Metric logic.
+        pred_a = y_pred_classes[i]
+        same_a = np.argwhere(a == a_label).flatten()
+        diff_a = same_a[same_a != i]
+        pred_same_a = y_pred_classes[diff_a]
+
+        if len(same_a) == 0:
+            return 0
+        return np.sum(pred_same_a == pred_a) / len(diff_a)
+
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
         data_batch = super().batch_preprocess(data_batch)
 
@@ -257,7 +293,6 @@ class Consistency(Metric):
         data_batch.update(custom_batch)
         return data_batch
 
-    @no_type_check
     def evaluate_batch(
         self,
         *,
@@ -267,17 +302,9 @@ class Consistency(Metric):
         y_pred_classes,
         **_,
     ) -> List[float]:
-        # TODO: vectorize
-        retval = []
-        for a, i, a_label in zip(a_batch, i_batch, a_label_batch):
-            pred_a = y_pred_classes[i]
-            same_a = np.argwhere(a == a_label).flatten()
-            diff_a = same_a[same_a != i]
-            pred_same_a = y_pred_classes[diff_a]
+        # TODO: for performance reasons vectorize this for-loop
 
-            if len(same_a) == 0:
-                retval.append(0.0)
-            else:
-                retval.append(np.sum(pred_same_a == pred_a) / len(diff_a))
-
-        return retval
+        return [
+            self.evaluate_instance(a, i, a_label, y_pred_classes)
+            for a, i, a_label in zip(a_batch, i_batch, a_label_batch)
+        ]

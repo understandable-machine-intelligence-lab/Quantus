@@ -262,6 +262,32 @@ class RandomLogit(Metric):
         float
             The evaluation results.
         """
+        # Randomly select off-class labels.
+        np.random.seed(self.seed)
+        y_off = np.array(
+            [
+                np.random.choice(
+                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
+                )
+            ]
+        )
+
+        # Explain against a random class.
+        a_perturbed = self.explain_func(
+            model=model.get_model(),
+            inputs=np.expand_dims(x, axis=0),
+            targets=y_off,
+            **self.explain_func_kwargs,
+        )
+
+        # Normalise and take absolute values of the attributions, if True.
+        if self.normalise:
+            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+
+        if self.abs:
+            a_perturbed = np.abs(a_perturbed)
+
+        return self.similarity_func(a.flatten(), a_perturbed.flatten())
 
     def custom_preprocess(
         self,
@@ -307,24 +333,8 @@ class RandomLogit(Metric):
         a_batch: np.ndarray,
         **_,
     ) -> List[float]:
-        # TODO: vectorize
-        retval = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Randomly select off-class labels.
-            np.random.seed(self.seed)
-            y_off = np.array(
-                [
-                    np.random.choice(
-                        [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                    )
-                ]
-            )
-            # Explain against a random class.
-            a_perturbed = self.explain_batch(
-                model.get_model(),
-                np.expand_dims(x, axis=0),
-                y_off,
-            )
-            retval.append(self.similarity_func(a.flatten(), a_perturbed.flatten()))
-
-        return retval
+        # TODO: for performance reasons vectorize this for-loop
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

@@ -229,7 +229,7 @@ class Sparseness(Metric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
-    
+
     @staticmethod
     def evaluate_instance(x: np.ndarray, a: np.ndarray) -> float:
         """
