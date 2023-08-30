@@ -289,6 +289,65 @@ class ROAD(PerturbationMetric):
            : list
             The evaluation results.
         """
+        # Order indices.
+        ordered_indices = np.argsort(a, axis=None)[::-1]
+
+        results_instance = np.array([None for _ in self.percentages])
+
+        for p_ix, p in enumerate(self.percentages):
+            top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
+
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=top_k_indices,
+                **self.perturb_func_kwargs,
+            )
+
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            class_pred_perturb = np.argmax(model.predict(x_input))
+
+            # Write a boolean into the percentage results.
+            results_instance[p_ix] = int(y == class_pred_perturb)
+
+        # Return list of booleans for each percentage.
+        return results_instance
+
+    def custom_preprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        custom_batch: Optional[np.ndarray],
+    ) -> None:
+        """
+        Implementation of custom_preprocess_batch.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        custom_batch: any
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+        None
+        """
+        # Infer the size of attributions.
+        self.a_size = a_batch[0, :, :].size
 
     def custom_postprocess(
         self,
@@ -341,32 +400,26 @@ class ROAD(PerturbationMetric):
         a_batch: np.ndarray,
         **kwargs,
     ):
-        retval = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Order indices.
-            ordered_indices = np.argsort(a, axis=None)[::-1]
+        """
+        TODO: write meaningful docstring about what does it compute.
 
-            results_instance = np.array([None for _ in self.percentages])
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
 
-            for p_ix, p in enumerate(self.percentages):
-                top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
-
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=top_k_indices,
-                    **self.perturb_func_kwargs,
-                )
-
-                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                class_pred_perturb = np.argmax(model.predict(x_input))
-
-                # Write a boolean into the percentage results.
-                results_instance[p_ix] = int(y == class_pred_perturb)
-
-            # Return list of booleans for each percentage.
-            retval.append(results_instance)
-
-        return retval
+        Returns
+        -------
+        list
+            The evaluation results.
+        """
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

@@ -258,6 +258,68 @@ class Monotonicity(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Prepare shapes.
+        a = a.flatten()
+
+        # Get indices of sorted attributions (ascending).
+        a_indices = np.argsort(a)
+
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        preds = [None for _ in range(n_perturbations)]
+
+        # Copy the input x but fill with baseline values.
+        baseline_value = utils.get_baseline_value(
+            value=self.perturb_func_kwargs["perturb_baseline"],
+            arr=x,
+            return_shape=x.shape,  # TODO. Double-check this over using = (1,).
+        )
+        x_baseline = np.full(x.shape, baseline_value)
+
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+            ]
+            x_baseline = self.perturb_func(
+                arr=x_baseline,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+
+            # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            preds[i_ix] = y_pred_perturb
+
+        return np.all(np.diff(preds) >= 0)
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -304,44 +366,31 @@ class Monotonicity(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[bool]:
-        retval = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Prepare shapes.
-            a = a.flatten()
+        """
+        TODO: write meaningful docstring about what does it compute.
 
-            # Get indices of sorted attributions (ascending).
-            a_indices = np.argsort(a)
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused.
 
-            n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-            preds = [None for _ in range(n_perturbations)]
+        Returns
+        -------
 
-            # Copy the input x but fill with baseline values.
-            baseline_value = utils.get_baseline_value(
-                value=self.perturb_func_kwargs["perturb_baseline"],
-                arr=x,
-                return_shape=x.shape,  # TODO. Double-check this over using = (1,).
-            )
-            x_baseline = np.full(x.shape, baseline_value)
+        scores_batch:
+            List of floats.
 
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_baseline = self.perturb_func(
-                    arr=x_baseline,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
-                )
+        """
 
-                # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input)[:, y])
-                preds[i_ix] = y_pred_perturb
-
-            retval.append(np.all(np.diff(preds) >= 0))
-
-        return retval
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a, s in zip(x_batch, y_batch, a_batch)
+        ]

@@ -244,6 +244,40 @@ class Sufficiency(Metric):
             **kwargs,
         )
 
+    @staticmethod
+    def evaluate_instance(
+        i: int = None,
+        a_sim_vector: np.ndarray = None,
+        y_pred_classes: np.ndarray = None,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        i: int
+            The index of the current instance.
+        a_sim_vector: any
+            The custom input to be evaluated on an instance-basis.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        # Metric logic.
+        pred_a = y_pred_classes[i]
+        low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
+        low_dist_a = low_dist_a[low_dist_a != i]
+        pred_low_dist_a = y_pred_classes[low_dist_a]
+
+        if len(low_dist_a) == 0:
+            return 0
+        return np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
+
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
         data_batch = super().batch_preprocess(data_batch)
         model = data_batch["model"]
@@ -274,17 +308,11 @@ class Sufficiency(Metric):
     def evaluate_batch(
         self, *, i_batch, a_sim_vector_batch, y_pred_classes, **_
     ) -> List[float]:
-        retval = []
-        for i, a_sim_vector in zip(i_batch, a_sim_vector_batch):
-            # Metric logic.
-            pred_a = y_pred_classes[i]
-            low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
-            low_dist_a = low_dist_a[low_dist_a != i]
-            pred_low_dist_a = y_pred_classes[low_dist_a]
+        """
+        TODO: write meaningful docstring about what does it compute.
+        """
 
-            if len(low_dist_a) == 0:
-                retval.append(0.0)
-            else:
-                retval.append((pred_low_dist_a == pred_a) / len(low_dist_a))
-
-        return retval
+        return [
+            self.evaluate_instance(i, a_sim_vector, y_pred_classes)
+            for i, a_sim_vector in zip(i_batch, a_sim_vector_batch)
+        ]

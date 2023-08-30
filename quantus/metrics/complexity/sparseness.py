@@ -229,12 +229,9 @@ class Sparseness(Metric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
-
-    def evaluate_instance(
-        self,
-        x: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
+    
+    @staticmethod
+    def evaluate_instance(x: np.ndarray, a: np.ndarray) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 

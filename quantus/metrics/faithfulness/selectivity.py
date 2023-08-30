@@ -389,6 +389,25 @@ class Selectivity(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[List[float]]:
+        """
+        TODO: write meaningful docstring about what does it compute.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+
+        Returns
+        -------
+        list
+            The evaluation results.
+        """
         return [
             self.evaluate_instance(model, x, y, a)
             for x, y, a in zip(x_batch, y_batch, a_batch)

@@ -273,6 +273,70 @@ class SensitivityN(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> Dict[str, List[float]]:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+            (Dict[str, List[float]]): The evaluation results.
+        """
+
+        # Reshape the attributions.
+        a = a.flatten()
+
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
+
+        # Predict on x.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        att_sums = []
+        pred_deltas = []
+        x_perturbed = x.copy()
+
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x_perturbed,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+            # Sum attributions.
+            att_sums.append(float(a[a_ix].sum()))
+
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            pred_deltas.append(y_pred - y_pred_perturb)
+
+        # Each list-element of self.evaluation_scores will be such a dictionary
+        # We will unpack that later in custom_postprocess().
+        return {"att_sums": att_sums, "pred_deltas": pred_deltas}
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -378,46 +442,27 @@ class SensitivityN(PerturbationMetric):
         a_batch: np.ndarray,
         **_,
     ) -> List[Dict[str, List[float]]]:
-        retval = []
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Reshape the attributions.
-            a = a.flatten()
+        """
+        TODO: write meaningful docstring about what does it compute.
 
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
 
-            # Predict on x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input)[:, y])
+        Returns
+        -------
+        list
+            The evaluation results.
+        """
 
-            att_sums = []
-            pred_deltas = []
-            x_perturbed = x.copy()
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
-                )
-                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-                # Sum attributions.
-                att_sums.append(float(a[a_ix].sum()))
-
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input)[:, y])
-                pred_deltas.append(y_pred - y_pred_perturb)
-
-            # Each list-element of self.evaluation_scores will be such a dictionary
-            # We will unpack that later in custom_postprocess().
-            retval.append({"att_sums": att_sums, "pred_deltas": pred_deltas})
-
-        return retval
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

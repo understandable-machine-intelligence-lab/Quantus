@@ -261,6 +261,71 @@ class FaithfulnessEstimate(PerturbationMetric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        # Flatten the attributions.
+        a = a.flatten()
+
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
+
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        pred_deltas = [None for _ in range(n_perturbations)]
+        att_sums = [None for _ in range(n_perturbations)]
+
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            pred_deltas[i_ix] = float(y_pred - y_pred_perturb)
+
+            # Sum attributions.
+            att_sums[i_ix] = np.sum(a[a_ix])
+
+        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
+        return similarity
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -308,10 +373,10 @@ class FaithfulnessEstimate(PerturbationMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         **_,
-    ):
+    ) -> List[float]:
         """
 
-        TODO: what does it compute?
+        TODO: write meaningful docstring about what does it compute.
 
         Parameters
         ----------
@@ -333,47 +398,8 @@ class FaithfulnessEstimate(PerturbationMetric):
             List of floats.
 
         """
-        scores_batch = []
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Flatten the attributions.
-            a = a.flatten()
-
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input)[:, y])
-
-            n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-            pred_deltas = [None for _ in range(n_perturbations)]
-            att_sums = [None for _ in range(n_perturbations)]
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
-                )
-                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input)[:, y])
-                pred_deltas[i_ix] = float(y_pred - y_pred_perturb)
-
-                # Sum attributions.
-                att_sums[i_ix] = np.sum(a[a_ix])
-
-            similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-            scores_batch.append(similarity)
-
-        return scores_batch
+        return [
+            self.evaluate_instance(model, x, y, a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
