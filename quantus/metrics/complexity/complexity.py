@@ -225,12 +225,41 @@ class Complexity(Metric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        x: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        if len(x.shape) == 1:
+            newshape = np.prod(x.shape)
+        else:
+            newshape = np.prod(x.shape[1:])
+
+        a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
+        return scipy.stats.entropy(pk=a)
+
     def evaluate_batch(
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
     ) -> List[float]:
         """
 
-        TODO: what does it compute?
+        TODO: write meaningful docstring about what does it compute.
 
         Parameters
         ----------
@@ -248,15 +277,5 @@ class Complexity(Metric):
             List of floats.
 
         """
-        # TODO: vectorize
-        scores_batch = []
-        for x, a in zip(x_batch, a_batch):
-            if len(x.shape) == 1:
-                newshape = np.prod(x.shape)
-            else:
-                newshape = np.prod(x.shape[1:])
-
-            a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
-            scores_batch.append(scipy.stats.entropy(pk=a))
-
-        return scores_batch
+        # TODO. For performance gains, replace the for loop below with vectorisation.
+        return [self.evaluate_instance(x, a) for x, a in zip(x_batch, a_batch)]

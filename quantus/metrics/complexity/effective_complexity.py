@@ -228,6 +228,27 @@ class EffectiveComplexity(Metric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        a: np.ndarray,
+    ) -> int:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        integer
+            The evaluation results.
+        """
+
+        a = a.flatten()
+        return int(np.sum(a > self.eps))
+
     def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
         """
 
@@ -248,11 +269,6 @@ class EffectiveComplexity(Metric):
             List of integers.
 
         """
-        # TODO: vectorize
-        scores_batch = []
+        # TODO. For performance gains, replace the for loop below with vectorisation.
 
-        for a in a_batch:
-            a = a.flatten()
-            scores_batch.append(int(np.sum(a > self.eps)))
-
-        return scores_batch
+        return [self.evaluate_instance(a) for a in a_batch]
