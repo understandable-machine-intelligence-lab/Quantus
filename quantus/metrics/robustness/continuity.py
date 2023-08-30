@@ -445,4 +445,21 @@ class Continuity(PerturbationMetric):
         y_batch: np.ndarray,
         **_,
     ) -> List[Dict[str, int]]:
+        """
+
+        Parameters
+        ----------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        _:
+            unused.
+
+        Returns
+        -------
+
+        """
         return [self.evaluate_instance(model, x, y) for x, y in zip(x_batch, y_batch)]

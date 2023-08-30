@@ -399,7 +399,7 @@ class MonotonicityCorrelation(PerturbationMetric):
         Parameters
         ----------
         model: ModelInterface
-            A ModelInterface that is subject to explanation.
+            A model that is subject to explanation.
         x_batch: np.ndarray
             The input to be evaluated on a batch-basis.
         y_batch: np.ndarray
@@ -412,19 +412,14 @@ class MonotonicityCorrelation(PerturbationMetric):
         List[float]
             The evaluation results.
         """
-        # Asserts.
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
-        )
 
         # Evaluate explanations.
         return [
             self.evaluate_instance(
-                model=model,
-                x=x,
-                y=y,
-                a=a,
+                model,
+                x,
+                y,
+                a,
             )
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

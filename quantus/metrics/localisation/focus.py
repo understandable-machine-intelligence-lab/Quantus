@@ -386,4 +386,18 @@ class Focus(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, c_batch: np.ndarray, **_
     ) -> List[float]:
+        """
+        Parameters
+        ----------
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        c_batch:
+            The custom input to be evaluated on an batch-basis.
+        _:
+            unused.
+
+        Returns
+        -------
+
+        """
         return [self.evaluate_instance(a, c) for a, c in zip(a_batch, c_batch)]

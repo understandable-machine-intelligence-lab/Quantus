@@ -333,7 +333,25 @@ class RandomLogit(Metric):
         a_batch: np.ndarray,
         **_,
     ) -> List[float]:
-        # TODO: for performance reasons vectorize this for-loop
+        """
+
+        Parameters
+        ----------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        _:
+            unused.
+
+        Returns
+        -------
+
+        """
         return [
             self.evaluate_instance(model, x, y, a)
             for x, y, a in zip(x_batch, y_batch, a_batch)

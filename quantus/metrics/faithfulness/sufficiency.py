@@ -309,7 +309,22 @@ class Sufficiency(Metric):
         self, *, i_batch, a_sim_vector_batch, y_pred_classes, **_
     ) -> List[float]:
         """
+
         TODO: write meaningful docstring about what does it compute.
+        Parameters
+        ----------
+        i_batch:
+            The index of the current instance.
+        a_sim_vector_batch:
+            The custom input to be evaluated on an instance-basis.
+        y_pred_classes:
+            The class predictions of the complete input dataset.
+        _:
+            unused.
+
+        Returns
+        -------
+
         """
 
         return [

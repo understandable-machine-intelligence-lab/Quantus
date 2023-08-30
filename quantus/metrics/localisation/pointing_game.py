@@ -309,4 +309,19 @@ class PointingGame(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
+        """
+
+        Parameters
+        ----------
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch:
+            A np.ndarray which contains segmentation masks that matches the input.
+        _:
+            unused.
+
+        Returns
+        -------
+
+        """
         return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]
