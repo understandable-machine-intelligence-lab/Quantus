@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Sequence, Optional, ClassVar, Generator, Set
+from typing import Any, Callable, Dict, Sequence, ClassVar, Generator, Set
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,10 +44,10 @@ class Metric:
         abs: bool,
         normalise: bool,
         normalise_func: Callable,
-        normalise_func_kwargs: Optional[Dict[str, Any]],
+        normalise_func_kwargs: Dict[str, ...] | None,
         return_aggregate: bool,
         aggregate_func: Callable,
-        default_plot_func: Optional[Callable],
+        default_plot_func: Callable[[...], None] | None,
         disable_warnings: bool,
         display_progressbar: bool,
         **kwargs,
@@ -118,19 +118,19 @@ class Metric:
         self,
         model,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: Optional[np.ndarray],
-        channel_first: Optional[bool],
-        explain_func: Optional[Callable],
-        explain_func_kwargs: Optional[Dict[str, Any]],
-        model_predict_kwargs: Optional[Dict],
-        softmax: Optional[bool],
-        device: Optional[str] = None,
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
+        s_batch: np.ndarray | None,
+        channel_first: bool | None,
+        explain_func: Callable[[...], None] | None,
+        explain_func_kwargs: Dict[str, ...] | None,
+        model_predict_kwargs: Dict[str, ...] | None,
+        softmax: bool | None,
+        device: str | None = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
+        custom_batch: Any = None,
         **kwargs,
-    ) -> Any:
+    ):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -306,17 +306,17 @@ class Metric:
         self,
         model,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: Optional[np.ndarray],
-        channel_first: Optional[bool],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
+        s_batch: np.ndarray | None,
+        channel_first: bool | None,
         explain_func: Callable,
-        explain_func_kwargs: Optional[Dict[str, Any]],
-        model_predict_kwargs: Optional[Dict],
+        explain_func_kwargs: Dict[str, ...] | None,
+        model_predict_kwargs: Dict[str, ...] | None,
         softmax: bool,
-        device: Optional[str],
-        custom_batch: Optional[np.ndarray],
-    ) -> Dict[str, Any]:
+        device: str | None,
+        custom_batch: np.ndarray | None,
+    ) -> Dict[str, ...]:
         """
         Prepares all necessary variables for evaluation.
 
@@ -438,11 +438,11 @@ class Metric:
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Optional[Dict[str, Any]]:
+        custom_batch: np.ndarray | None,
+    ) -> Dict[str, ...] | None:
         """
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional
@@ -486,10 +486,10 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
+            >>>     y_batch: np.ndarray | None,
+            >>>     a_batch: np.ndarray | None,
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
+            >>>     custom_batch: np.ndarray | None,
             >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable': np.mean(x_batch)}
             >>>
@@ -497,8 +497,8 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
+            >>>     y: np.ndarray | None,
+            >>>     a: np.ndarray | None,
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.float,
             >>> ) -> float:
@@ -508,10 +508,10 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
+            >>>     y_batch: np.ndarray | None,
+            >>>     a_batch: np.ndarray | None,
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
+            >>>     custom_batch: np.ndarray | None,
             >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
             >>>
@@ -519,8 +519,8 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
+            >>>     y: np.ndarray | None,
+            >>>     a: np.ndarray | None,
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.int,
             >>> ) -> float:
@@ -531,10 +531,10 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
+            >>>     y_batch: np.ndarray | None,
+            >>>     a_batch: np.ndarray | None,
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
+            >>>     custom_batch: np.ndarray | None,
             >>> ) -> Dict[str, Any]:
             >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
             >>>
@@ -542,8 +542,8 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
+            >>>     y: np.ndarray | None,
+            >>>     a: np.ndarray | None,
             >>>     s: np.ndarray,
             >>> ) -> float:
 
@@ -553,10 +553,10 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
+            >>>     y_batch: np.ndarray | None,
+            >>>     a_batch: np.ndarray | None,
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
+            >>>     custom_batch: np.ndarray | None,
             >>> ) -> None:
             >>>     if np.any(np.all(a_batch < 0, axis=0)):
             >>>         raise ValueError("Attributions must not be all negative")
@@ -569,8 +569,8 @@ class Metric:
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
+            >>>     y: np.ndarray | None,
+            >>>     a: np.ndarray | None,
             >>>     s: np.ndarray,
             >>> ) -> float:
 
@@ -581,11 +581,11 @@ class Metric:
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
         s_batch: np.ndarray,
         **kwargs,
-    ) -> Optional[Any]:
+    ):
         """
         Implement this method if you need custom postprocessing of results or
         additional attributes.
@@ -614,9 +614,9 @@ class Metric:
 
     def generate_batches(
         self,
-        data: Dict[str, Any],
+        data: Dict[str, ...],
         batch_size: int,
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[Dict[str, ...], None, None]:
         """
         Creates iterator to iterate over all batched instances in data dictionary.
         Each iterator output element is a keyword argument dictionary with
@@ -693,7 +693,7 @@ class Metric:
 
     def plot(
         self,
-        plot_func: Optional[Callable] = None,
+        plot_func: Callable[[...], None] | None = None,
         show: bool = True,
         path_to_save: str | None = None,
         *args,
@@ -778,7 +778,7 @@ class Metric:
         )
         return self.all_evaluation_scores
 
-    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+    def batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
         """
         Does computationally heavy pre-processing on batch level to avoid OOM.
         By default, will only generate explanations if missing, in case metric requires custom

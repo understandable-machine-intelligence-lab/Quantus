@@ -293,6 +293,7 @@ class Consistency(Metric):
         data_batch.update(custom_batch)
         return data_batch
 
+    @no_type_check
     def evaluate_batch(
         self,
         *,

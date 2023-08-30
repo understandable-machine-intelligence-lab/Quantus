@@ -284,7 +284,7 @@ class Continuity(PerturbationMetric):
 
     def evaluate_instance(
         self, model: ModelInterface, x: np.ndarray, y: np.ndarray
-    ) -> Dict[str, int | float]:
+    ) -> Dict[int, List[Any]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
