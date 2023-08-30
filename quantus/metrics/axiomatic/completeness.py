@@ -314,9 +314,35 @@ class Completeness(PerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
-        **kwargs,
-    ):
+        **_,
+    ) -> List[bool]:
+        """
+
+        Checks if sum of attributions is equal to the difference between original prediction and
+        prediction on baseline value.
+
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        _:
+            Unused kwargs.
+
+        Returns
+        -------
+
+        scores_batch:
+            List of booleans.
+
+
+        """
         # TODO. For performance gains, replace the for loop below with vectorisation.
         return [
             self.evaluate_instance(model, x, y, a)
