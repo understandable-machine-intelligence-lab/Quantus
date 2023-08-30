@@ -224,6 +224,44 @@ class RelevanceMassAccuracy(Metric):
             **kwargs,
         )
 
+    @staticmethod
+    def evaluate_instance(
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Return np.nan as result if segmentation map is empty.
+        if np.sum(s) == 0:
+            warn.warn_empty_segmentation()
+            return np.nan
+
+        # Prepare shapes.
+        a = a.flatten()
+        s = s.flatten().astype(bool)
+
+        # Compute inside/outside ratio.
+        r_within = np.sum(a[s])
+        r_total = np.sum(a)
+
+        # Calculate mass accuracy.
+        mass_accuracy = r_within / r_total
+
+        return mass_accuracy
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -261,25 +299,4 @@ class RelevanceMassAccuracy(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
-        retval = []
-        for a, s in zip(a_batch, s_batch):
-            # Return np.nan as result if segmentation map is empty.
-            if np.sum(s) == 0:
-                warn.warn_empty_segmentation()
-                retval.append(np.nan)
-                continue
-
-            # Prepare shapes.
-            a = a.flatten()
-            s = s.flatten().astype(bool)
-
-            # Compute inside/outside ratio.
-            r_within = np.sum(a[s])
-            r_total = np.sum(a)
-
-            # Calculate mass accuracy.
-            mass_accuracy = r_within / r_total
-
-            retval.append(mass_accuracy)
-
-        return retval
+        return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]

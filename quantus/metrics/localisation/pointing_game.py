@@ -230,6 +230,47 @@ class PointingGame(Metric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> bool:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        boolean
+            The evaluation results.
+        """
+
+        # Return np.nan as result if segmentation map is empty.
+        if np.sum(s) == 0:
+            warn.warn_empty_segmentation()
+            return np.nan
+
+        # Prepare shapes.
+        a = a.flatten()
+        s = s.flatten().astype(bool)
+
+        # Find indices with max value.
+        max_index = np.argwhere(a == np.max(a))
+
+        # Check if maximum of explanation is on target object class.
+        hit = np.any(s[max_index])
+
+        if self.weighted and hit:
+            hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
+
+        return hit
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -268,26 +309,4 @@ class PointingGame(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
-        retval = []
-        for a, s in zip(a_batch, s_batch):
-            if np.sum(s) == 0:
-                warn.warn_empty_segmentation()
-                retval.append(np.nan)
-                continue
-
-            # Prepare shapes.
-            a = a.flatten()
-            s = s.flatten().astype(bool)
-
-            # Find indices with max value.
-            max_index = np.argwhere(a == np.max(a))
-
-            # Check if maximum of explanation is on target object class.
-            hit = np.any(s[max_index])
-
-            if self.weighted and hit:
-                hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
-
-            retval.append(hit)
-
-        return retval
+        return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]

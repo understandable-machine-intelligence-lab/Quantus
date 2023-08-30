@@ -262,6 +262,52 @@ class Focus(Metric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        a: np.ndarray,
+        c: np.ndarray = None,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        c: any
+            The custom input to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        # Prepare shapes for mosaics.
+        self.mosaic_shape = a.shape
+
+        total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
+        target_positive_relevance = 0
+
+        quadrant_functions_list = [
+            self.quadrant_top_left,
+            self.quadrant_top_right,
+            self.quadrant_bottom_left,
+            self.quadrant_bottom_right,
+        ]
+
+        for quadrant_p, quadrant_func in zip(c, quadrant_functions_list):
+            if not bool(quadrant_p):
+                continue
+            quadrant_relevance = quadrant_func(a=a)
+            target_positive_relevance += np.sum(
+                quadrant_relevance[quadrant_relevance > 0]
+            )
+
+        focus_score = target_positive_relevance / total_positive_relevance
+
+        return focus_score
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -336,39 +382,7 @@ class Focus(Metric):
         ]
         return quandrant_a
 
-    @no_type_check
     def evaluate_batch(
-        self,
-        *,
-        a_batch: np.ndarray,
-        c_batch: np.ndarray,
-        **_,
-    ):
-        retval = []
-        for a, c in zip(a_batch, c_batch):
-            # Prepare shapes for mosaics.
-            self.mosaic_shape = a.shape
-
-            total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
-            target_positive_relevance = 0
-
-            quadrant_functions_list = [
-                self.quadrant_top_left,
-                self.quadrant_top_right,
-                self.quadrant_bottom_left,
-                self.quadrant_bottom_right,
-            ]
-
-            for quadrant_p, quadrant_func in zip(c, quadrant_functions_list):
-                if not bool(quadrant_p):
-                    continue
-                quadrant_relevance = quadrant_func(a=a)
-                target_positive_relevance += np.sum(
-                    quadrant_relevance[quadrant_relevance > 0]
-                )
-
-            focus_score = target_positive_relevance / total_positive_relevance
-
-            retval.append(focus_score)
-
-        return retval
+        self, *, a_batch: np.ndarray, c_batch: np.ndarray, **_
+    ) -> List[float]:
+        return [self.evaluate_instance(a, c) for a, c in zip(a_batch, c_batch)]

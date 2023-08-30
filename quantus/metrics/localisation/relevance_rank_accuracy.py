@@ -226,6 +226,51 @@ class RelevanceRankAccuracy(Metric):
             **kwargs,
         )
 
+    @staticmethod
+    def evaluate_instance(
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Return np.nan as result if segmentation map is empty.
+        if np.sum(s) == 0:
+            warn.warn_empty_segmentation()
+            return np.nan
+
+        # Prepare shapes.
+        a = a.flatten()
+        s = np.where(s.flatten().astype(bool))[0]
+
+        # Size of the ground truth mask.
+        k = len(s)
+
+        # Sort in descending order.
+        a_sorted = np.argsort(a)[-int(k) :]
+
+        # Calculate hits.
+        hits = len(np.intersect1d(s, a_sorted))
+
+        if hits != 0:
+            rank_accuracy = hits / float(k)
+        else:
+            rank_accuracy = 0.0
+
+        return rank_accuracy
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -263,33 +308,5 @@ class RelevanceRankAccuracy(Metric):
     def evaluate_batch(
         self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
-        retval = []
-
-        for a, s in zip(a_batch, s_batch):
-            # Return np.nan as result if segmentation map is empty.
-            if np.sum(s) == 0:
-                warn.warn_empty_segmentation()
-                retval.append(np.nan)
-                continue
-
-            # Prepare shapes.
-            a = a.flatten()
-            s = np.where(s.flatten().astype(bool))[0]
-
-            # Size of the ground truth mask.
-            k = len(s)
-
-            # Sort in descending order.
-            a_sorted = np.argsort(a)[-int(k) :]
-
-            # Calculate hits.
-            hits = len(np.intersect1d(s, a_sorted))
-
-            if hits != 0:
-                rank_accuracy = hits / float(k)
-            else:
-                rank_accuracy = 0.0
-
-            retval.append(rank_accuracy)
-
-        return retval
+        # TODO: for performance reasons, this method should be vectorized.
+        return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]

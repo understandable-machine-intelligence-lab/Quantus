@@ -240,6 +240,58 @@ class AttributionLocalisation(Metric):
             **kwargs,
         )
 
+    def evaluate_instance(
+        self,
+        x: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        if np.sum(s) == 0:
+            warn.warn_empty_segmentation()
+            return np.nan
+
+        # Prepare shapes.
+        a = a.flatten()
+        s = s.flatten().astype(bool)
+
+        # Compute ratio.
+        size_bbox = float(np.sum(s))
+        size_data = np.prod(x.shape[1:])
+        ratio = size_bbox / size_data
+
+        # Compute inside/outside ratio.
+        inside_attribution = np.sum(a[s])
+        total_attribution = np.sum(a)
+        inside_attribution_ratio = float(inside_attribution / total_attribution)
+
+        if not ratio <= self.max_size:
+            warn.warn_max_size()
+        if inside_attribution_ratio > 1.0:
+            warn.warn_segmentation(inside_attribution, total_attribution)
+            return np.nan
+        if not self.weighted:
+            return inside_attribution_ratio
+        else:
+            return float(inside_attribution_ratio * ratio)
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -277,35 +329,24 @@ class AttributionLocalisation(Metric):
     def evaluate_batch(
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, s_batch: np.ndarray, **_
     ) -> List[float]:
-        retval = []
-        for x, a, s in zip(x_batch, a_batch, s_batch):
-            if np.sum(s) == 0:
-                warn.warn_empty_segmentation()
-                retval.append(np.nan)
-                continue
+        """
+        TODO: write meaningful docstring about what does it compute.
 
-            # Prepare shapes.
-            a = a.flatten()
-            s = s.flatten().astype(bool)
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        a_batch: np.ndarray
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray
+            A np.ndarray which contains segmentation masks that matches the input.
 
-            # Compute ratio.
-            size_bbox = float(np.sum(s))
-            size_data = np.prod(x.shape[1:])
-            ratio = size_bbox / size_data
-
-            # Compute inside/outside ratio.
-            inside_attribution = np.sum(a[s])
-            total_attribution = np.sum(a)
-            inside_attribution_ratio = float(inside_attribution / total_attribution)
-
-            if not ratio <= self.max_size:
-                warn.warn_max_size()
-            if inside_attribution_ratio > 1.0:
-                warn.warn_segmentation(inside_attribution, total_attribution)
-                retval.append(np.nan)
-            elif not self.weighted:
-                retval.append(inside_attribution_ratio)
-            else:
-                retval.append(float(inside_attribution_ratio * ratio))
-
-        return retval
+        Returns
+        -------
+        evaluation_scores: list
+            a list of floats.
+        """
+        return [
+            self.evaluate_instance(x, a, s)
+            for x, a, s in zip(x_batch, a_batch, s_batch)
+        ]

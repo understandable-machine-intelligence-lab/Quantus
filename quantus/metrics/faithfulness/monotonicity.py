@@ -392,5 +392,5 @@ class Monotonicity(PerturbationMetric):
 
         return [
             self.evaluate_instance(model, x, y, a)
-            for x, y, a, s in zip(x_batch, y_batch, a_batch)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
         ]
