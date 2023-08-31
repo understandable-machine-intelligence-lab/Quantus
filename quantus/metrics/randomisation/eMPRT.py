@@ -26,6 +26,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions import complexity_func
 #from quantus.functions.scores_func import *
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
@@ -62,6 +63,7 @@ class eMPRT(Metric):
     def __init__(
         self,
         quality_func: Optional[Callable] = None,
+        quality_func_kwargs : Optional[dict] = None,
         layer_order: str = "bottom_up",
         nr_samples: int = 10,
         seed: int = 42,
@@ -144,9 +146,13 @@ class eMPRT(Metric):
 
         # Save metric-specific attributes.
         if quality_func is None:
-            quality_func = gini_coeffiient
+            quality_func = complexity_func.gini_coefficient
+
+        if quality_func_kwargs is None:
+            quality_func_kwargs = {}
 
         self.quality_func = quality_func
+        self.quality_func_kwargs = quality_func_kwargs
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.return_sample_quality = return_sample_quality
@@ -308,12 +314,12 @@ class eMPRT(Metric):
         # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
         a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
         for a_ix, a_random in enumerate(a_batch_random):
-            self.scores_expl_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0])
+            self.scores_expl_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0], **self.quality_func_kwargs)
 
         # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
         #a_batch_constant = np.zeros_like(*(self.nr_samples, *a_batch.shape[1:]))
         #for a_ix, a_batch_const in enumerate(a_batch_constant):
-        #    self.scores_expl_constant[a_ix] = self.quality_func(a=a_batch_const, x=x_batch[0])
+        #    self.scores_expl_constant[a_ix] = self.quality_func(a=a_batch_const, x=x_batch[0], **self.quality_func_kwargs)
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
@@ -339,10 +345,11 @@ class eMPRT(Metric):
                 if self.abs:
                     a_batch_original = np.abs(a_batch_original)
 
+                self.scores_expl_model_randomised["orig"] = []
                 for a_ix, a_ori in enumerate(a_batch_original):
-                    self.scores_expl_model_randomised["orig"] = self.quality_func(a=np.abs(a_ori), x=x_batch[0])
+                    self.scores_expl_model_randomised["orig"].append(self.quality_func(a=np.abs(a_ori), x=x_batch[0], **self.quality_func_kwargs))
 
-            scores_expl_model_randomised_scores = [None for _ in x_batch]
+            scores_expl_model_randomised_scores = []
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -380,7 +387,6 @@ class eMPRT(Metric):
                     np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
                     np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
 
-
             # Save scores_expl_model_randomised scores in a result dictionary.
             self.scores_expl_model_randomised[layer_name] = scores_expl_model_randomised_scores
 
@@ -404,7 +410,7 @@ class eMPRT(Metric):
 
         self.all_evaluation_scores.append(self.scores_expl_model_randomised)
 
-        return self.evaluation_scores
+        return self.all_evaluation_scores
 
     def evaluate_instance(
         self,
@@ -447,7 +453,7 @@ class eMPRT(Metric):
             a_perturbed = np.abs(a_perturbed)
 
         # Compute distance measure.
-        return self.quality_func(a=a_perturbed, x=x)
+        return self.quality_func(a=a_perturbed, x=x, **self.quality_func_kwargs)
 
     def custom_preprocess(
         self,

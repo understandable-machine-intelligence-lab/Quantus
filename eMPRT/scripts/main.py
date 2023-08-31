@@ -125,7 +125,7 @@ def plot_smpr_experiment(
         fig.savefig(kwargs.get("file_name", None))
     #plt.show()
 
-def plot_mptc_experiment(
+def plot_emprt_experiment(
     results,
     *args,
     **kwargs,
@@ -217,8 +217,8 @@ def main():
 @click.option("--smpr-n-perturbations", type=int, default=1, required=False)
 @click.option("--smpr-perturbation-noiselevel", type=float, default=0.1, required=False)
 @click.option("--smpr-n-randomizations", type=int, default=1, required=False)
-@click.option("--mptc-quality-func", type=str, default="entropy", required=False)
-@click.option("--mptc-nr-samples", type=int, default=10, required=False)
+@click.option("--emprt-quality-func", type=str, default="entropy", required=False)
+@click.option("--emprt-nr-samples", type=int, default=10, required=False)
 @click.option("--use-cpu", type=bool, default=False, required=False)
 @click.option("--batch-size", type=int, default=32, required=False)
 @click.option("--shuffle", type=bool, default=False, required=False)
@@ -240,8 +240,8 @@ def randomization(
         smpr_n_perturbations,
         smpr_perturbation_noiselevel,
         smpr_n_randomizations,
-        mptc_quality_func,
-        mptc_nr_samples,
+        emprt_quality_func,
+        emprt_nr_samples,
         use_cpu,
         batch_size,
         shuffle,
@@ -263,8 +263,6 @@ def randomization(
     # Use Wandb?
     if not use_wandb:
         os.environ["WANDB_MODE"] = "disabled"
-    else:
-        os.environ["WANDB_MODE"] = "enabled"
 
     # Set wandb key
     if wandb_key is not None:
@@ -288,8 +286,8 @@ def randomization(
             "smpr_n_perturbations": smpr_n_perturbations,
             "smpr_perturbation_noiselevel": smpr_perturbation_noiselevel,
             "smpr_n_randomizations": smpr_n_randomizations,
-            "mptc_quality_func": mptc_quality_func,
-            "mptc_nr_samples": mptc_nr_samples,
+            "emprt_quality_func": emprt_quality_func,
+            "emprt_nr_samples": emprt_nr_samples,
             "use_cpu": use_cpu,
             "batch_size": batch_size,
             "shuffle": shuffle,
@@ -325,7 +323,7 @@ def randomization(
     )
 
     print(f"Number of Samples in Dataset: {len(dataset.samples)}")
-    dataset.samples = dataset.samples[:32]
+    dataset.samples = dataset.samples[:1000]
     print(f"Reduced of Samples in Dataset: {len(dataset.samples)}")
 
     # Prepare dataloaders
@@ -363,12 +361,12 @@ def randomization(
                 display_progressbar = False,
             ),
         }
-    elif eval_metricname == "mptc":
+    elif eval_metricname == "emprt":
         metrics = {
-            f"MPTC": quantus.MPT_Complexity(
-                quality_func = QUALITY_FUNCTIONS[mptc_quality_func],
+            f"wMPRT": quantus.eMPRT(
+                quality_func = QUALITY_FUNCTIONS[emprt_quality_func],
                 layer_order = eval_layerorder,
-                nr_samples = mptc_nr_samples,
+                nr_samples = emprt_nr_samples,
                 seed = seed,
                 return_sample_entropy = False,
                 abs = True,
@@ -452,9 +450,9 @@ def randomization(
                         "mean-score": np.mean(scores),
                         "std-score": np.std(scores)
                     })
-    elif eval_metricname == "mptc":
+    elif eval_metricname == "emprt":
         for metric, m_results in results.items():
-            plot_mptc_experiment(
+            plot_emprt_experiment(
                 m_results,
                 quality_func = "Entropy",
                 file_name = os.path.join(save_path, f"{metric}.svg")

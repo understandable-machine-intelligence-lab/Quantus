@@ -11,4 +11,4 @@ from quantus.metrics.randomisation.random_logit import RandomLogit
 
 from quantus.metrics.randomisation.sampling_model_parameter_randomisation import ModelParameterRandomisationSampling
 
-from quantus.metrics.randomisation.mpt_complexity import MPT_Complexity
+from quantus.metrics.randomisation.eMPRT import eMPRT

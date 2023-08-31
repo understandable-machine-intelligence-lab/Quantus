@@ -28,6 +28,7 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
     float:
         A floating point, raning [0, inf].
     """
+    assert (a >= 0).all(), "Entropy computation requires non-negative attributions"
 
     if len(x.shape) == 1:
         newshape = np.prod(x.shape)
@@ -37,7 +38,6 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
     a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
 
     return scipy.stats.entropy(pk=a)
-
 
 def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     """
@@ -50,12 +50,13 @@ def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     x: np.ndarray
         Array to compute shape.
     kwargs: optional
-            Keyword arguments.
+        Keyword arguments.
 
     Returns
     -------
     float:
         A floating point, ranging [0, 1].
+    
     """
 
     if len(x.shape) == 1:
@@ -70,3 +71,30 @@ def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
         a.shape[0] * np.sum(a)
     )
     return score
+
+def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
+    """
+    Calculate discrete entropy of explanations with n_bins equidistant spaced bins
+    Parameters
+    ----------
+    a: np.ndarray
+        Array to calculate entropy on.
+    x: np.ndarray
+        Array to compute shape.
+    kwargs: optional
+        Keyword arguments.
+
+        n_bins: int
+            Number of bins. default is 100.
+    
+    Returns
+    -------
+    float:
+        Discrete Entropy.
+    """
+
+    n_bins = kwargs.get("n_bins", 100)
+    
+    histogram, bins = np.histogram(a, bins=n_bins)
+
+    return scipy.stats.entropy(pk=histogram)

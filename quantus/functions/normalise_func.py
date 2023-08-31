@@ -50,6 +50,47 @@ def normalise_by_max(
     return a
 
 
+def normalise_and_shift_by_minmax(
+    a: np.ndarray,
+    normalise_axes: Optional[Sequence[int]] = None,
+) -> np.ndarray:
+    """
+    Shift attributions by subtracting the minimum and then normalise by the maximum
+    attribution is in [0, 1] afterwards.
+
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+        the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    a: np.ndarray
+         a normalised array.
+    """
+
+    # No normalisation if a is only zeros.
+    if np.all(a == 0.0):
+        return a
+
+    # Default normalise_axes.
+    if normalise_axes is None:
+        normalise_axes = list(range(np.ndim(a)))
+
+    # Cast Sequence to tuple so numpy accepts it.
+    normalise_axes = tuple(normalise_axes)
+
+    a_min = np.min(a, axis=normalise_axes, keepdims=True)
+    a = np.subtract(a, a_min)
+
+    a_max = np.max(a, axis=normalise_axes, keepdims=True)
+    a = np.divide(a, a_max)
+    return a
+
 def normalise_by_negative(
     a: np.ndarray,
     normalise_axes: Optional[Sequence[int]] = None,
