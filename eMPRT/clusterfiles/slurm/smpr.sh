@@ -20,7 +20,7 @@ seed="${10}"
 wandb_key="${11}"
 partition="${12}"
 
-SUBMIT_DIR=/data/cluster/users/lweber/smpr/gpu-cluster-results-2
+SUBMIT_DIR=/data/cluster/users/lweber/smpr/gpu-cluster-results-3
 mkdir -p ${SUBMIT_DIR}
 
 source "/etc/slurm/local_job_dir.sh"
