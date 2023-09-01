@@ -5,15 +5,16 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+import copy
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
-from cachetools import cachedmethod, LRUCache
-import operator
+import warnings
+import logging
 
 import numpy as np
 import torch
+from functools import lru_cache
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
@@ -54,42 +55,97 @@ class PyTorchModel(ModelInterface):
             model_predict_kwargs=model_predict_kwargs,
         )
         self.device = device
-        self.cache = LRUCache(100)
 
-    @property
-    def _last_layer_is_softmax(self) -> bool:
+    @lru_cache(maxsize=None)
+    def _get_last_softmax_layer_index(self) -> Optional[int]:
         """
-        Checks if the last layer is an instance of torch.nn.Softmax.
+        Returns the index of the last module of torch.nn.Softmax type in the list of model children.
+        If no softmax module is found, returns None.
         """
+        modules = list(self.model.modules())
+        for i in range(-1, -len(modules), -1):
+            if isinstance(modules[i], torch.nn.Softmax):
+                return i
+        return None
+
         last_layer = list(self.model.children())[-1]
         return isinstance(last_layer, torch.nn.Softmax)
 
-    @cachedmethod(operator.attrgetter("cache"))
+    @lru_cache(maxsize=None)
     def _get_model_with_linear_top(self) -> torch.nn:
         """
-        In a case model has a softmax on top, and we want linear,
-        we have to rebuild the model and replace top with linear activation.
-        Cache the rebuilt model and reuse it during consecutive predict calls.
+        In a case model has a softmax module, the last torch.nn.Softmax module in the self.model.modules() list is
+        replaced with torch.nn.Identity().
+        Iterates through named modules in reverse order (from the last to the first), for the first module of
+        torch.nn.Softmax type, the module's name is then used to replace the module with torch.nn.Identity() in
+        the original model's copy using setattr.
         """
-        if not self._last_layer_is_softmax:
-            return self.model
+        linear_model = copy.deepcopy(self.model)
 
-        return torch.nn.Sequential(*(list(self.model.children())[:-1]))
+        for named_module in list(linear_model.named_modules())[::-1]:
+            if isinstance(named_module[1], torch.nn.Softmax):
+                setattr(linear_model, named_module[0], torch.nn.Identity())
+
+                logging.info("Argument softmax=False passed, but the passed model contains a module of type "
+                             "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().", named_module[0])
+                break
+
+        return linear_model
 
     def get_softmax_arg_model(self) -> torch.nn:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation as the last layer and softmax=false,
         the layer is removed.
+            +----------------------------------------------+----------------+-------------------+
+            |                                              | softmax = true |  softmax = false  |
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax LAST in model.modules()     | Do softmax  (1)| Remove softmax (4)|
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax NOT LAST in model.modules() | Add softmax (2)| Do nothing     (5)|
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax NOT in model.modules()      | Add softmax (3)| Do nothing     (6)|
+            +----------------------------------------------+----------------+-------------------+
+
+        (cells numbers according to Case N comments in the method)
         """
 
-        if self._last_layer_is_softmax and self.softmax is False:
-            return self._get_model_with_linear_top()
+        # last_softmax is the index of the last module which is of softmax type in the list of model children
+        # or None if no softmax layer is found
+        last_softmax = self._get_last_softmax_layer_index()
 
-        if not self._last_layer_is_softmax and self.softmax is True:
-            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))
+        if self.softmax and last_softmax == -1:
+            return self.model  # Case 1
 
-        return self.model
+        if self.softmax and not last_softmax:
+            logging.info("Argument softmax=True passed, but the passed model contains no module of type "
+                         "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer.")
+            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 3
+
+        if not self.softmax and not last_softmax:
+            return self.model  # Case 6
+
+        warnings.warn(
+            "The combination of the value of the passed softmax argument and the passed model potentially requires "
+            "adjusting the model's modules. Make sure that the torch.nn.Softmax layer is the last module in the list "
+            "of model's children (self.model.modules()) if and only if it is the actual last module applied before"
+            "output."
+        )  # Warning for cases 2, 4, 5
+
+        if self.softmax and last_softmax != -1:
+            logging.info("Argument softmax=True passed. The passed model contains a module of type "
+                         "torch.nn.Softmax, but it is not the last in the list of model's children ("
+                         "self.model.modules()). torch.nn.Softmax module is added as the output layer."
+                         "Make sure that the torch.nn.Softmax layer is the last module in the list "
+                         "of model's children (self.model.modules()) if and only if it is the actual last module "
+                         "applied before output.")
+
+            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 2
+
+        if not self.softmax and last_softmax == -1:
+            return self._get_model_with_linear_top()  # Case 4
+
+        return self.model  # Case 5
 
     def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
         """
