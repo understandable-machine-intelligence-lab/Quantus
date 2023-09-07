@@ -56,7 +56,7 @@ def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     -------
     float:
         A floating point, ranging [0, 1].
-    
+
     """
 
     if len(x.shape) == 1:
@@ -86,7 +86,7 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
 
         n_bins: int
             Number of bins. default is 100.
-    
+
     Returns
     -------
     float:
@@ -94,7 +94,37 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
     """
 
     n_bins = kwargs.get("n_bins", 100)
-    
+
     histogram, bins = np.histogram(a, bins=n_bins)
 
     return scipy.stats.entropy(pk=histogram)
+
+def freedman_diaconis_rule(a):
+    # Freedman–Diaconis' choice.
+
+    iqr = np.percentile(a, 75) - np.percentile(a, 25)
+    bin_width = 2 * iqr / np.power(len(a), 1/3)
+
+    # Set a minimum value for bin_width to avoid division by very small numbers.
+    min_bin_width = 1e-6
+    bin_width = max(bin_width, min_bin_width)
+
+    n_bins = int((np.max(a) - np.min(a)) / bin_width)
+    n_bins = max(min(n_bins, 1000), 10)
+
+    return n_bins
+
+def scotts_rule(a):
+    # Scott's rule.
+
+    std = np.std(a)
+    n = len(a)
+
+    # Calculate bin width using Scott's rule.
+    bin_width = 3.5 * std / np.power(n, 1/3)
+
+    # Calculate number of bins based on bin width.
+    n_bins = int((np.max(a) - np.min(a)) / bin_width)
+    n_bins = max(min(n_bins, 1000), 10)
+
+    return n_bins
