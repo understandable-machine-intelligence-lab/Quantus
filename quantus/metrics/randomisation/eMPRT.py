@@ -24,6 +24,7 @@ import torch
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
+from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions import complexity_func
@@ -147,7 +148,7 @@ class eMPRT(Metric):
 
         # Save metric-specific attributes.
         if quality_func is None:
-            quality_func = complexity_func.gini_coefficient
+            quality_func = complexity_func.entropy
 
         if quality_func_kwargs is None:
             quality_func_kwargs = {}
@@ -295,9 +296,12 @@ class eMPRT(Metric):
         )
 
         # Initialise arrays.
+        self.scores_sensitivity = np.zeros((self.nr_samples))
+        self.scores_model_sensitivity = np.zeros((self.nr_samples))
         self.scores_expl_random = np.zeros((self.nr_samples))
         self.scores_expl_constant = np.zeros((self.nr_samples))
-        self.scores_expl_model_randomised = {} # np.zeros((self.n_layers, a_batch.shape[0]))
+        self.scores_expl_model_randomised = {}
+        self.scores_model = {}
 
         # Get model and data.
         model = data["model"]
@@ -316,7 +320,15 @@ class eMPRT(Metric):
         # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
         a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
         for a_ix, a_random in enumerate(a_batch_random):
-            self.scores_expl_random[a_ix] = self.quality_func(a=a_random, x=x_batch[0], **self.quality_func_kwargs)
+            score = self.evaluate_instance(
+                        model=model,
+                        x=x_batch[0],
+                        y=None,
+                        s=None,
+                        a=None,
+                        a_perturbed=a_random,
+                    )
+            self.scores_expl_random[a_ix] = score #self.quality_func(a=a_random, x=x_batch[0], **self.quality_func_kwargs)
 
         # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
         #a_batch_constant = np.zeros_like(*(self.nr_samples, *a_batch.shape[1:]))
@@ -347,8 +359,16 @@ class eMPRT(Metric):
                     )
                     self.scores_expl_model_randomised["orig"].append(score)
 
-            if self.return_sensitivity_score and (l_ix+1) < len(model_iterator):
-                continue
+                y_preds = model.predict(x_batch)
+
+                # Compute entropy of the output layer.
+                self.scores_model["orig"] = []
+                for y_ix, y_pred in enumerate(y_preds):
+                    score = complexity_func.entropy(a=y_pred, x=len(y_pred))
+                    self.scores_model["orig"].append(score)
+
+            #if self.return_sensitivity_score and (l_ix+1) < len(model_iterator):
+            #    continue
 
             scores_expl_model_randomised_scores = []
 
@@ -388,8 +408,25 @@ class eMPRT(Metric):
                     np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
                     np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
 
+            scores_model = []
+
+            # Use attribute value if not passed explicitly.
+            random_layer_model = utils.get_wrapped_model(
+                model=random_layer_model,
+                channel_first=channel_first,
+                softmax=softmax,
+                device=device,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+
+            y_preds = random_layer_model.predict(x_batch)
+            for y_ix, y_pred in enumerate(y_preds):
+                score = complexity_func.entropy(a=y_pred, x=len(y_pred))
+                scores_model.append(score)
+
             # Save scores_expl_model_randomised scores in a result dictionary.
             self.scores_expl_model_randomised[layer_name] = scores_expl_model_randomised_scores
+            self.scores_model[layer_name] = scores_model
 
         # Call post-processing.
         self.custom_postprocess(
@@ -404,11 +441,12 @@ class eMPRT(Metric):
             self.evaluation_scores = self.recompute_scores_per_sample()
 
         if self.return_sensitivity_score:
-            assert len(self.scores_expl_model_randomised) == 2, "..."
+            #assert len(self.scores_expl_model_randomised) == 2, "..."
             scores = list(self.scores_expl_model_randomised.values())
-            scores_orig = scores[0]
-            scores_rand = scores[1]
-            self.evaluation_scores = [b / a for a, b in zip(scores_orig, scores_rand)]
+            self.scores_sensitivity = [b / a for a, b in zip(scores[0], scores[-1])]
+
+            scores = list(self.scores_model.values())
+            self.scores_model_sensitivity = [b / a for a, b in zip(scores[0], scores[-1])]
 
         if self.return_aggregate:
             assert self.return_sample_quality, (
