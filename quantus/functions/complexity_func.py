@@ -99,11 +99,11 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
 
     return scipy.stats.entropy(pk=histogram)
 
-def freedman_diaconis_rule(a):
+def freedman_diaconis_rule(a: np.array) -> int:
     # Freedman–Diaconis' choice.
 
     iqr = np.percentile(a, 75) - np.percentile(a, 25)
-    bin_width = 2 * iqr / np.power(len(a), 1/3)
+    bin_width = 2 * iqr / np.power(len(a[0].ndim), 1/3) # Adapted this.
 
     # Set a minimum value for bin_width to avoid division by very small numbers.
     min_bin_width = 1e-6
@@ -114,7 +114,7 @@ def freedman_diaconis_rule(a):
 
     return n_bins
 
-def scotts_rule(a):
+def scotts_rule(a: np.array) -> int:
     # Scott's rule.
 
     std = np.std(a)

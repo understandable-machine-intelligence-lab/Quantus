@@ -63,15 +63,16 @@ class eMPRT(Metric):
 
     def __init__(
         self,
-        quality_func: Optional[Callable] = None,
-        quality_func_kwargs : Optional[dict] = None,
+        complexity_func: Optional[Callable] = None,
+        complexity_func_kwargs: Optional[dict] = None,
         layer_order: str = "bottom_up",
-        nr_samples: int = 10,
+        nr_samples: Optional[int] = None,
         seed: int = 42,
-        return_sensitivity_score: bool = False,
-        return_sample_quality: bool = False,
-        abs: bool = True,
-        normalise: bool = True,
+        return_delta: bool = False,
+        return_average_sample_score: bool = False,
+        skip_layers: bool = False,
+        abs: bool = False,
+        normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -92,7 +93,7 @@ class eMPRT(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_quality: boolean
+        return_average_sample_score: boolean
             Indicates whether return one float per sample, representing the average
             correlation coefficient across the layers for that sample.
         abs: boolean
@@ -147,23 +148,24 @@ class eMPRT(Metric):
             #torch.backends.cudnn.enabled = False
 
         # Save metric-specific attributes.
-        if quality_func is None:
-            quality_func = complexity_func.entropy
+        if complexity_func is None:
+            complexity_func = complexity_func.entropy
 
-        if quality_func_kwargs is None:
-            quality_func_kwargs = {}
+        if complexity_func_kwargs is None:
+            complexity_func_kwargs = {}
 
-        self.quality_func = quality_func
-        self.quality_func_kwargs = quality_func_kwargs
+        self.complexity_func = complexity_func
+        self.complexity_func_kwargs = complexity_func_kwargs
         self.layer_order = layer_order
         self.nr_samples = nr_samples
-        self.return_sensitivity_score = return_sensitivity_score
-        self.return_sample_quality = return_sample_quality
+        self.return_delta = return_delta
+        self.return_average_sample_score = return_average_sample_score
+        self.skip_layers = skip_layers
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.scores_expl_random = np.array([])
         self.scores_expl_constant = np.array([])
-        self.scores_expl_model_randomised = {}
+        self.explanation_scores = {}
 
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -296,12 +298,12 @@ class eMPRT(Metric):
         )
 
         # Initialise arrays.
-        self.scores_sensitivity = np.zeros((self.nr_samples))
-        self.scores_model_sensitivity = np.zeros((self.nr_samples))
+        self.scores_delta_explanation = np.zeros((self.nr_samples))
+        self.scores_delta_model = np.zeros((self.nr_samples))
         self.scores_expl_random = np.zeros((self.nr_samples))
         self.scores_expl_constant = np.zeros((self.nr_samples))
-        self.scores_expl_model_randomised = {}
-        self.scores_model = {}
+        self.explanation_scores = {}
+        self.model_scores = {}
 
         # Get model and data.
         model = data["model"]
@@ -317,23 +319,24 @@ class eMPRT(Metric):
             disable=not self.display_progressbar,
         )
 
-        # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
-        a_batch_random = np.random.rand(*(self.nr_samples, *a_batch.shape[1:]))
+        # Get the number of bins for discrete entropy calculation.
+        if isinstance(self.complexity_func, complexity_func.discrete_entropy) and "n_bins" not in self.complexity_func_kwargs:
+            self.get_number_of_bins(a=a_batch)
+
+        # Compute the explanation_scores given uniformly sampled explanation.
+        if self.nr_samples is None:
+            self.nr_samples = len(a_batch)
+
+        a_batch_random = np.random.uniform(*(self.nr_samples, *a_batch.shape[1:]), low=0, high=1)
         for a_ix, a_random in enumerate(a_batch_random):
             score = self.evaluate_instance(
                         model=model,
                         x=x_batch[0],
                         y=None,
                         s=None,
-                        a=None,
-                        a_perturbed=a_random,
+                        a=a_random,
                     )
-            self.scores_expl_random[a_ix] = score #self.quality_func(a=a_random, x=x_batch[0], **self.quality_func_kwargs)
-
-        # Compute the scores_expl_model_randomised of a uniformly sampled explanation.
-        #a_batch_constant = np.zeros_like(*(self.nr_samples, *a_batch.shape[1:]))
-        #for a_ix, a_batch_const in enumerate(a_batch_constant):
-        #    self.scores_expl_constant[a_ix] = self.quality_func(a=a_batch_const, x=x_batch[0], **self.quality_func_kwargs)
+            self.scores_expl_random[a_ix] = score
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
@@ -347,30 +350,30 @@ class eMPRT(Metric):
                     **self.explain_func_kwargs,
                 )
 
-                self.scores_expl_model_randomised["orig"] = []
+                self.explanation_scores["orig"] = []
                 for a_ix, a_ori in enumerate(a_batch_original):
                     score = self.evaluate_instance(
                         model=model,
                         x=x_batch[0],
                         y=None,
                         s=None,
-                        a=None,
-                        a_perturbed=a_ori,
+                        a=a_ori,
                     )
-                    self.scores_expl_model_randomised["orig"].append(score)
+                    self.explanation_scores["orig"].append(score)
 
                 y_preds = model.predict(x_batch)
 
                 # Compute entropy of the output layer.
-                self.scores_model["orig"] = []
+                self.model_scores["orig"] = []
                 for y_ix, y_pred in enumerate(y_preds):
                     score = complexity_func.entropy(a=y_pred, x=len(y_pred))
-                    self.scores_model["orig"].append(score)
+                    self.model_scores["orig"].append(score)
 
-            #if self.return_sensitivity_score and (l_ix+1) < len(model_iterator):
-            #    continue
+            # Skip layers if computing delta.
+            if self.skip_layers and self.return_delta and (l_ix+1) < len(model_iterator):
+                continue
 
-            scores_expl_model_randomised_scores = []
+            explanation_scores_scores = []
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -380,7 +383,7 @@ class eMPRT(Metric):
                 **self.explain_func_kwargs,
             )
 
-            # Get id for storage
+            # Get id for storing data.
             if attributions_path is not None:
                 savepath = os.path.join(attributions_path, f"{l_ix}-{layer_name}")
                 os.makedirs(savepath, exist_ok=True)
@@ -392,25 +395,27 @@ class eMPRT(Metric):
                             last_id = id
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
+            for instance_id, (a_ix, a_perturbed) in batch_iterator:
                 score = self.evaluate_instance(
                     model=random_layer_model,
                     x=x_batch[0],
                     y=None,
                     s=None,
-                    a=None,
-                    a_perturbed=a_instance_perturbed,
+                    a=a_perturbed,
                 )
-                scores_expl_model_randomised_scores.append(score)
+                explanation_scores_scores.append(score)
 
+                # Save data.
                 if attributions_path is not None:
                     np.save(os.path.join(savepath, f"input_{last_id+instance_id}.npy"), x_batch[instance_id])
-                    np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
-                    np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
+                    np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_ix)
+                    np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_perturbed)
 
-            scores_model = []
+            # Score the model complexity.
 
-            # Use attribute value if not passed explicitly.
+            model_scores = []
+
+            # Wrap the model.
             random_layer_model = utils.get_wrapped_model(
                 model=random_layer_model,
                 channel_first=channel_first,
@@ -419,14 +424,15 @@ class eMPRT(Metric):
                 model_predict_kwargs=model_predict_kwargs,
             )
 
+            # Predict and save scores.
             y_preds = random_layer_model.predict(x_batch)
             for y_ix, y_pred in enumerate(y_preds):
                 score = complexity_func.entropy(a=y_pred, x=len(y_pred))
-                scores_model.append(score)
+                model_scores.append(score)
 
-            # Save scores_expl_model_randomised scores in a result dictionary.
-            self.scores_expl_model_randomised[layer_name] = scores_expl_model_randomised_scores
-            self.scores_model[layer_name] = scores_model
+            # Save explanation_scores scores in a result dictionary.
+            self.explanation_scores[layer_name] = explanation_scores_scores
+            self.model_scores[layer_name] = model_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -437,24 +443,28 @@ class eMPRT(Metric):
             s_batch=s_batch,
         )
 
-        if self.return_sample_quality:
+        # If return one score per sample.
+        if self.return_average_sample_score:
             self.evaluation_scores = self.recompute_scores_per_sample()
 
-        if self.return_sensitivity_score:
-            #assert len(self.scores_expl_model_randomised) == 2, "..."
-            scores = list(self.scores_expl_model_randomised.values())
-            self.scores_sensitivity = [b / a for a, b in zip(scores[0], scores[-1])]
 
-            scores = list(self.scores_model.values())
-            self.scores_model_sensitivity = [b / a for a, b in zip(scores[0], scores[-1])]
+        # If return delta score per sample (model and explanations).
+        if self.return_delta:
+            scores = list(self.explanation_scores.values())
+            self.scores_delta_explanation = [b / a for a, b in zip(scores[0], scores[-1])]
 
+            scores = list(self.model_scores.values())
+            self.scores_delta_model = [b / a for a, b in zip(scores[0], scores[-1])]
+
+        # If return one aggregate score for all samples.
         if self.return_aggregate:
-            assert self.return_sample_quality, (
-                "You must set 'return_sample_quality' to True in order to compute the aggregate."
+            assert self.return_average_sample_score or self.return_delta, (
+                "You must set 'return_average_sample_score' or 'return_delta to True in order to compute the aggregate score."
             )
-            self.scores_expl_model_randomised = [self.aggregate_func(self.scores_expl_model_randomised)]
+            self.explanation_scores = [self.aggregate_func(self.explanation_scores)]
 
-        self.all_evaluation_scores.append(self.scores_expl_model_randomised)
+        # Return all_evaluation_scores according to Quantus.
+        self.all_evaluation_scores.append(self.explanation_scores)
 
         return self.all_evaluation_scores
 
@@ -465,7 +475,6 @@ class eMPRT(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -484,8 +493,6 @@ class eMPRT(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
 
         Returns
         -------
@@ -493,13 +500,13 @@ class eMPRT(Metric):
             The evaluation results.
         """
         if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+            a = self.normalise_func(a, **self.normalise_func_kwargs)
 
         if self.abs:
-            a_perturbed = np.abs(a_perturbed)
+            a = np.abs(a)
 
         # Compute distance measure.
-        return self.quality_func(a=a_perturbed, x=x, **self.quality_func_kwargs)
+        return self.complexity_func(a=a, x=x, **self.complexity_func_kwargs)
 
     def custom_preprocess(
         self,
@@ -558,3 +565,26 @@ class eMPRT(Metric):
         corr_coeffs = list(results.values())
 
         return corr_coeffs
+
+    def get_number_of_bins(self, a: np.array) -> None:
+
+        # Compute the number of bins.
+        if self.normalise:
+            a = self.normalise_func(a, **self.normalise_func_kwargs)
+
+        if self.abs:
+            a = np.abs(a)
+
+        rule: Optional[Callable] = None
+        if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
+            rule = complexity_func.freedman_diaconis_rule
+        elif self.complexity_func_kwargs["rule"] == "scott":
+            rule = complexity_func.scotts_rule
+        else:
+            print(f"No rule found, 'n_bins' set to {100}.")
+            self.complexity_func_kwargs["n_bins"] = 100
+            return None
+
+        # Get the number of bins for discrete entropy calculation.
+        self.complexity_func_kwargs["n_bins"] = rule(a=a)
+        print(f"Rule '{self.complexity_func_kwargs['rule']}', 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
