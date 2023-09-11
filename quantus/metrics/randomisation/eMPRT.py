@@ -27,8 +27,7 @@ from quantus.helpers import warn
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions import complexity_func
-#from quantus.functions.scores_func import *
+#from quantus.functions import complexity_func
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -149,7 +148,7 @@ class eMPRT(Metric):
 
         # Save metric-specific attributes.
         if complexity_func is None:
-            complexity_func = complexity_func.entropy
+            complexity_func = entropy
 
         if complexity_func_kwargs is None:
             complexity_func_kwargs = {}
@@ -161,11 +160,6 @@ class eMPRT(Metric):
         self.return_delta = return_delta
         self.return_average_sample_score = return_average_sample_score
         self.skip_layers = skip_layers
-
-        # Results are returned/saved as a dictionary not like in the super-class as a list.
-        self.scores_expl_random = np.array([])
-        self.scores_expl_constant = np.array([])
-        self.explanation_scores = {}
 
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -297,14 +291,6 @@ class eMPRT(Metric):
             device=device,
         )
 
-        # Initialise arrays.
-        self.scores_delta_explanation = np.zeros((self.nr_samples))
-        self.scores_delta_model = np.zeros((self.nr_samples))
-        self.scores_expl_random = np.zeros((self.nr_samples))
-        self.scores_expl_constant = np.zeros((self.nr_samples))
-        self.explanation_scores = {}
-        self.model_scores = {}
-
         # Get model and data.
         model = data["model"]
         x_batch = data["x_batch"]
@@ -320,14 +306,24 @@ class eMPRT(Metric):
         )
 
         # Get the number of bins for discrete entropy calculation.
-        if isinstance(self.complexity_func, complexity_func.discrete_entropy) and "n_bins" not in self.complexity_func_kwargs:
+        if "n_bins" not in self.complexity_func_kwargs:
             self.get_number_of_bins(a=a_batch)
+
 
         # Compute the explanation_scores given uniformly sampled explanation.
         if self.nr_samples is None:
             self.nr_samples = len(a_batch)
 
-        a_batch_random = np.random.uniform(*(self.nr_samples, *a_batch.shape[1:]), low=0, high=1)
+        # Initialise arrays.
+        self.delta_explanation_scores = np.zeros((self.nr_samples))
+        self.delta_model_scores = np.zeros((self.nr_samples))
+        self.explanation_random_scores = np.zeros((self.nr_samples))
+        self.scores_expl_constant = np.zeros((self.nr_samples))
+        self.explanation_scores = {}
+        self.model_scores = {}
+
+        a_batch_random = np.random.randn(*(self.nr_samples, *a_batch.shape[1:]))
+        #a_batch_random = np.random.uniform(*(self.nr_samples, *a_batch.shape[1:]), low=0, high=1)
         for a_ix, a_random in enumerate(a_batch_random):
             score = self.evaluate_instance(
                         model=model,
@@ -336,9 +332,10 @@ class eMPRT(Metric):
                         s=None,
                         a=a_random,
                     )
-            self.scores_expl_random[a_ix] = score
+            self.explanation_random_scores[a_ix] = score
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
+
 
             if l_ix == 0:
 
@@ -361,13 +358,15 @@ class eMPRT(Metric):
                     )
                     self.explanation_scores["orig"].append(score)
 
-                y_preds = model.predict(x_batch)
+
 
                 # Compute entropy of the output layer.
                 self.model_scores["orig"] = []
-                for y_ix, y_pred in enumerate(y_preds):
-                    score = complexity_func.entropy(a=y_pred, x=len(y_pred))
+                for y_ix, y_pred in enumerate(model.predict(x_batch)):
+                    score = entropy(a=y_pred, x=y_pred)
                     self.model_scores["orig"].append(score)
+
+
 
             # Skip layers if computing delta.
             if self.skip_layers and self.return_delta and (l_ix+1) < len(model_iterator):
@@ -412,7 +411,6 @@ class eMPRT(Metric):
                     np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_perturbed)
 
             # Score the model complexity.
-
             model_scores = []
 
             # Wrap the model.
@@ -427,7 +425,7 @@ class eMPRT(Metric):
             # Predict and save scores.
             y_preds = random_layer_model.predict(x_batch)
             for y_ix, y_pred in enumerate(y_preds):
-                score = complexity_func.entropy(a=y_pred, x=len(y_pred))
+                score = entropy(a=y_pred, x=y_pred)
                 model_scores.append(score)
 
             # Save explanation_scores scores in a result dictionary.
@@ -451,10 +449,10 @@ class eMPRT(Metric):
         # If return delta score per sample (model and explanations).
         if self.return_delta:
             scores = list(self.explanation_scores.values())
-            self.scores_delta_explanation = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.delta_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
             scores = list(self.model_scores.values())
-            self.scores_delta_model = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.delta_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
@@ -577,9 +575,9 @@ class eMPRT(Metric):
 
         rule: Optional[Callable] = None
         if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
-            rule = complexity_func.freedman_diaconis_rule
-        elif self.complexity_func_kwargs["rule"] == "scott":
-            rule = complexity_func.scotts_rule
+            rule = freedman_diaconis_rule
+        elif self.complexity_func_kwargs["rule"] == "scotts":
+            rule = scotts_rule
         else:
             print(f"No rule found, 'n_bins' set to {100}.")
             self.complexity_func_kwargs["n_bins"] = 100

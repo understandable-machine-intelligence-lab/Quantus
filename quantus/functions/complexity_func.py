@@ -35,9 +35,9 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
     else:
         newshape = np.prod(x.shape[1:])
 
-    a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
-
-    return scipy.stats.entropy(pk=a)
+    a_reshaped = np.reshape(a, int(newshape))
+    a_normalised = a_reshaped.astype(np.float64) / np.sum(np.abs(a_reshaped))
+    return scipy.stats.entropy(pk=a_normalised)
 
 def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     """
@@ -103,7 +103,7 @@ def freedman_diaconis_rule(a: np.array) -> int:
     # Freedman–Diaconis' choice.
 
     iqr = np.percentile(a, 75) - np.percentile(a, 25)
-    bin_width = 2 * iqr / np.power(len(a[0].ndim), 1/3) # Adapted this.
+    bin_width = 2 * iqr / np.power(a[0].ndim, 1/3) # Adapted this.
 
     # Set a minimum value for bin_width to avoid division by very small numbers.
     min_bin_width = 1e-6
