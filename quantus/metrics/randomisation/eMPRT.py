@@ -27,7 +27,7 @@ from quantus.helpers import warn
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions import complexity_func
+#from quantus.functions import complexity_func
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -314,8 +314,7 @@ class eMPRT(Metric):
 
         # Get the number of bins for discrete entropy calculation.
         if "n_bins" not in self.complexity_func_kwargs:
-            self.find_n_bins(a=a_batch)
-
+            self.find_n_bins(a_batch=a_batch)
 
         # Compute the explanation_scores given uniformly sampled explanation.
         if self.nr_samples is None:
@@ -368,7 +367,7 @@ class eMPRT(Metric):
                 # Compute entropy of the output layer.
                 self.model_scores["orig"] = []
                 for y_ix, y_pred in enumerate(model.predict(x_batch)):
-                    score = complexity_func.entropy(a=y_pred, x=y_pred)
+                    score = entropy(a=y_pred, x=y_pred)
                     self.model_scores["orig"].append(score)
 
             # Skip layers if computing delta.
@@ -429,7 +428,7 @@ class eMPRT(Metric):
             # Predict and save scores.
             y_preds = random_layer_model.predict(x_batch)
             for y_ix, y_pred in enumerate(y_preds):
-                score = complexity_func.entropy(a=y_pred, x=y_pred)
+                score = entropy(a=y_pred, x=y_pred)
                 model_scores.append(score)
 
             # Save explanation_scores scores in a result dictionary.
@@ -447,7 +446,7 @@ class eMPRT(Metric):
 
         # If return one score per sample.
         if self.return_average_sample_score:
-            self.evaluation_scores = self.recompute_average_correlation_per_sample()
+            self.evaluation_scores = self.recompute_average_complexity_per_sample()
 
         # If return correlation score (model and explanations)
         if self.return_correlation:
@@ -559,13 +558,13 @@ class eMPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.explanation_scores, dict), (
             "To compute the correlation between model and explanation per sample for "
-            "enhanced Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
             "must be of type dict."
         )
         layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+            self.explanation_scores[list(self.explanation_scores.keys())[0]]
         )
         explanation_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
         model_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
@@ -581,25 +580,25 @@ class eMPRT(Metric):
 
         return corr_coeffs
 
-    def recompute_average_correlation_per_sample(
+    def recompute_average_complexity_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.explanation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
             "must be of type dict."
         )
         layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+            self.explanation_scores[list(self.explanation_scores.keys())[0]]
         )
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.evaluation_scores:
+            for layer in self.explanation_scores:
                 if layer == "orig":
                     continue
-                results[sample].append(float(self.evaluation_scores[layer][sample]))
+                results[sample].append(float(self.explanation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
@@ -607,7 +606,7 @@ class eMPRT(Metric):
         return corr_coeffs
 
     def find_n_bins(self,
-                   a: np.array,
+                   a_batch: np.array,
                    max_n_bins: int = 200,
                    min_n_bins: int = 10,
                    debug: bool = True) -> None:
@@ -623,9 +622,9 @@ class eMPRT(Metric):
             print(f"Max and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
         rule: Optional[Callable] = None
         if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
-            rule = complexity_func.freedman_diaconis_rule
+            rule = freedman_diaconis_rule
         elif self.complexity_func_kwargs["rule"] == "scotts":
-            rule = complexity_func.scotts_rule
+            rule = scotts_rule
         else:
             if debug:
                 print(f"No rule found, 'n_bins' set to {100}.")
