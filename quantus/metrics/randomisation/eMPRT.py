@@ -610,8 +610,8 @@ class eMPRT(Metric):
 
     def find_n_bins(self,
                    a_batch: np.array,
-                   max_n_bins: int = 200,
                    min_n_bins: int = 10,
+                   max_n_bins: int = 200,
                    debug: bool = True) -> None:
 
         # Compute the number of bins.
@@ -645,4 +645,4 @@ class eMPRT(Metric):
         self.complexity_func_kwargs["n_bins"] = n_bins
 
         if debug:
-            print(f"\tWith min={min_n_bins} and max={min_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
+            print(f"\tWith min={min_n_bins} and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
