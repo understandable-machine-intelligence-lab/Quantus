@@ -67,8 +67,9 @@ class eMPRT(Metric):
         layer_order: str = "bottom_up",
         nr_samples: Optional[int] = None,
         seed: int = 42,
-        return_delta: bool = True,
-        return_correlation: bool = True,
+        compute_delta: bool = True,
+        compute_correlation: bool = True,
+        return_delta: bool = False,
         return_average_sample_score: bool = False,
         skip_layers: bool = False,
         similarity_func: Optional[Callable] = None,
@@ -163,8 +164,8 @@ class eMPRT(Metric):
         self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.nr_samples = nr_samples
-        self.return_delta = return_delta
-        self.return_correlation = return_correlation
+        self.compute_delta = compute_delta
+        self.compute_correlation = compute_correlation
         self.return_average_sample_score = return_average_sample_score
         self.skip_layers = skip_layers
 
@@ -371,7 +372,7 @@ class eMPRT(Metric):
                     self.model_scores["orig"].append(score)
 
             # Skip layers if computing delta.
-            if self.skip_layers and self.return_delta and (l_ix+1) < len(model_iterator):
+            if self.skip_layers and self.compute_delta and (l_ix+1) < len(model_iterator):
                 continue
 
             # Score explanation complexity.
@@ -449,11 +450,11 @@ class eMPRT(Metric):
             self.evaluation_scores = self.recompute_average_complexity_per_sample()
 
         # If return correlation score (model and explanations)
-        if self.return_correlation:
+        if self.compute_correlation:
             self.correlation_scores = self.recompute_model_explanation_correlation_per_sample()
 
         # If return delta score per sample (model and explanations).
-        if self.return_delta:
+        if self.compute_delta:
 
             # Compute deltas for explanation scores.
             scores = list(self.explanation_scores.values())
@@ -468,8 +469,8 @@ class eMPRT(Metric):
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
-            assert self.return_average_sample_score or self.return_delta, (
-                "You must set 'return_average_sample_score' or 'return_delta to True in order to compute the aggregate score."
+            assert self.return_average_sample_score or self.compute_delta, (
+                "You must set 'return_average_sample_score' or 'compute_delta to True in order to compute the aggregate score."
             )
             self.explanation_scores = [self.aggregate_func(self.explanation_scores)]
 
@@ -620,6 +621,7 @@ class eMPRT(Metric):
 
         if debug:
             print(f"Max and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
+
         rule: Optional[Callable] = None
         if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
             rule = freedman_diaconis_rule
