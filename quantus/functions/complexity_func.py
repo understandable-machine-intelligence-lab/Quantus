@@ -99,32 +99,32 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
 
     return scipy.stats.entropy(pk=histogram)
 
-def freedman_diaconis_rule(a: np.array) -> int:
-    # Freedman–Diaconis' choice.
+def freedman_diaconis_rule(a_batch: np.array) -> int:
+    """Freedman–Diaconis' rule."""
 
-    iqr = np.percentile(a, 75) - np.percentile(a, 25)
-    bin_width = 2 * iqr / np.power(a[0].ndim, 1/3) # Adapted this.
+    iqr = np.percentile(a_batch, 75) - np.percentile(a_batch, 25)
+    n = a_batch[0].ndim # Adapted this (fr. len(a_batch))
+    bin_width = 2 * iqr / np.power(n, 1/3)
 
     # Set a minimum value for bin_width to avoid division by very small numbers.
     min_bin_width = 1e-6
     bin_width = max(bin_width, min_bin_width)
 
-    n_bins = int((np.max(a) - np.min(a)) / bin_width)
-    n_bins = max(min(n_bins, 1000), 10)
+    # Calculate number of bins based on bin width.
+    n_bins = int((np.max(a_batch) - np.min(a_batch)) / bin_width)
 
     return n_bins
 
-def scotts_rule(a: np.array) -> int:
-    # Scott's rule.
+def scotts_rule(a_batch: np.array) -> int:
+    """Scott's rule."""
 
-    std = np.std(a)
-    n = len(a)
+    std = np.std(a_batch)
+    n = a_batch[0].ndim # Adapted this (fr. len(a_batch))
 
     # Calculate bin width using Scott's rule.
     bin_width = 3.5 * std / np.power(n, 1/3)
 
     # Calculate number of bins based on bin width.
-    n_bins = int((np.max(a) - np.min(a)) / bin_width)
-    n_bins = max(min(n_bins, 1000), 10)
+    n_bins = int((np.max(a) - np.min(a_batch)) / bin_width)
 
     return n_bins

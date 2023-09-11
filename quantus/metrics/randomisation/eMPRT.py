@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Sensitivity metric."""
+"""This module contains the implementation of the enhanced Model Parameter Randomisation Test metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -44,7 +44,7 @@ class eMPRT(Metric):
     INSERT DESC.
 
     References:
-        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
+        1) INSERT SOURCE
 
     Attributes:
         -  _name: The name of the metric.
@@ -54,10 +54,10 @@ class eMPRT(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Model Parameter Randomisation"
+    name = "enhanced Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
+    score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.RANDOMISATION
 
     def __init__(
@@ -67,9 +67,11 @@ class eMPRT(Metric):
         layer_order: str = "bottom_up",
         nr_samples: Optional[int] = None,
         seed: int = 42,
-        return_delta: bool = False,
+        return_delta: bool = True,
+        return_correlation: bool = True,
         return_average_sample_score: bool = False,
         skip_layers: bool = False,
+        similarity_func: Optional[Callable] = None
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -133,7 +135,7 @@ class eMPRT(Metric):
             **kwargs,
         )
 
-        # Set seed for reproducibility
+        # Set seed for reproducibility.
         if seed is not None:
             torch.manual_seed(seed)
             torch.cuda.manual_seed(seed)
@@ -153,11 +155,16 @@ class eMPRT(Metric):
         if complexity_func_kwargs is None:
             complexity_func_kwargs = {}
 
+        if similarity_func is None:
+            similarity_func = quantus.correlation_spearman
+
         self.complexity_func = complexity_func
         self.complexity_func_kwargs = complexity_func_kwargs
+        self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.return_delta = return_delta
+        self.return_correlation = return_correlation
         self.return_average_sample_score = return_average_sample_score
         self.skip_layers = skip_layers
 
@@ -307,7 +314,7 @@ class eMPRT(Metric):
 
         # Get the number of bins for discrete entropy calculation.
         if "n_bins" not in self.complexity_func_kwargs:
-            self.get_number_of_bins(a=a_batch)
+            self.find_n_bins(a=a_batch)
 
 
         # Compute the explanation_scores given uniformly sampled explanation.
@@ -318,7 +325,7 @@ class eMPRT(Metric):
         self.delta_explanation_scores = np.zeros((self.nr_samples))
         self.delta_model_scores = np.zeros((self.nr_samples))
         self.explanation_random_scores = np.zeros((self.nr_samples))
-        self.scores_expl_constant = np.zeros((self.nr_samples))
+        self.correlation_scores = np.zeros((self.nr_samples))
         self.explanation_scores = {}
         self.model_scores = {}
 
@@ -366,12 +373,11 @@ class eMPRT(Metric):
                     score = entropy(a=y_pred, x=y_pred)
                     self.model_scores["orig"].append(score)
 
-
-
             # Skip layers if computing delta.
             if self.skip_layers and self.return_delta and (l_ix+1) < len(model_iterator):
                 continue
 
+            # Score explanation complexity.
             explanation_scores_scores = []
 
             # Generate an explanation with perturbed model.
@@ -443,16 +449,25 @@ class eMPRT(Metric):
 
         # If return one score per sample.
         if self.return_average_sample_score:
-            self.evaluation_scores = self.recompute_scores_per_sample()
+            self.evaluation_scores = self.recompute_average_correlation_per_sample()
 
+        # If return correlation score (model and explanations)
+        if self.return_correlation:
+            self.correlation_scores = self.recompute_model_explanation_correlation_per_sample()
 
         # If return delta score per sample (model and explanations).
         if self.return_delta:
+
+            # Compute deltas for explanation scores.
             scores = list(self.explanation_scores.values())
             self.delta_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
+            # Compute deltas for model scores.
             scores = list(self.model_scores.values())
             self.delta_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+
+            # Set delta scores as the final output.
+            self.explanation_scores = self.delta_explanation_scores
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
@@ -539,15 +554,42 @@ class eMPRT(Metric):
         """
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
+
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def recompute_scores_per_sample(
+    def recompute_model_explanation_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.evaluation_scores, dict), (
+            "To compute the correlation between model and explanation per sample for "
+            "enhanced Model Parameter Randomisation Test, 'last_result' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+        )
+        explanation_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+        model_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in results:
+            for layer in self.explanation_scores:
+                explanation_scores[sample].append(float(self.explanation_scores[layer][sample]))
+                model_scores[sample].append(float(self.model_scores[layer][sample]))
+
+        corr_coeffs = []
+        for sample in results:
+            corr_coeffs.append(self.similarity_func(model_scores[sample], explanation_scores[sample]))
+
+        return corr_coeffs
+
+    def recompute_average_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
         layer_length = len(
@@ -557,6 +599,8 @@ class eMPRT(Metric):
 
         for sample in results:
             for layer in self.evaluation_scores:
+                if layer == "orig":
+                    continue
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
@@ -564,25 +608,40 @@ class eMPRT(Metric):
 
         return corr_coeffs
 
-    def get_number_of_bins(self, a: np.array) -> None:
+    def find_n_bins(self,
+                   a: np.array,
+                   max_n_bins: int = 200,
+                   min_n_bins: int = 10,
+                   debug: bool = True) -> None:
 
         # Compute the number of bins.
         if self.normalise:
-            a = self.normalise_func(a, **self.normalise_func_kwargs)
+            a_batch = self.normalise_func(a, **self.normalise_func_kwargs)
 
         if self.abs:
-            a = np.abs(a)
+            a_batch = np.abs(a_batch)
 
+        if debug:
+            print(f"Max and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
         rule: Optional[Callable] = None
         if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
             rule = freedman_diaconis_rule
         elif self.complexity_func_kwargs["rule"] == "scotts":
             rule = scotts_rule
         else:
-            print(f"No rule found, 'n_bins' set to {100}.")
+            if debug:
+                print(f"No rule found, 'n_bins' set to {100}.")
             self.complexity_func_kwargs["n_bins"] = 100
             return None
 
         # Get the number of bins for discrete entropy calculation.
-        self.complexity_func_kwargs["n_bins"] = rule(a=a)
-        print(f"Rule '{self.complexity_func_kwargs['rule']}', 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
+        n_bins = rule(a_batch=a_batch)
+
+        if debug:
+            print(f"Rule '{self.complexity_func_kwargs['rule']}', n_bins={n_bins}.")
+
+        n_bins = max(min(n_bins, max_n_bins), min_n_bins)
+        self.complexity_func_kwargs["n_bins"] = n_bins
+
+        if debug:
+            print(f"With min={min_n_bins} and max={min_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")

@@ -56,7 +56,7 @@ AVAILABLE_METRICS = {
         "Effective Complexity": EffectiveComplexity,
     },
     "Randomisation": {
-        "Model Parameter Randomisation": ModelParameterRandomisation,
+        "Model Parameter Randomisation Test": ModelParameterRandomisation,
         "Random Logit": RandomLogit,
     },
     "Axiomatic": {

@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Sensitivity metric."""
+"""This module contains the implementation of the Model Parameter Randomisation Test metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -36,7 +36,7 @@ from quantus.helpers.enums import (
 
 class ModelParameterRandomisation(Metric):
     """
-    Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
+    Implementation of the Model Parameter Randomisation Test by Adebayo et. al., 2018.
 
     The Model Parameter Randomization measures the distance between the original attribution and a newly computed
     attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
@@ -57,7 +57,7 @@ class ModelParameterRandomisation(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Model Parameter Randomisation"
+    name = "Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -69,6 +69,8 @@ class ModelParameterRandomisation(Metric):
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
+        return_last_correlation: bool = False,
+        skip_layers: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -139,6 +141,11 @@ class ModelParameterRandomisation(Metric):
         self.layer_order = layer_order
         self.seed = seed
         self.return_sample_correlation = return_sample_correlation
+        self.return_last_correlation = return_last_correlation
+        self.skip_layers = skip_layers
+
+        if self.return_sample_correlation and self.return_last_correlation:
+            raise ValueError(f"Both 'return_sample_correlation' and 'return_last_correlation' cannot be True. Pick one.")
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.evaluation_scores = {}
@@ -288,9 +295,36 @@ class ModelParameterRandomisation(Metric):
             disable=not self.display_progressbar,
         )
 
-        for layer_name, random_layer_model in model_iterator:
+        for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
             similarity_scores = [None for _ in x_batch]
+
+            # Save correlation scores of no perturbation.
+            if l_ix == 0:
+
+                # Generate an explanation with perturbed model.
+                a_batch_original = self.explain_func(
+                    model=model.get_model(),
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **self.explain_func_kwargs,
+                )
+
+                for instance_id, a_ori in enumerate(a_batch_original):
+                    score = self.evaluate_instance(
+                        model=model,
+                        x=None,
+                        y=None,
+                        s=None,
+                        a=a_instance,
+                        a_perturbed=a_ori,
+                    )
+                    similarity_scores[instance_id] = score
+                self.evaluation_scores["orig"] = similarity_scores[instance_id]
+
+            # Skip layers if computing delta.
+            if self.skip_layers and (l_ix + 1) < len(model_iterator):
+                continue
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -302,7 +336,7 @@ class ModelParameterRandomisation(Metric):
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.evaluate_instance(
+                score = self.evaluate_instance(
                     model=random_layer_model,
                     x=None,
                     y=None,
@@ -310,7 +344,7 @@ class ModelParameterRandomisation(Metric):
                     a=a_instance,
                     a_perturbed=a_instance_perturbed,
                 )
-                similarity_scores[instance_id] = result
+                similarity_scores[instance_id] = score
 
             # Save similarity scores in a result dictionary.
             self.evaluation_scores[layer_name] = similarity_scores
@@ -326,6 +360,9 @@ class ModelParameterRandomisation(Metric):
 
         if self.return_sample_correlation:
             self.evaluation_scores = self.compute_correlation_per_sample()
+
+        elif self.return_last_correlation:
+            self.evaluation_scores = self.compute_last_correlation_per_sample()
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -432,9 +469,25 @@ class ModelParameterRandomisation(Metric):
 
         for sample in results:
             for layer in self.evaluation_scores:
+                if layer == "orig":
+                    continue
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
+
+        return corr_coeffs
+
+
+    def compute_last_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.evaluation_scores, dict), (
+            "To compute the last correlation coefficient per sample for "
+            "Model Parameter Randomisation Test, 'last_result' "
+            "must be of type dict."
+        )
+        corr_coeffs = list(self.evaluation_scores.values())[-1]
 
         return corr_coeffs
