@@ -125,6 +125,6 @@ def scotts_rule(a_batch: np.array) -> int:
     bin_width = 3.5 * std / np.power(n, 1/3)
 
     # Calculate number of bins based on bin width.
-    n_bins = int((np.max(a) - np.min(a_batch)) / bin_width)
+    n_bins = int((np.max(a_batch) - np.min(a_batch)) / bin_width)
 
     return n_bins
