@@ -167,6 +167,7 @@ class eMPRT(Metric):
         self.compute_delta = compute_delta
         self.compute_correlation = compute_correlation
         self.return_average_sample_score = return_average_sample_score
+        self.return_delta = return_delta
         self.skip_layers = skip_layers
 
         # Asserts and warnings.
@@ -445,15 +446,11 @@ class eMPRT(Metric):
             s_batch=s_batch,
         )
 
-        # If return one score per sample.
-        if self.return_average_sample_score:
-            self.evaluation_scores = self.recompute_average_complexity_per_sample()
-
-        # If return correlation score (model and explanations)
+        # If compute correlation score (model and explanations)
         if self.compute_correlation:
             self.correlation_scores = self.recompute_model_explanation_correlation_per_sample()
 
-        # If return delta score per sample (model and explanations).
+        # If compute delta score per sample (model and explanations).
         if self.compute_delta:
 
             # Compute deltas for explanation scores.
@@ -464,7 +461,12 @@ class eMPRT(Metric):
             scores = list(self.model_scores.values())
             self.delta_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
-            # Set delta scores as the final output.
+        # If return one score per sample.
+        if self.return_average_sample_score:
+            self.evaluation_scores = self.recompute_average_complexity_per_sample()
+
+        # If return delta score per sample.
+        if self.return_delta:
             self.explanation_scores = self.delta_explanation_scores
 
         # If return one aggregate score for all samples.
@@ -620,7 +622,7 @@ class eMPRT(Metric):
             a_batch = np.abs(a_batch)
 
         if debug:
-            print(f"Max and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
+            print(f"\tMax and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
 
         rule: Optional[Callable] = None
         if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
@@ -629,7 +631,7 @@ class eMPRT(Metric):
             rule = scotts_rule
         else:
             if debug:
-                print(f"No rule found, 'n_bins' set to {100}.")
+                print(f"\tNo rule found, 'n_bins' set to {100}.")
             self.complexity_func_kwargs["n_bins"] = 100
             return None
 
@@ -637,10 +639,10 @@ class eMPRT(Metric):
         n_bins = rule(a_batch=a_batch)
 
         if debug:
-            print(f"Rule '{self.complexity_func_kwargs['rule']}', n_bins={n_bins}.")
+            print(f"\tRule '{self.complexity_func_kwargs['rule']}', n_bins={n_bins}.")
 
         n_bins = max(min(n_bins, max_n_bins), min_n_bins)
         self.complexity_func_kwargs["n_bins"] = n_bins
 
         if debug:
-            print(f"With min={min_n_bins} and max={min_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
+            print(f"\tWith min={min_n_bins} and max={min_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
