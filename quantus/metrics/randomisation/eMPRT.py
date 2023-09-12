@@ -36,6 +36,14 @@ from quantus.helpers.enums import (
     EvaluationCategory,
 )
 
+# The existing rules.
+RULES_N_BINS = {
+            "freedman_diaconis": freedman_diaconis_rule,
+            "scotts": scotts_rule,
+            "square_root": square_root_choice,
+            "sturges_formula": sturges_formula,
+            "rice": rice_rule
+        }
 
 class eMPRT(Metric):
     """
@@ -318,7 +326,8 @@ class eMPRT(Metric):
         if "n_bins" not in self.complexity_func_kwargs:
             self.find_n_bins(a_batch=a_batch,
                              min_n_bins=self.complexity_func_kwargs.get("min_n_bins", 10),
-                             max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200))
+                             max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200),
+                             debug=self.complexity_func_kwargs.get("debug", False))
 
         # Compute the explanation_scores given uniformly sampled explanation.
         if self.nr_samples is None:
@@ -621,35 +630,26 @@ class eMPRT(Metric):
                    max_n_bins: int = 200,
                    debug: bool = True) -> None:
 
-        # Compute the number of bins.
         if self.normalise:
             a_batch = self.normalise_func(a, **self.normalise_func_kwargs)
-
         if self.abs:
             a_batch = np.abs(a_batch)
+
+        rule_name = self.complexity_func_kwargs.get("rule", None)
+        rule = RULES_N_BINS.get(rule_name)
 
         if debug:
             print(f"\tMax and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
 
-        rule: Optional[Callable] = None
-        if self.complexity_func_kwargs["rule"] == "freedman_diaconis":
-            rule = freedman_diaconis_rule
-        elif self.complexity_func_kwargs["rule"] == "scotts":
-            rule = scotts_rule
-        else:
-            if debug:
-                print(f"\tNo rule found, 'n_bins' set to {100}.")
+        if not rule:
             self.complexity_func_kwargs["n_bins"] = 100
+            if debug:
+                print(f"\tNo rule found, 'n_bins' set to 100.")
             return None
 
-        # Get the number of bins for discrete entropy calculation.
         n_bins = rule(a_batch=a_batch)
-
-        if debug:
-            print(f"\tRule '{self.complexity_func_kwargs['rule']}', n_bins={n_bins}.")
-
         n_bins = max(min(n_bins, max_n_bins), min_n_bins)
         self.complexity_func_kwargs["n_bins"] = n_bins
 
         if debug:
-            print(f"\tWith min={min_n_bins} and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
+            print(f"\tRule '{rule_name}' -> n_bins={n_bins} but with min={min_n_bins} and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")

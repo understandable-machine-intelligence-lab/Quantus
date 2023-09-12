@@ -103,7 +103,7 @@ def freedman_diaconis_rule(a_batch: np.array) -> int:
     """Freedman–Diaconis' rule."""
 
     iqr = np.percentile(a_batch, 75) - np.percentile(a_batch, 25)
-    n = a_batch[0].ndim # Adapted this (fr. len(a_batch))
+    n = a_batch[0].ndim
     bin_width = 2 * iqr / np.power(n, 1/3)
 
     # Set a minimum value for bin_width to avoid division by very small numbers.
@@ -119,12 +119,38 @@ def scotts_rule(a_batch: np.array) -> int:
     """Scott's rule."""
 
     std = np.std(a_batch)
-    n = a_batch[0].ndim # Adapted this (fr. len(a_batch))
+    n = a_batch[0].ndim
 
     # Calculate bin width using Scott's rule.
     bin_width = 3.5 * std / np.power(n, 1/3)
 
     # Calculate number of bins based on bin width.
     n_bins = int((np.max(a_batch) - np.min(a_batch)) / bin_width)
+
+    return n_bins
+
+import numpy as np
+
+def square_root_choice(a_batch: np.array) -> int:
+    """Square-root choice rule."""
+
+    n = a_batch[0].ndim
+    n_bins = int(np.sqrt(n))
+
+    return n_bins
+
+def sturges_formula(a_batch: np.array) -> int:
+    """Sturges' formula."""
+
+    n = a_batch[0].ndim
+    n_bins = int(np.log2(n) + 1)
+
+    return n_bins
+
+def rice_rule(a_batch: np.array) -> int:
+    """Rice Rule."""
+
+    n = a_batch[0].ndim
+    n_bins = int(2 * np.power(n, 1/3))
 
     return n_bins
