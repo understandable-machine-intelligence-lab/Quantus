@@ -129,8 +129,6 @@ def scotts_rule(a_batch: np.array) -> int:
 
     return n_bins
 
-import numpy as np
-
 def square_root_choice(a_batch: np.array) -> int:
     """Square-root choice rule."""
 
