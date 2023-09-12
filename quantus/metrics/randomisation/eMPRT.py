@@ -69,7 +69,7 @@ class eMPRT(Metric):
         seed: int = 42,
         compute_delta: bool = True,
         compute_correlation: bool = True,
-        return_delta: bool = False,
+        return_fraction: bool = False,
         return_average_sample_score: bool = False,
         skip_layers: bool = False,
         similarity_func: Optional[Callable] = None,
@@ -167,7 +167,7 @@ class eMPRT(Metric):
         self.compute_delta = compute_delta
         self.compute_correlation = compute_correlation
         self.return_average_sample_score = return_average_sample_score
-        self.return_delta = return_delta
+        self.return_fraction = return_fraction
         self.skip_layers = skip_layers
 
         # Asserts and warnings.
@@ -316,7 +316,9 @@ class eMPRT(Metric):
 
         # Get the number of bins for discrete entropy calculation.
         if "n_bins" not in self.complexity_func_kwargs:
-            self.find_n_bins(a_batch=a_batch)
+            self.find_n_bins(a_batch=a_batch,
+                             min_n_bins=self.complexity_func_kwargs.get("min_n_bins", 10),
+                             max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200))
 
         # Compute the explanation_scores given uniformly sampled explanation.
         if self.nr_samples is None:
@@ -325,6 +327,7 @@ class eMPRT(Metric):
         # Initialise arrays.
         self.delta_explanation_scores = np.zeros((self.nr_samples))
         self.delta_model_scores = np.zeros((self.nr_samples))
+        self.fraction_explanation_scores = np.zeros((self.nr_samples))
         self.explanation_random_scores = np.zeros((self.nr_samples))
         self.correlation_scores = np.zeros((self.nr_samples))
         self.explanation_scores = {}
@@ -455,19 +458,23 @@ class eMPRT(Metric):
 
             # Compute deltas for explanation scores.
             scores = list(self.explanation_scores.values())
-            self.delta_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.delta_explanation_scores = [b - a for a, b in zip(scores[0], scores[-1])]
 
             # Compute deltas for model scores.
             scores = list(self.model_scores.values())
-            self.delta_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.delta_model_scores = [b - a for a, b in zip(scores[0], scores[-1])]
+
+            # Compute deltas for model scores.
+            scores = list(self.explanation_scores.values())
+            self.fraction_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
         # If return one score per sample.
         if self.return_average_sample_score:
             self.evaluation_scores = self.recompute_average_complexity_per_sample()
 
         # If return delta score per sample.
-        if self.return_delta:
-            self.explanation_scores = self.delta_explanation_scores
+        if self.return_fraction:
+            self.explanation_scores = self.fraction_explanation_scores
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
