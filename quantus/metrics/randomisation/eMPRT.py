@@ -76,9 +76,9 @@ class eMPRT(Metric):
         nr_samples: Optional[int] = None,
         seed: int = 42,
         compute_delta: bool = True,
-        compute_delta_skill_score: bool = True,
+        compute_delta_skill_scores: bool = True,
         compute_correlation: bool = True,
-        return_delta_skill_score: bool = True,
+        return_delta_skill_scores: bool = True,
         return_fraction: bool = False,
         return_average_sample_score: bool = False,
         skip_layers: bool = False,
@@ -175,11 +175,11 @@ class eMPRT(Metric):
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.compute_delta = compute_delta
-        self.compute_delta_skill_score = compute_delta_skill_score
+        self.compute_delta_skill_scores = compute_delta_skill_scores
         self.compute_correlation = compute_correlation
         self.return_average_sample_score = return_average_sample_score
         self.return_fraction = return_fraction
-        self.return_delta_skill_score = return_delta_skill_score
+        self.return_delta_skill_scores = return_delta_skill_scores
         self.skip_layers = skip_layers
 
         # Asserts and warnings.
@@ -342,7 +342,8 @@ class eMPRT(Metric):
         self.delta_explanation_scores = np.zeros((self.nr_samples))
         self.delta_model_scores = np.zeros((self.nr_samples))
         self.fraction_explanation_scores = np.zeros((self.nr_samples))
-        self.delta_skill_score = np.zeros((self.nr_samples))
+        self.fraction_model_scores = np.zeros((self.nr_samples))
+        self.delta_skill_scores = np.zeros((self.nr_samples))
         self.explanation_random_scores = np.zeros((self.nr_samples))
         self.correlation_scores = np.zeros((self.nr_samples))
         self.explanation_scores = {}
@@ -479,13 +480,17 @@ class eMPRT(Metric):
             scores = list(self.model_scores.values())
             self.delta_model_scores = [b - a for a, b in zip(scores[0], scores[-1])]
 
-            # Compute fraction deltas for model scores.
+            # Compute fraction for explanation scores.
             scores = list(self.explanation_scores.values())
             self.fraction_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
 
+            # Compute fraction for explanation scores.
+            scores = list(self.model_scores.values())
+            self.fraction_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+
         # If compute delta skill score per sample (model and explanations).
-        if self.compute_delta_skill_score:
-            self.delta_skill_score = [b / a for a, b in zip(self.delta_model_scores, self.delta_explanation_scores)]
+        if self.compute_delta_skill_scores:
+            self.delta_skill_scores = [b / a for a, b in zip(self.fraction_model_scores, self.fraction_explanation_scores)]
 
         # If return one score per sample.
         if self.return_average_sample_score:
@@ -496,8 +501,8 @@ class eMPRT(Metric):
             self.evaluation_scores = self.fraction_explanation_scores
 
         # If return delta score per sample.
-        if self.return_delta_skill_score:
-            self.evaluation_scores = self.delta_skill_score
+        if self.return_delta_skill_scores:
+            self.evaluation_scores = self.delta_skill_scores
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
