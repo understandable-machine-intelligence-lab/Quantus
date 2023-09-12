@@ -76,7 +76,9 @@ class eMPRT(Metric):
         nr_samples: Optional[int] = None,
         seed: int = 42,
         compute_delta: bool = True,
+        compute_delta_skill_score: bool = True,
         compute_correlation: bool = True,
+        return_delta_skill_score: bool = True,
         return_fraction: bool = False,
         return_average_sample_score: bool = False,
         skip_layers: bool = False,
@@ -173,9 +175,11 @@ class eMPRT(Metric):
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.compute_delta = compute_delta
+        self.compute_delta_skill_score = compute_delta_skill_score
         self.compute_correlation = compute_correlation
         self.return_average_sample_score = return_average_sample_score
         self.return_fraction = return_fraction
+        self.return_delta_skill_score = return_delta_skill_score
         self.skip_layers = skip_layers
 
         # Asserts and warnings.
@@ -325,6 +329,7 @@ class eMPRT(Metric):
         # Get the number of bins for discrete entropy calculation.
         if "n_bins" not in self.complexity_func_kwargs:
             self.find_n_bins(a_batch=a_batch,
+                             n_bins_default=self.complexity_func_kwargs.get("n_bins_default", 100),
                              min_n_bins=self.complexity_func_kwargs.get("min_n_bins", 10),
                              max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200),
                              debug=self.complexity_func_kwargs.get("debug", False))
@@ -337,6 +342,7 @@ class eMPRT(Metric):
         self.delta_explanation_scores = np.zeros((self.nr_samples))
         self.delta_model_scores = np.zeros((self.nr_samples))
         self.fraction_explanation_scores = np.zeros((self.nr_samples))
+        self.delta_skill_score = np.zeros((self.nr_samples))
         self.explanation_random_scores = np.zeros((self.nr_samples))
         self.correlation_scores = np.zeros((self.nr_samples))
         self.explanation_scores = {}
@@ -473,9 +479,13 @@ class eMPRT(Metric):
             scores = list(self.model_scores.values())
             self.delta_model_scores = [b - a for a, b in zip(scores[0], scores[-1])]
 
-            # Compute deltas for model scores.
+            # Compute fraction deltas for model scores.
             scores = list(self.explanation_scores.values())
             self.fraction_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+
+        # If compute delta skill score per sample (model and explanations).
+        if self.compute_delta_skill_score:
+            self.delta_skill_score = [b / a for a, b in zip(self.delta_model_scores, self.delta_explanation_scores)]
 
         # If return one score per sample.
         if self.return_average_sample_score:
@@ -483,17 +493,21 @@ class eMPRT(Metric):
 
         # If return delta score per sample.
         if self.return_fraction:
-            self.explanation_scores = self.fraction_explanation_scores
+            self.evaluation_scores = self.fraction_explanation_scores
+
+        # If return delta score per sample.
+        if self.return_delta_skill_score:
+            self.evaluation_scores = self.delta_skill_score
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
             assert self.return_average_sample_score or self.compute_delta, (
                 "You must set 'return_average_sample_score' or 'compute_delta to True in order to compute the aggregate score."
             )
-            self.explanation_scores = [self.aggregate_func(self.explanation_scores)]
+            self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
         # Return all_evaluation_scores according to Quantus.
-        self.all_evaluation_scores.append(self.explanation_scores)
+        self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.all_evaluation_scores
 
@@ -626,6 +640,7 @@ class eMPRT(Metric):
 
     def find_n_bins(self,
                    a_batch: np.array,
+                   n_bins_default: int = 100,
                    min_n_bins: int = 10,
                    max_n_bins: int = 200,
                    debug: bool = True) -> None:
@@ -642,7 +657,7 @@ class eMPRT(Metric):
             print(f"\tMax and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
 
         if not rule:
-            self.complexity_func_kwargs["n_bins"] = 100
+            self.complexity_func_kwargs["n_bins"] = n_bins_default
             if debug:
                 print(f"\tNo rule found, 'n_bins' set to 100.")
             return None
