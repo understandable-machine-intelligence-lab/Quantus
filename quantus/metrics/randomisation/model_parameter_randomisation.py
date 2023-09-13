@@ -34,7 +34,7 @@ from quantus.helpers.enums import (
 )
 
 
-class ModelParameterRandomisation(Metric):
+class MPRT(Metric):
     """
     Implementation of the Model Parameter Randomisation Test by Adebayo et. al., 2018.
 
@@ -310,7 +310,8 @@ class ModelParameterRandomisation(Metric):
                     **self.explain_func_kwargs,
                 )
 
-                for instance_id, a_ori in enumerate(a_batch_original):
+                batch_iterator = enumerate(zip(a_batch, a_batch_original))
+                for instance_id, (a_instance, a_ori) in batch_iterator:
                     score = self.evaluate_instance(
                         model=model,
                         x=None,
@@ -359,10 +360,10 @@ class ModelParameterRandomisation(Metric):
         )
 
         if self.return_sample_correlation:
-            self.evaluation_scores = self.compute_correlation_per_sample()
+            self.evaluation_scores = self.recompute_correlation_per_sample()
 
         elif self.return_last_correlation:
-            self.evaluation_scores = self.compute_last_correlation_per_sample()
+            self.evaluation_scores = self.recompute_last_correlation_per_sample()
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -453,13 +454,13 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def compute_correlation_per_sample(
+    def recompute_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
             "must be of type dict."
         )
         layer_length = len(
@@ -478,14 +479,13 @@ class ModelParameterRandomisation(Metric):
 
         return corr_coeffs
 
-
-    def compute_last_correlation_per_sample(
+    def recompute_last_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the last correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
             "must be of type dict."
         )
         corr_coeffs = list(self.evaluation_scores.values())[-1]
