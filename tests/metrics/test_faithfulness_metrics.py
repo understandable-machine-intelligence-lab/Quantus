@@ -270,7 +270,7 @@ def test_faithfulness_correlation(
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
-        a_batch = None
+        pytest.fail("Test")
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
