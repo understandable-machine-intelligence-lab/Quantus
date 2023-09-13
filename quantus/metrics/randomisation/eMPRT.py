@@ -197,19 +197,7 @@ class eMPRT(Metric):
                     self.return_last_complexity,
                     self.return_delta_explanation,
                     return_delta_explanation_vs_model
-                ]) == 1, "Only one 'return' argument should be set to True."
-
-        # If return one aggregate score for all samples.
-        if self.return_aggregate:
-            assert sum([self.return_fraction,
-                    self.return_average_sample_score,
-                    self.return_correlation,
-                    self.return_last_complexity,
-                    self.return_delta_explanation,
-                    return_delta_explanation_vs_model
-                ]) == 1, (
-                "You must set any of 'return' arguments to True in order to compute the aggregate score."
-            )
+                ]) == 1, "Set one of the possible 'return' arguments to True."
 
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
