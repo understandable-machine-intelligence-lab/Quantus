@@ -76,11 +76,15 @@ class eMPRT(Metric):
         nr_samples: Optional[int] = None,
         seed: int = 42,
         compute_delta: bool = True,
-        compute_delta_skill_scores: bool = True,
+        compute_delta_skill_score: bool = True,
         compute_correlation: bool = True,
-        return_delta_skill_scores: bool = True,
+        compute_last_complexity: bool = True,
+        return_delta_skill_score: bool = True,
         return_fraction: bool = False,
         return_average_sample_score: bool = False,
+        return_correlation: bool = False,
+        return_last_complexity: bool = False,
+        return_delta_explanation: bool = False,
         skip_layers: bool = False,
         similarity_func: Optional[Callable] = None,
         abs: bool = False,
@@ -175,11 +179,15 @@ class eMPRT(Metric):
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.compute_delta = compute_delta
-        self.compute_delta_skill_scores = compute_delta_skill_scores
+        self.compute_delta_skill_score = compute_delta_skill_score
         self.compute_correlation = compute_correlation
+        self.compute_last_complexity = compute_last_complexity
         self.return_average_sample_score = return_average_sample_score
         self.return_fraction = return_fraction
-        self.return_delta_skill_scores = return_delta_skill_scores
+        self.return_delta_skill_score = return_delta_skill_score
+        self.return_correlation = return_correlation
+        self.return_last_complexity = return_last_complexity
+        self.return_delta_explanation = return_delta_explanation
         self.skip_layers = skip_layers
 
         # Asserts and warnings.
@@ -469,6 +477,10 @@ class eMPRT(Metric):
         if self.compute_correlation:
             self.correlation_scores = self.recompute_model_explanation_correlation_per_sample()
 
+        # If compute the last complexity score.
+        if self.compute_last_complexity:
+            self.last_complexity_scores = self.recompute_last_correlation_per_sample()
+
         # If compute delta score per sample (model and explanations).
         if self.compute_delta:
 
@@ -482,27 +494,38 @@ class eMPRT(Metric):
 
             # Compute fraction for explanation scores.
             scores = list(self.explanation_scores.values())
-            self.fraction_explanation_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.fraction_explanation_scores = [b / a if a != 0 else np.nan for a, b in zip(scores[0], scores[-1])]
 
             # Compute fraction for explanation scores.
             scores = list(self.model_scores.values())
-            self.fraction_model_scores = [b / a for a, b in zip(scores[0], scores[-1])]
+            self.fraction_model_scores = [b / a if a != 0 else np.nan for a, b in zip(scores[0], scores[-1])]
 
         # If compute delta skill score per sample (model and explanations).
-        if self.compute_delta_skill_scores:
-            self.delta_skill_scores = [b / a for a, b in zip(self.fraction_model_scores, self.fraction_explanation_scores)]
+        if self.compute_delta_skill_score:
+            self.delta_skill_scores = [b / a if a != 0 else np.nan for a, b in zip(self.fraction_model_scores, self.fraction_explanation_scores)]
 
         # If return one score per sample.
         if self.return_average_sample_score:
             self.evaluation_scores = self.recompute_average_complexity_per_sample()
+
+        # If return
+        if self.return_delta_explanation:
+            self.evaluation_scores = self.delta_explanation_scores
 
         # If return delta score per sample.
         if self.return_fraction:
             self.evaluation_scores = self.fraction_explanation_scores
 
         # If return delta score per sample.
-        if self.return_delta_skill_scores:
+        if self.return_delta_skill_score:
             self.evaluation_scores = self.delta_skill_scores
+
+        # If return delta score per sample.
+        if self.return_correlation:
+            self.evaluation_scores = self.correlation_scores
+
+        if self.return_last_complexity:
+            self.evaluation_scores = self.last_complexity_scores
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
@@ -643,6 +666,20 @@ class eMPRT(Metric):
 
         return corr_coeffs
 
+    def recompute_last_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.explanation_scores, dict), (
+            "To compute the last correlation coefficient per sample for "
+            "Model Parameter Randomisation Test, 'explanation_scores' "
+            "must be of type dict."
+        )
+        corr_coeffs = list(self.explanation_scores.values())[-1]
+
+        return corr_coeffs
+
+
     def find_n_bins(self,
                    a_batch: np.array,
                    n_bins_default: int = 100,
@@ -673,3 +710,4 @@ class eMPRT(Metric):
 
         if debug:
             print(f"\tRule '{rule_name}' -> n_bins={n_bins} but with min={min_n_bins} and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}.")
+
