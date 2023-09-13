@@ -8,7 +8,7 @@ wandb_key="$3"
 counter=0
 for data in {imagenet,}; do
   for model in {vgg16,resnet18}; do
-    for xai_methodname in {gradient,lrp-epsilon,lrp-zplus,guided-backprop}; do
+    for xai_methodname in {grad-cam,gradient}; do #gradient,lrp-epsilon,lrp-zplus,guided-backprop
       for xai_n_noisedraws in {1,10,25,50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000}; do
         for xai_noiselevel in {0.1,}; do
           for eval_layer_order in {"bottom_up","top_down"}; do

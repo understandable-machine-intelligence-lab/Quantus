@@ -27,7 +27,7 @@ from quantus.helpers import warn
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-#from quantus.functions import complexity_func
+from quantus.functions import complexity_func
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -38,11 +38,11 @@ from quantus.helpers.enums import (
 
 # The existing rules.
 RULES_N_BINS = {
-            "freedman_diaconis": freedman_diaconis_rule,
-            "scotts": scotts_rule,
-            "square_root": square_root_choice,
-            "sturges_formula": sturges_formula,
-            "rice": rice_rule
+            "freedman_diaconis": complexity_func.freedman_diaconis_rule,
+            "scotts": complexity_func.scotts_rule,
+            "square_root": complexity_func.square_root_choice,
+            "sturges_formula": complexity_func.sturges_formula,
+            "rice": complexity_func.rice_rule
         }
 
 class eMPRT(Metric):
@@ -159,13 +159,13 @@ class eMPRT(Metric):
 
         # Save metric-specific attributes.
         if complexity_func is None:
-            complexity_func = entropy
+            complexity_func = complexity_func.discrete_entropy
 
         if complexity_func_kwargs is None:
             complexity_func_kwargs = {}
 
         if similarity_func is None:
-            similarity_func = quantus.correlation_spearman
+            similarity_func = similarity_func.correlation_spearman
 
         self.complexity_func = complexity_func
         self.complexity_func_kwargs = complexity_func_kwargs
@@ -356,7 +356,6 @@ class eMPRT(Metric):
 
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
-
             if l_ix == 0:
 
                 # Generate an explanation with perturbed model.
@@ -381,7 +380,7 @@ class eMPRT(Metric):
                 # Compute entropy of the output layer.
                 self.model_scores["orig"] = []
                 for y_ix, y_pred in enumerate(model.predict(x_batch)):
-                    score = entropy(a=y_pred, x=y_pred)
+                    score = self.complexity_func(a=y_pred, x=y_pred)
                     self.model_scores["orig"].append(score)
 
             # Skip layers if computing delta.
@@ -442,7 +441,7 @@ class eMPRT(Metric):
             # Predict and save scores.
             y_preds = random_layer_model.predict(x_batch)
             for y_ix, y_pred in enumerate(y_preds):
-                score = entropy(a=y_pred, x=y_pred)
+                score = self.complexity_func(a=y_pred, x=y_pred)
                 model_scores.append(score)
 
             # Save explanation_scores scores in a result dictionary.

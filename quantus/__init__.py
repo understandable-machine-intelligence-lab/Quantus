@@ -18,6 +18,7 @@ from quantus.functions import *
 from quantus.functions import complexity_func
 from quantus.functions import normalise_func
 
+
 # Expose quantus.<metric> to the user.
 from quantus.metrics import *
 

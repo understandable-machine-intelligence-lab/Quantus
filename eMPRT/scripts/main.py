@@ -30,6 +30,34 @@ from utils import arguments as argument_utils
 if not torch.cuda.is_available():
     sys.exit(77)
 
+def smoothexplain(model, inputs, targets, **kwargs):
+
+    xai_noiselevel = kwargs.pop("xai_noiselevel", 0.1)
+    xai_n_noisedraws = kwargs.pop("xai_n_noisedraws", 1)
+    
+    device = kwargs.get("device", None)
+    if not isinstance(inputs, torch.Tensor):
+        inputs = torch.Tensor(inputs).to(device)
+
+    if not isinstance(targets, torch.Tensor):
+        targets = torch.as_tensor(targets).to(device)
+
+    dims = tuple(range(1, inputs.ndim))
+    std = xai_noiselevel * (inputs.amax(dims, keepdim=True) - inputs.amin(dims, keepdim=True))
+
+    result = np.zeros(inputs.shape)
+    for n in range(xai_n_noisedraws):
+        # the last epsilon is defined as zero to compute the true output,
+        # and have SmoothGrad w/ n_iter = 1 === gradient
+        if n == xai_n_noisedraws - 1:
+            epsilon = torch.zeros_like(inputs)
+        else:
+            epsilon = torch.randn_like(inputs) * std
+        expl = quantus.explain(model, inputs + epsilon, targets, **kwargs)
+        result += expl / xai_n_noisedraws
+
+    return result
+
 XAI_METHODS = {
         "gradient": {
             "xai_lib": "zennit",
@@ -80,10 +108,14 @@ XAI_METHODS = {
             "canonizer_kwargs": {},
             "composite_kwargs": {},
         },
+        "grad-cam": {
+            "xai_lib": "captum",
+            "method_name": "LayerGradCam"
+        },
     }
 
 QUALITY_FUNCTIONS = {
-    "entropy": quantus.functions.complexity_func.entropy
+    "entropy": quantus.complexity_func.entropy
 }
 
 def plot_smpr_experiment(
@@ -363,7 +395,7 @@ def randomization(
         }
     elif eval_metricname == "emprt":
         metrics = {
-            f"wMPRT": quantus.eMPRT(
+            f"eMPRT": quantus.eMPRT(
                 quality_func = QUALITY_FUNCTIONS[emprt_quality_func],
                 layer_order = eval_layerorder,
                 nr_samples = emprt_nr_samples,
@@ -383,17 +415,32 @@ def randomization(
         metrics = {}
         raise ValueError("Please provide a valid eval_metricname")
 
-    xai_attributor_kwargs = {
-        "n_iter": xai_n_noisedraws,
-        "noise_level": xai_noiselevel
-    }
-    xai_canonizer = zutils.get_zennit_canonizer(model)
-    xai_methods = {xai_methodname: {
-        **XAI_METHODS[xai_methodname], 
-        "canonizer": xai_canonizer,
-        "attributor_kwargs": xai_attributor_kwargs,
-        "device": device,
-    }}
+    if xai_methodname is not "grad-cam":
+        xai_attributor_kwargs = {
+            "n_iter": xai_n_noisedraws,
+            "noise_level": xai_noiselevel
+        }
+        xai_canonizer = zutils.get_zennit_canonizer(model)
+        xai_methods = {xai_methodname: {
+            **XAI_METHODS[xai_methodname], 
+            "canonizer": xai_canonizer,
+            "attributor_kwargs": xai_attributor_kwargs,
+            "device": device,
+        }}
+        explain_func_kwargs = None
+    else:
+        gc_layer = eval("model.features[-2]") if model_name == "vgg16" else eval("list(model.named_modules())[61][1]")
+        xai_methods = {
+            xai_methodname: smoothexplain,
+        }                   
+        explain_func_kwargs = {
+            **XAI_METHODS[xai_methodname], 
+            "xai_n_noisedraws": xai_n_noisedraws,
+            "xai_noiselevel": xai_noiselevel,
+            "gc_layer": gc_layer,
+            "device": device,
+        }
+
 
     # Iterate over Batches and Evaluate
     results =  {m: {x: {} for x in xai_methods.keys()} for m in metrics.keys()} 
@@ -410,7 +457,7 @@ def randomization(
             s_batch = None,
             agg_func = lambda x: x,
             progress = True,
-            explain_func_kwargs = None,
+            explain_func_kwargs = explain_func_kwargs,
             attributions_path = os.path.join(save_path, "attributions"),
             call_kwargs = {"set1": {"device": device}},
         )

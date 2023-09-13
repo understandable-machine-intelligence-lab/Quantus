@@ -8,7 +8,7 @@ wandb_key="$3"
 counter=0
 for data in {imagenet,}; do
   for model in {vgg16,}; do
-    for xai_methodname in {gradient,}; do
+    for xai_methodname in {grad-cam,}; do
       for xai_n_noisedraws in {10,}; do
         for xai_noiselevel in {0.1,}; do
           for eval_layer_order in {"bottom_up",}; do

@@ -9,6 +9,6 @@ from quantus.metrics.randomisation.model_parameter_randomisation import (
 )
 from quantus.metrics.randomisation.random_logit import RandomLogit
 
-from quantus.metrics.randomisation.sampling_model_parameter_randomisation import ModelParameterRandomisationSampling
+from quantus.metrics.randomisation.sMPRT import ModelParameterRandomisationSampling
 
 from quantus.metrics.randomisation.eMPRT import eMPRT
