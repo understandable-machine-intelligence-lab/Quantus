@@ -18,6 +18,7 @@ From: pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
     "matplotlib>=3.3.4" \
     "torchvision>=0.14.0" \
     "zennit>=0.5.1" \
+    "captum>=0.6.0" \
     "cachetools" \
     "wandb" \
 

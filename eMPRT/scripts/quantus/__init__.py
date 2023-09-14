@@ -4,11 +4,29 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.randomisation.model_parameter_randomisation import (
-    MPRT,
-)
-from quantus.metrics.randomisation.random_logit import RandomLogit
+# Set the correct version.
+__version__ = "0.4.3"
 
-from quantus.metrics.randomisation.sMPRT import sMPRT
+# Expose quantus.evaluate to the user.
+from quantus.evaluation import evaluate
 
-from quantus.metrics.randomisation.eMPRT import eMPRT
+# Expose quantus.explain to the user.
+from quantus.functions.explanation_func import explain
+
+# Expose quantus.<function-class>.<function-name> to the user.
+from quantus.functions import *
+from quantus.functions import complexity_func
+from quantus.functions import normalise_func
+
+
+# Expose quantus.<metric> to the user.
+from quantus.metrics import *
+
+# Expose quantus.helpers.constants to the user.
+from quantus.helpers.constants import *
+
+# Expose the model interfaces.
+from quantus.helpers.model import *
+
+# Expose the helpers utils.
+from quantus.helpers.utils import *

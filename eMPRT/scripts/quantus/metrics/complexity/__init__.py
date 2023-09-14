@@ -4,11 +4,6 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.randomisation.model_parameter_randomisation import (
-    MPRT,
-)
-from quantus.metrics.randomisation.random_logit import RandomLogit
-
-from quantus.metrics.randomisation.sMPRT import sMPRT
-
-from quantus.metrics.randomisation.eMPRT import eMPRT
+from quantus.metrics.complexity.complexity import Complexity
+from quantus.metrics.complexity.effective_complexity import EffectiveComplexity
+from quantus.metrics.complexity.sparseness import Sparseness

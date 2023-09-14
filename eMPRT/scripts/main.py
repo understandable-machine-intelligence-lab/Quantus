@@ -53,70 +53,11 @@ def smoothexplain(model, inputs, targets, **kwargs):
             epsilon = torch.zeros_like(inputs)
         else:
             epsilon = torch.randn_like(inputs) * std
+            
         expl = quantus.explain(model, inputs + epsilon, targets, **kwargs)
         result += expl / xai_n_noisedraws
 
     return result
-
-XAI_METHODS = {
-        "gradient": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "canonizer": None,
-            "composite": None,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-        },
-        "smoothgrad": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "canonizer": None,
-            "composite": None,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-        },
-        "lrp-epsilon": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "composite": zutils.Epsilon,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {
-                "stabilizer": 1e-6,
-                "epsilon": 1e-6
-            },
-        },
-        "lrp-zplus": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "composite": zutils.ZPlus,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {
-                "stabilizer": 1e-6,
-            },
-        },
-        "guided-backprop": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "composite": zcomp.GuidedBackprop,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-        },
-        "excitation-backprop": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "composite": zcomp.ExcitationBackprop,
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-        },
-        "grad-cam": {
-            "xai_lib": "captum",
-            "method_name": "LayerGradCam"
-        },
-    }
-
-QUALITY_FUNCTIONS = {
-    "entropy": quantus.complexity_func.entropy
-}
 
 def plot_smpr_experiment(
     results,
@@ -243,22 +184,17 @@ def main():
 @click.argument("model-name", type=str, required=True)
 @click.argument("xai-methodname", type=str, required=True)
 @click.argument("eval-metricname", type=str, required=True)
+@click.option("--nr-test-samples", type=int, default=1000, required=False)
 @click.option("--xai-n-noisedraws", type=int, default=1, required=False)
 @click.option("--xai-noiselevel", type=float, default=0.0, required=False)
 @click.option("--eval-layerorder", type=str, default="bottom_up", required=False)
-@click.option("--smpr-n-perturbations", type=int, default=1, required=False)
-@click.option("--smpr-perturbation-noiselevel", type=float, default=0.1, required=False)
-@click.option("--smpr-n-randomizations", type=int, default=1, required=False)
-@click.option("--emprt-quality-func", type=str, default="entropy", required=False)
-@click.option("--emprt-nr-samples", type=int, default=10, required=False)
 @click.option("--use-cpu", type=bool, default=False, required=False)
 @click.option("--batch-size", type=int, default=32, required=False)
 @click.option("--shuffle", type=bool, default=False, required=False)
-@click.option("--seed", type=int, default=None, required=False)
 @click.option("--wandb-key", type=str, default="", required=False)
 @click.option("--wandb-projectname", type=str, default="", required=False)
 @click.option("--use-wandb", type=bool, default=True, required=False)
-def randomization(
+def evaluate_randomization(
         save_path,
         dataset_name,
         data_path,
@@ -266,18 +202,13 @@ def randomization(
         model_name,
         xai_methodname,
         eval_metricname,
+        nr_test_samples,
         xai_n_noisedraws,
         xai_noiselevel,
         eval_layerorder,
-        smpr_n_perturbations,
-        smpr_perturbation_noiselevel,
-        smpr_n_randomizations,
-        emprt_quality_func,
-        emprt_nr_samples,
         use_cpu,
         batch_size,
         shuffle,
-        seed,
         wandb_key,
         wandb_projectname,
         use_wandb
@@ -299,33 +230,6 @@ def randomization(
     # Set wandb key
     if wandb_key is not None:
         os.environ["WANDB_API_KEY"] = wandb_key
-
-    # Set up wandb
-    id = wandb.util.generate_id()
-    wandb.init(
-        id=id,
-        resume="allow",
-        project=wandb_projectname,
-        dir=wandbpath,
-        config={
-            "dataset_name": dataset_name,
-            "model_name": model_name,
-            "xai_methodname": xai_methodname,
-            "xai_n_noisedraws": xai_n_noisedraws,
-            "xai_noiselevel": xai_noiselevel,
-            "eval_metricname": eval_metricname,
-            "eval_layer_order": eval_layerorder,
-            "smpr_n_perturbations": smpr_n_perturbations,
-            "smpr_perturbation_noiselevel": smpr_perturbation_noiselevel,
-            "smpr_n_randomizations": smpr_n_randomizations,
-            "emprt_quality_func": emprt_quality_func,
-            "emprt_nr_samples": emprt_nr_samples,
-            "use_cpu": use_cpu,
-            "batch_size": batch_size,
-            "shuffle": shuffle,
-            "seed": seed,
-        }
-    )
 
     # Save arguments
     print("Saving arguments...")
@@ -355,7 +259,7 @@ def randomization(
     )
 
     print(f"Number of Samples in Dataset: {len(dataset.samples)}")
-    dataset.samples = dataset.samples[:1000]
+    dataset.samples = dataset.samples[:nr_test_samples]
     print(f"Reduced of Samples in Dataset: {len(dataset.samples)}")
 
     # Prepare dataloaders
@@ -367,161 +271,199 @@ def randomization(
         batch_size = batch_size,
         shuffle = shuffle,
     )
+    for i, (batch, labels) in enumerate(loader):
+        x_batch = batch.numpy()
+        img_size = x_batch.shape[2]
+        nr_channels = x_batch.shape[1]
+        break
 
     # Prepare model
     model = models.get_model(model_name, device)
     model.eval()
 
+    # xai-specific params:
+    eval_abs = True if xai_methodname in ["gradient"] else False
+    eval_normalise = True if xai_methodname in ["grad-cam"] else False
+    eval_normalise_func = quantus.normalise_func.normalise_by_relu if xai_methodname in ["grad-cam"] else None
+
     # Prepare Quantus Eval
-    if eval_metricname == "smpr":
-        metrics = {
-            f"SMPR": quantus.ModelParameterRandomisationSampling(
-                n_perturbations = smpr_n_perturbations,
-                perturbation_noise_level = smpr_perturbation_noiselevel,
-                n_randomisations = smpr_n_randomizations,
-                similarity_func = quantus.similarity_func.ssim,
-                layer_order = eval_layerorder,
-                seed = seed,
-                return_sample_correlation = False,
-                abs = False,
-                normalise = True,
-                normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
-                return_aggregate = False,
-                aggregate_func = None,
-                default_plot_func = None,
-                disable_warnings = False,
-                display_progressbar = False,
-            ),
+    if eval_metricname == "smprt":
+        metric_kwargs = {
+            "n_noisy_models": 1,
+            "ng_std_level": 0.1,
+            "n_random_models": 1,
+            "similarity_func": quantus.similarity_func.ssim,
+            "layer_order": eval_layerorder,
+            "return_sample_correlation": False,
+            "abs": eval_abs,
+            "normalise": eval_normalise,
+            "normalise_func": eval_normalise_func,
+            "return_aggregate": False,
+            "aggregate_func": None,
+            "default_plot_func": None,
+            "disable_warnings": False,
+            "display_progressbar": False,
         }
+        metric = quantus.sMPRT(
+                **metric_kwargs
+        )
     elif eval_metricname == "emprt":
-        metrics = {
-            f"eMPRT": quantus.eMPRT(
-                quality_func = QUALITY_FUNCTIONS[emprt_quality_func],
-                layer_order = eval_layerorder,
-                nr_samples = emprt_nr_samples,
-                seed = seed,
-                return_sample_entropy = False,
-                abs = True,
-                normalise = True,
-                normalise_func = quantus.normalise_func.normalise_by_average_second_moment_estimate,
-                return_aggregate = False,
-                aggregate_func = None,
-                default_plot_func = None,
-                disable_warnings = False,
-                display_progressbar = False,
-            ),
+        metric_kwargs = {
+            "layer_order":  eval_layerorder,
+            "return_average_sample_score": False,
+            "complexity_func": quantus.complexity_func.discrete_entropy,
+            "complexity_func_kwargs": {"n_bins": 100}, #scotts
+            "return_delta_explanation_vs_model":  True,
+            "similarity_func": quantus.correlation_spearman,
+            "skip_layers": False,
+            "abs": eval_abs,
+            "normalise": eval_normalise,
+            "normalise_func": eval_normalise_func,
+            "return_aggregate": False,
+            "aggregate_func": None,
+            "default_plot_func": None,
+            "disable_warnings": False,
+            "display_progressbar": False,
         }
+        metric = quantus.eMPRT(
+                **metric_kwargs
+        )
     else:
-        metrics = {}
         raise ValueError("Please provide a valid eval_metricname")
 
-    if xai_methodname is not "grad-cam":
-        xai_attributor_kwargs = {
-            "n_iter": xai_n_noisedraws,
-            "noise_level": xai_noiselevel
-        }
-        xai_canonizer = zutils.get_zennit_canonizer(model)
-        xai_methods = {xai_methodname: {
-            **XAI_METHODS[xai_methodname], 
-            "canonizer": xai_canonizer,
-            "attributor_kwargs": xai_attributor_kwargs,
+    XAI_METHOD_KWARGS = {
+        "lrp-zplus": {
+            "xai_lib": "zennit",
+            "attributor": zattr.Gradient,
+            "composite": zutils.ZPlus,
+            "canonizer": zutils.get_zennit_canonizer(model),
+            "canonizer_kwargs": {},
+            "composite_kwargs": {
+                "stabilizer": 1e-6,
+            },
             "device": device,
-        }}
-        explain_func_kwargs = None
-    else:
-        gc_layer = eval("model.features[-2]") if model_name == "vgg16" else eval("list(model.named_modules())[61][1]")
-        xai_methods = {
-            xai_methodname: smoothexplain,
-        }                   
-        explain_func_kwargs = {
-            **XAI_METHODS[xai_methodname], 
+        },
+        "gradient": {
+            "xai_lib": "zennit",
+            "attributor": zattr.Gradient,
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+            "device": device,
+        },
+        "lrp-epsilon": {
+            "xai_lib": "zennit",
+            "attributor": zattr.Gradient,
+            "composite": zutils.Epsilon,
+            "canonizer": zutils.get_zennit_canonizer(model),
+            "canonizer_kwargs": {},
+            "composite_kwargs": {
+                "stabilizer": 1e-6,
+                "epsilon": 1e-6
+            },
+            "device": device,
+        },
+        "guided-backprop": {
+            "xai_lib": "zennit",
+            "attributor": zattr.Gradient,
+            "canonizer": None,
+            "composite": zcomp.GuidedBackprop,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+            "device": device,
+        },
+        "grad-cam" : {
+            "xai_lib": "captum",
+            "device": device,
+            "gc_layer": eval("model.features[-2]") if model_name == "vgg16" else eval("list(model.named_modules())[61][1]"),
+            "interpolate": (img_size, img_size),
+            "interpolate_mode": "bilinear",
+            "method": "LayerGradCam",
+        }
+    }
+
+    # Set up wandb
+    id = wandb.util.generate_id()
+    wandb.init(
+        id=id,
+        resume="allow",
+        project=wandb_projectname,
+        dir=wandbpath,
+        config={
+            "dataset_name": dataset_name,
+            "model_name": model_name,
+            "xai_methodname": xai_methodname,
             "xai_n_noisedraws": xai_n_noisedraws,
             "xai_noiselevel": xai_noiselevel,
-            "gc_layer": gc_layer,
-            "device": device,
+            "eval_metricname": eval_metricname,
+            "eval_layer_order": eval_layerorder,
+            "use_cpu": use_cpu,
+            "batch_size": batch_size,
+            "shuffle": shuffle,
+            "nr_test_samples": nr_test_samples,
+            "xai_kwargs": XAI_METHOD_KWARGS[xai_methodname],
+            "metric_kwargs": metric_kwargs
         }
-
-
+    )
+    scores = {}
+    scores["explanation_scores"] = {}
+    if eval_metricname == "emprt":
+        scores["model_scores"] = {}
+        scores["delta_explanation_scores"] = []
+        scores["delta_model_scores"] = []
+        scores["fraction_explanation_scores"] = []
+        scores["fraction_model_scores"] = []
+        scores["delta_explanation_vs_models"] = []
     # Iterate over Batches and Evaluate
-    results =  {m: {x: {} for x in xai_methods.keys()} for m in metrics.keys()} 
     for i, (batch, labels) in enumerate(loader):
 
         print("Evaluating Batch {}/{}".format(i+1, len(loader)))
 
-        batch_results = quantus.evaluate(
-            metrics = metrics,
-            xai_methods = xai_methods,
-            model = model,
-            x_batch = batch.numpy(),
-            y_batch = labels.numpy(),
-            s_batch = None,
-            agg_func = lambda x: x,
-            progress = True,
-            explain_func_kwargs = explain_func_kwargs,
-            attributions_path = os.path.join(save_path, "attributions"),
-            call_kwargs = {"set1": {"device": device}},
+        batch_results = metric(
+            model=model,
+            x_batch=batch.numpy(),
+            y_batch=labels.numpy(),
+            a_batch=None,
+            device=device,
+            explain_func=smoothexplain,
+            explain_func_kwargs={**XAI_METHOD_KWARGS[xai_methodname], "xai_n_noisedraws": xai_n_noisedraws, "xai_noiselevel": xai_noiselevel}
         )
 
-        # Append correctly to results
-        for m in metrics.keys():
-            for x in xai_methods.keys():
-                layers = list(batch_results[x][m]["set1"].keys())
-                for l in layers:
-                    if l not in results[m][x].keys():
-                        results[m][x][l] = []
-                    results[m][x][l] += batch_results[x][m]["set1"][l]
+        if eval_metricname == "smprt":
+            for k, v in batch_results.items():
+                if k not in scores["explanation_scores"].keys():
+                    scores["explanation_scores"][k] = []
+                scores["explanation_scores"][k] += v
 
-    resultsfile = os.path.join(save_path, "results.json")
+        elif eval_metricname == "emprt":
+            for k, v in metric.explanation_scores.items():
+                if k not in scores["explanation_scores"].keys():
+                    scores["explanation_scores"][k] = []
+                scores["explanation_scores"][k] += v
+            for k, v in metric.model_scores.items():
+                if k not in scores["model_scores"].keys():
+                    scores["model_scores"][k] = []
+                scores["model_scores"][k] += v
+            scores["delta_explanation_scores"] += metric.delta_explanation_scores
+            scores["delta_model_scores"] += metric.delta_model_scores
+            scores["fraction_explanation_scores"] += metric.fraction_explanation_scores
+            scores["fraction_model_scores"] += metric.fraction_model_scores
+            scores["delta_explanation_vs_models"] += metric.delta_explanation_vs_models
+
+    resultsfile = os.path.join(save_path, "scores.json")
     with open(resultsfile, "w") as jsonfile:
-        json.dump(results, jsonfile)
+        json.dump(scores, jsonfile)
 
-    print(results)
-
-    if eval_metricname == "smpr":
-        for metric, m_results in results.items():
-            plot_smpr_experiment(
-                m_results,
-                similarity_score = "SSIM",
-                file_name = os.path.join(save_path, f"{metric}.svg")
-            )
-            for method in m_results.keys():
-                layers = list(m_results[method].keys())
-                for l, layer in enumerate(layers):
-                    scores = []
-                    for rand in m_results[method][layer]:
-                        for sample in rand:
-                            scores.append(sample)
-                    wandb.log({
-                        "layer": layer,
-                        "layer_id": l,
-                        "mean-score": np.mean(scores),
-                        "std-score": np.std(scores)
-                    })
-    elif eval_metricname == "emprt":
-        for metric, m_results in results.items():
-            plot_emprt_experiment(
-                m_results,
-                quality_func = "Entropy",
-                file_name = os.path.join(save_path, f"{metric}.svg")
-            )
-            for method in m_results.keys():
-                layers = list(m_results[method].keys())
-                for l, layer in enumerate(layers):
-                    scores = []
-                    for sample in m_results[method][layer]:
-                        scores.append(sample)
-                    wandb.log({
-                        "layer": layer,
-                        "layer_id": l,
-                        "mean-score": np.mean(scores),
-                        "std-score": np.std(scores)
-                    })
-
-
+    for k, v in scores["explanation_scores"].items():
+        wandb.log({
+            "mean-score": np.mean(v),
+        })
+    wandb.log({"scores": scores})
 
 @main.command(name="plot-attribution-results")
 @click.argument("path", type=str, required=True)
-def randomization(
+def plot_attribution_results(
         path,
 ):
     for layer in os.listdir(path):

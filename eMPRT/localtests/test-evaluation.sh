@@ -4,8 +4,8 @@ seed="$1"
 
 data="imagenet"
 model="vgg16"
-xai_methodname="gradient"
-eval_metricname="mptc"
+xai_methodnames="Gradient"
+eval_metricname="smprt"
 xai_n_noisedraws=1
 xai_noiselevel=0.0
 eval_layer_order="top_down"
@@ -16,9 +16,9 @@ mptc_quality_func="entropy"
 mptc_nr_samples=10
 
 python ../scripts/main.py evaluate-randomisation \
-                          /media/lweber/f3ed2aae-a7bf-4a55-b50d-ea8fb534f1f51/mptc/ \
+                          /media/lweber/f3ed2aae-a7bf-4a55-b50d-ea8fb534f1f5/mptc/ \
                           ${data} \
-                          /media/lweber/f3ed2aae-a7bf-4a55-b50d-ea8fb534f1f51/Datasets/imagenet \
+                          /media/lweber/f3ed2aae-a7bf-4a55-b50d-ea8fb534f1f5/Datasets/imagenet \
                           ../scripts/label_map_imagenet.json \
                           ${model} \
                           ${xai_methodname} \

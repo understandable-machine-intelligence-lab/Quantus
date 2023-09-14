@@ -4,24 +4,19 @@
 #SBATCH --output=%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --gpus=1
 
-data="$1"
-model="$2"
+dataset_name="$1"
+model_name="$2"
 xai_methodname="$3"
-xai_n_noisedraws="$4"
-xai_noiselevel="$5"
-eval_layer_order="$6"
-eval_n_perturbations="$7"
-eval_perturbation_noiselevel="$8"
-eval_n_randomizations="${9}"
-seed="${10}"
-wandb_key="${11}"
-partition="${12}"
-
-SUBMIT_DIR=/data/cluster/users/lweber/smpr/gpu-cluster-results-3
-mkdir -p ${SUBMIT_DIR}
+eval_metricname="$4"
+nr_test_samples="$5"
+xai_n_noisedraws="$6"
+xai_noiselevel="$7"
+eval_layer_order="$8"
+wandb_key="${9}"
+wandb_projectname="${10}"
 
 source "/etc/slurm/local_job_dir.sh"
 mkdir -p ${LOCAL_JOB_DIR}/results
@@ -29,7 +24,7 @@ mkdir -p ${LOCAL_JOB_DIR}/datasets
 mkdir -p ${LOCAL_JOB_DIR}/labelmaps
 
 echo "COPYING LABELMAPS..."
-cp -r ${HOME}/Quantus/METHOD_NAME/scripts/label_map_imagenet.json ${LOCAL_JOB_DIR}/labelmaps
+cp -r ${HOME}/Quantus/eMPRT/scripts/label_map_imagenet.json ${LOCAL_JOB_DIR}/labelmaps
 
 dir ${LOCAL_JOB_DIR}
 dir ${LOCAL_JOB_DIR}/results
@@ -39,27 +34,26 @@ for i in {1..30}; do
   /usr/bin/time -v apptainer \
     run \
           --nv \
-          --bind /data/datapool/datasets/ImageNet-complete/:/mnt/datasets/${data} \
+          --bind /data/datapool/datasets/ImageNet-complete/:/mnt/datasets/${dataset_name} \
           --bind ${LOCAL_JOB_DIR}/labelmaps:/mnt/labelmaps/ \
           --bind ${LOCAL_JOB_DIR}/results:/mnt/output/ \
           ../singularity/smpr.sif evaluate-randomisation \
-            ${data} \
-            /mnt/datasets/${data} \
-            /mnt/labelmaps/label_map_imagenet.json \
-            ${model} \
-            ${xai_methodname} \
-            ${xai_n_noisedraws} \
-            ${xai_noiselevel} \
-            ${eval_layer_order} \
-            ${eval_n_perturbations} \
-            ${eval_perturbation_noiselevel} \
-            ${eval_n_randomizations} \
             /mnt/output/ \
+            ${dataset_name} \
+            /mnt/datasets/${dataset_name} \
+            /mnt/labelmaps/label_map_imagenet.json \
+            ${model_name} \
+            ${xai_methodname} \
+            ${eval_metricname} \
+            --nr-test-samples ${nr_test_samples} \
+            --xai-n-noisedraws ${xai_n_noisedraws} \
+            --xai-noiselevel ${xai_noiselevel} \
+            --eval-layerorder ${eval_layer_order} \
             --use-cpu False \
             --batch-size 32 \
-            --shuffle True \
-            --seed ${seed} \
-            --wandb-key ${wandb_key}
+            --shuffle False \
+            --wandb-key ${wandb_key} \
+            --wandb-projectname ${wandb_projectname}
   ret_val=$?;
 
   if (( $ret_val == 77 )); then 
@@ -71,9 +65,5 @@ for i in {1..30}; do
   break;
 done
 
-base=${data}-${model}-${xai_methodname}-${xai_n_noisedraws}-${xai_noiselevel}-${eval_layer_order}-${eval_n_perturbations}-${eval_perturbation_noiselevel}-${eval_n_randomizations}-${seed} \
-cd ${LOCAL_JOB_DIR}
-tar -czf ${base}.tgz results
-cp ${base}.tgz ${SLURM_SUBMIT_DIR}
 rm -rf ${LOCAL_JOB_DIR}/results
 
