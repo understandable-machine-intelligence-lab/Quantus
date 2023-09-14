@@ -528,7 +528,7 @@ class eMPRT(Metric):
         # Return all_evaluation_scores according to Quantus.
         self.all_evaluation_scores.append(self.evaluation_scores)
 
-        return self.all_evaluation_scores
+        return self.evaluation_scores
 
     def evaluate_instance(
         self,
