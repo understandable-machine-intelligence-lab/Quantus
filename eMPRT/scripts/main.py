@@ -188,6 +188,7 @@ def main():
 @click.option("--xai-n-noisedraws", type=int, default=1, required=False)
 @click.option("--xai-noiselevel", type=float, default=0.0, required=False)
 @click.option("--eval-layerorder", type=str, default="bottom_up", required=False)
+@click.option("--eval-normalise", type=bool, default=True, required=False)
 @click.option("--use-cpu", type=bool, default=False, required=False)
 @click.option("--batch-size", type=int, default=32, required=False)
 @click.option("--shuffle", type=bool, default=False, required=False)
@@ -206,6 +207,7 @@ def evaluate_randomization(
         xai_n_noisedraws,
         xai_noiselevel,
         eval_layerorder,
+        eval_normalise,
         use_cpu,
         batch_size,
         shuffle,
@@ -283,8 +285,7 @@ def evaluate_randomization(
 
     # xai-specific params:
     eval_abs = True if xai_methodname in ["gradient"] else False
-    eval_normalise = True if xai_methodname in ["grad-cam"] else False
-    eval_normalise_func = quantus.normalise_func.normalise_by_relu if xai_methodname in ["grad-cam"] else None
+    eval_normalise_func = quantus.normalise_func.normalise_by_relu if xai_methodname in ["grad-cam"] else quantus.normalise_func.normalise_by_average_second_moment_estimate
 
     # Prepare Quantus Eval
     if eval_metricname == "smprt":
@@ -434,7 +435,7 @@ def evaluate_randomization(
             for k, v in batch_results.items():
                 if k not in scores["explanation_scores"].keys():
                     scores["explanation_scores"][k] = []
-                scores["explanation_scores"][k] += v
+                scores["explanation_scores"][k] += v[0]
 
         elif eval_metricname == "emprt":
             for k, v in metric.explanation_scores.items():

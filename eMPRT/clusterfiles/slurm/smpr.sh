@@ -15,8 +15,9 @@ nr_test_samples="$5"
 xai_n_noisedraws="$6"
 xai_noiselevel="$7"
 eval_layer_order="$8"
-wandb_key="${9}"
-wandb_projectname="${10}"
+eval_normalise="$9"
+wandb_key="${10}"
+wandb_projectname="${11}"
 
 source "/etc/slurm/local_job_dir.sh"
 mkdir -p ${LOCAL_JOB_DIR}/results
@@ -49,6 +50,7 @@ for i in {1..30}; do
             --xai-n-noisedraws ${xai_n_noisedraws} \
             --xai-noiselevel ${xai_noiselevel} \
             --eval-layerorder ${eval_layer_order} \
+            --eval-normalise ${eval_normalise} \
             --use-cpu False \
             --batch-size 32 \
             --shuffle False \

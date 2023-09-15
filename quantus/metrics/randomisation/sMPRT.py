@@ -276,6 +276,28 @@ class sMPRT(MPRT):
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
+        a_batch_original = self.explain_func(
+            model=model.get_model(),
+            inputs=x_batch,
+            targets=y_batch,
+            **self.explain_func_kwargs,
+        )
+
+        orig_scores = []
+        batch_iterator = enumerate(zip(a_batch, a_batch_original))
+        for instance_id, (a_instance, a_instance_orig) in batch_iterator:
+            score = self.evaluate_instance(
+                model=model,
+                x=x_batch[0],
+                y=None,
+                s=None,
+                a=a_instance,
+                a_perturbed=a_instance_orig,
+            )
+            orig_scores.append(score)
+
+        self.evaluation_scores["orig"] = [orig_scores]
+
         # Get randomisable layers.
         randomisable_layers = model.get_randomisable_layer_names(order=self.layer_order)
 
