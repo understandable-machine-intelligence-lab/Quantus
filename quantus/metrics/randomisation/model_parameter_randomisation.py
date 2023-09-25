@@ -284,6 +284,8 @@ class MPRT(Metric):
         a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
+        self.correlation_scores = np.zeros((len(x_batch)))
+        self.similarity_scores = {}
         self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
@@ -299,8 +301,12 @@ class MPRT(Metric):
 
             similarity_scores = [None for _ in x_batch]
 
+            # Skip layers if computing delta.
+            if self.skip_layers and (l_ix + 1) < len(model_iterator):
+                continue
+
             # Save correlation scores of no perturbation.
-            if l_ix == 0:
+            if l_ix == 0: # (l_ix == 0 and self.layer_order == "bottom_up") or (l_ix+1 == len(model_iterator) and self.layer_order == "top_down"):
 
                 # Generate an explanation with perturbed model.
                 a_batch_original = self.explain_func(
@@ -321,11 +327,9 @@ class MPRT(Metric):
                         a_perturbed=a_ori,
                     )
                     similarity_scores[instance_id] = score
-                self.evaluation_scores["orig"] = similarity_scores[instance_id]
 
-            # Skip layers if computing delta.
-            if self.skip_layers and (l_ix + 1) < len(model_iterator):
-                continue
+                # Save similarity scores in a result dictionary.
+                self.similarity_scores["orig"] = similarity_scores
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -348,7 +352,7 @@ class MPRT(Metric):
                 similarity_scores[instance_id] = score
 
             # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
+            self.similarity_scores[layer_name] = similarity_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -360,10 +364,12 @@ class MPRT(Metric):
         )
 
         if self.return_sample_correlation:
-            self.evaluation_scores = self.recompute_correlation_per_sample()
+            self.correlation_scores = self.recompute_correlation_per_sample()
+            self.evaluation_scores = self.correlation_scores
 
         elif self.return_last_correlation:
-            self.evaluation_scores = self.recompute_last_correlation_per_sample()
+            self.correlation_scores = self.recompute_last_correlation_per_sample()
+            self.evaluation_scores = self.correlation_scores
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -458,21 +464,21 @@ class MPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.similarity_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
+            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
             "must be of type dict."
         )
         layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+            self.similarity_scores[list(self.similarity_scores.keys())[0]]
         )
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.evaluation_scores:
+            for layer in self.similarity_scores:
                 if layer == "orig":
                     continue
-                results[sample].append(float(self.evaluation_scores[layer][sample]))
+                results[sample].append(float(self.similarity_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
@@ -483,11 +489,14 @@ class MPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.similarity_scores, dict), (
             "To compute the last correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
+            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
             "must be of type dict."
         )
-        corr_coeffs = list(self.evaluation_scores.values())[-1]
+        #if self.layer_order == "top_down":
+        #    corr_coeffs = list(self.similarity_scores.values())[-2]
+        #elif self.layer_order == "bottom_up":
+        corr_coeffs = list(self.similarity_scores.values())[-1]
 
         return corr_coeffs
