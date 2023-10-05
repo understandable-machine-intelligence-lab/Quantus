@@ -255,7 +255,6 @@ class Complexity(Metric):
         self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
     ) -> List[float]:
         """
-
         TODO: write meaningful docstring about what does it compute.
 
         Parameters
@@ -274,5 +273,6 @@ class Complexity(Metric):
             List of floats.
 
         """
-        # TODO. For performance gains, replace the for loop below with vectorisation.
+        # TODO: For performance gains, replace the for loop below with vectorisation.
+        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
         return [self.evaluate_instance(x, a) for x, a in zip(x_batch, a_batch)]

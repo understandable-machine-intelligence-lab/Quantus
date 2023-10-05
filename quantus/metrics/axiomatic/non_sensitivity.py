@@ -371,7 +371,6 @@ class NonSensitivity(PerturbationMetric):
         **kwargs,
     ) -> List[int]:
         """
-
         Count the number of features in each explanation, for which model is not sensitive.
 
         Parameters

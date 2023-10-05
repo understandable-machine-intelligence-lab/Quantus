@@ -317,7 +317,6 @@ class Completeness(PerturbationMetric):
         **_,
     ) -> List[bool]:
         """
-
         Checks if sum of attributions is equal to the difference between original prediction and
         prediction on baseline value.
 
@@ -343,7 +342,8 @@ class Completeness(PerturbationMetric):
 
 
         """
-        # TODO. For performance gains, replace the for loop below with vectorisation.
+        # TODO: For performance gains, replace the for loop below with vectorisation.
+        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
         return [
             self.evaluate_instance(model, x, y, a)
             for x, y, a in zip(x_batch, y_batch, a_batch)

@@ -323,5 +323,6 @@ class RelevanceRankAccuracy(Metric):
         -------
 
         """
-        # TODO: for performance reasons, this method should be vectorized.
+        # TODO: For performance gains, replace the for loop below with vectorisation.
+        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
         return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]

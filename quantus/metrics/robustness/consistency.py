@@ -303,7 +303,8 @@ class Consistency(Metric):
         y_pred_classes,
         **_,
     ) -> List[float]:
-        # TODO: for performance reasons vectorize this for-loop
+        # TODO: For performance gains, replace the for loop below with vectorisation.
+        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
 
         return [
             self.evaluate_instance(a, i, a_label, y_pred_classes)

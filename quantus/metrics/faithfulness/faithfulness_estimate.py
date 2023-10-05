@@ -375,7 +375,6 @@ class FaithfulnessEstimate(PerturbationMetric):
         **_,
     ) -> List[float]:
         """
-
         TODO: write meaningful docstring about what does it compute.
 
         Parameters

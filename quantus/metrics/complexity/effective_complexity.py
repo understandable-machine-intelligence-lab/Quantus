@@ -251,7 +251,6 @@ class EffectiveComplexity(Metric):
 
     def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
         """
-
         Count how many attributions exceed the threshold `eps`
 
         Parameters
@@ -269,6 +268,7 @@ class EffectiveComplexity(Metric):
             List of integers.
 
         """
-        # TODO. For performance gains, replace the for loop below with vectorisation.
+        # TODO: For performance gains, replace the for loop below with vectorisation.
+        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
 
         return [self.evaluate_instance(a) for a in a_batch]
