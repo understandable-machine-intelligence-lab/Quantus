@@ -12,6 +12,7 @@ from typing import Tuple
 
 # Import different models depending on which deep learning framework is installed.
 if util.find_spec("torch"):
+
     import torch
     import torch.nn as nn
 

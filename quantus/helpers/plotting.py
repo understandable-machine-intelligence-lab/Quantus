@@ -245,6 +245,7 @@ def plot_model_parameter_randomisation_experiment(
 
             plt.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
     else:
+
         layers = list(results.keys())
         scores = {k: [] for k in layers}
         # samples = len(results)
