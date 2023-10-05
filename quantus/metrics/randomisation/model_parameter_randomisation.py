@@ -295,9 +295,9 @@ class ModelParameterRandomisation(Metric):
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_batch(
-                random_layer_model,
-                x_batch,
-                y_batch,
+                model=random_layer_model,
+                x_batch=x_batch,
+                y_batch=y_batch,
             )
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
