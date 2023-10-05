@@ -352,6 +352,7 @@ class ROAD(PerturbationMetric):
         }
 
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
         data_batch = super().batch_preprocess(data_batch)
         # Infer the size of attributions.
         self.a_size = data_batch["a_batch"][0, :, :].size
