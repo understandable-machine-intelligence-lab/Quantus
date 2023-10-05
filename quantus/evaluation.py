@@ -116,7 +116,6 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, Dict):
-
             if explain_func_kwargs is not None:
                 warnings.warn(
                     "Passed explain_func_kwargs will be ignored when passing type Dict[str, Dict] as xai_methods."
