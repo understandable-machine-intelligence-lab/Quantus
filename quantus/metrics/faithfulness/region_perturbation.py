@@ -72,6 +72,7 @@ class RegionPerturbation(PerturbationMetric):
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        inverse_estimation: Optional[bool] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
@@ -152,9 +153,13 @@ class RegionPerturbation(PerturbationMetric):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
+        self.inverse_estimation = inverse_estimation
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
+        if isinstance(self.inverse_estimation, bool):
+            assert self.order in ["morf", "lerf"], "Inverse estimation assumes order is either 'morf' and 'lerf'.
+
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -339,6 +344,11 @@ class RegionPerturbation(PerturbationMetric):
                 a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
             )
             patches.append(patch_slice)
+
+        if self.inverse_estimation == True:
+            self.order = "lerf"
+        elif self.inverse_estimation == False:
+            self.order = "morf"
 
         if self.order == "random":
             # Order attributions randomly.

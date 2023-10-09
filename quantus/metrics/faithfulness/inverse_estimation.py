@@ -26,18 +26,14 @@ from quantus.helpers.enums import (
 )
 
 
-class PixelFlipping(PerturbationMetric):
+class InverseEstimation(PerturbationMetric):
     """
-    Implementation of Pixel-Flipping experiment by Bach et al., 2015.
+    Implementation of Inverse Estimation experiment by Author et al., 2023.
 
-    The basic idea is to compute a decomposition of a digit for a digit class
-    and then flip pixels with highly positive, highly negative scores or pixels
-    with scores close to zero and then to evaluate the impact of these flips
-    onto the prediction scores (mean prediction is calculated).
+    The basic idea is to ..............
 
     References:
-        1) Sebastian Bach et al.: "On pixel-wise explanations for non-linear classifier
-        decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
+        1) ..........
 
     Attributes:
         -  _name: The name of the metric.
@@ -47,7 +43,7 @@ class PixelFlipping(PerturbationMetric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Pixel-Flipping"
+    name = "Inverse-Estimation"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -55,21 +51,13 @@ class PixelFlipping(PerturbationMetric):
 
     def __init__(
         self,
-        features_in_step: int = 1,
-        abs: bool = False,
-        normalise: bool = True,
+        metric_init: PerturbationMetric,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
-        return_auc_per_sample: bool = False,
-        inverse_estimation: bool = False,
         default_plot_func: Optional[Callable] = None,
-        disable_warnings: bool = False,
-        display_progressbar: bool = False,
         **kwargs,
     ):
         """
@@ -109,19 +97,27 @@ class PixelFlipping(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
+        if metric_init.normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
+        if metric_init.perturb_func is None:
             perturb_func = baseline_replacement_by_indices
         perturb_func = perturb_func
 
-        if perturb_func_kwargs is None:
+        if metric_init.perturb_func_kwargs is None:
             perturb_func_kwargs = {}
         perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
-        if default_plot_func is None:
+        if metric_init.default_plot_func is None:
+            # TODO. Create plot.
             default_plot_func = plotting.plot_pixel_flipping_experiment
+
+        abs = metric_init.abs
+        normalise = metric_init.normalise
+        return_aggregate = metric_init.return_aggregate
+        aggregate_func = metric_init.aggregate_func
+        display_progressbar = metric_init.display_progressbar
+        disable_warnings = metric_init.disable_warnings
 
         super().__init__(
             abs=abs,
@@ -138,12 +134,12 @@ class PixelFlipping(PerturbationMetric):
             **kwargs,
         )
 
-        # Save metric-specific attributes.
-        self.features_in_step = features_in_step
-        self.return_auc_per_sample = return_auc_per_sample
-        self.inverse_estimation = inverse_estimation
-
         # Asserts and warnings.
+        assert hasattr(
+            metric_init, "inverse_estimation"
+        ), "The metric must have 'inverse_estimation' (bool) attribute"
+
+        # TODO. Update warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -154,6 +150,8 @@ class PixelFlipping(PerturbationMetric):
                     "e0130140"
                 ),
             )
+
+        self.metric_init = metric_init
 
     def __call__(
         self,
@@ -245,7 +243,9 @@ class PixelFlipping(PerturbationMetric):
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        return super().__call__(
+        # Run normal experiment.
+        self.metric_init.inverse_estimation = False
+        self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -261,114 +261,25 @@ class PixelFlipping(PerturbationMetric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> List[float]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        list
-            The evaluation results.
-        """
-
-        # Reshape attributions.
-        a = a.flatten()
-
-        # Get indices of sorted attributions.
-        if self.inverse_estimation is None or self.inverse_estimation is False:
-            a_indices = np.argsort(-a)  # Order is descending.
-        elif self.inverse_estimation is True:
-            a_indices = np.argsort(a)  # Order is ascending.
-
-        # Prepare lists.
-        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-        preds = [None for _ in range(n_perturbations)]
-        x_perturbed = x.copy()
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-            x_perturbed = self.perturb_func(
-                arr=x_perturbed,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            preds[i_ix] = y_pred_perturb
-
-        if self.return_auc_per_sample:
-            return utils.calculate_auc(preds)
-
-        return preds
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
-    ) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        None
-        """
-        # Asserts.
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
+        # Run inverse experiment.
+        self.metric_init.inverse_estimation = True
+        self.metric_init(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
+            **kwargs,
         )
 
-    @property
-    def get_auc_score(self):
-        """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
+    def set_metric_to_inverse(self):
+        # TODO. Implement.
+        # TODO. Check that
+        pass
