@@ -152,6 +152,8 @@ class InverseEstimation(PerturbationMetric):
             )
 
         self.metric_init = metric_init
+        self.all_evaluation_scores_meta = []
+        self.all_evaluation_scores_meta_inverse = []
 
     def __call__(
         self,
@@ -243,7 +245,9 @@ class InverseEstimation(PerturbationMetric):
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        # Run normal experiment.
+        self.metric_init.return_aggregate = True
+
+        # Run faithfulness experiment.
         self.metric_init.inverse_estimation = False
         self.metric_init(
             model=model,
@@ -260,8 +264,13 @@ class InverseEstimation(PerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
+        assert len(self.metric_init.evaluation_scores) == len(
+            x_batch
+        ), "To run the inverse estimation, the number of evaluation scores must match the number of instances in the batch."
+        self.all_evaluation_scores_meta.extend(self.metric_init.evaluation_scores)
+        self.metric_init.evaluation_scores = []
 
-        # Run inverse experiment.
+        # Run inverse faithfulness experiment.
         self.metric_init.inverse_estimation = True
         self.metric_init(
             model=model,
@@ -278,8 +287,56 @@ class InverseEstimation(PerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
+        self.all_evaluation_scores_meta_inverse.extend(
+            self.metric_init.evaluation_scores
+        )
+        self.metric_init.evaluation_scores = []
 
-    def set_metric_to_inverse(self):
-        # TODO. Implement.
-        # TODO. Check that
-        pass
+        # Compute the inverse.
+        inv_scores = np.array(self.all_evaluation_scores_meta) - np.array(
+            self.all_evaluation_scores_meta_inverse
+        )
+        self.evaluation_scores.extend(inv_scores)
+
+        self.metric_init.all_evaluation_scores = []
+        # TODO. Implement a write-over of samples (len(x_batch) x len) with the inverse.
+        self.all_evaluation_scores.extend(inv_scores)
+
+        return inv_scores
+
+    def custom_postprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        **kwargs,
+    ) -> None:
+        """
+        Post-process the evaluation results.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+
+        Returns
+        -------
+        None
+        """
+        # TODO. Implement aggregation method.
+
+        # Calculate accuracy for every number of most important pixels removed.
+        self.evaluation_scores = {
+            percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
+            for p_ix, percentage in enumerate(self.percentages)
+        }
