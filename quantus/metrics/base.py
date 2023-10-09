@@ -261,8 +261,8 @@ class Metric:
                     "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
                 )
 
-        # Append content of last results to all results.
-        self.all_evaluation_scores.append(self.evaluation_scores)
+        # Append the content of the last results to all results.
+        self.all_evaluation_scores.extend(self.evaluation_scores)
 
         return self.evaluation_scores
 
