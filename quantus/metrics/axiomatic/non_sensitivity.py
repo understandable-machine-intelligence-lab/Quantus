@@ -14,16 +14,17 @@ from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class NonSensitivity(PerturbationMetric):
+class NonSensitivity(Metric):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 
@@ -62,7 +63,7 @@ class NonSensitivity(PerturbationMetric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_baseline: str = "black",
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -114,16 +115,6 @@ class NonSensitivity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
-        perturb_func = perturb_func
-        perturb_func_kwargs = perturb_func_kwargs
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -143,6 +134,9 @@ class NonSensitivity(PerturbationMetric):
         self.eps = eps
         self.n_samples = n_samples
         self.features_in_step = features_in_step
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -310,7 +304,6 @@ class NonSensitivity(PerturbationMetric):
                     arr=x,
                     indices=a_ix,
                     indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
                 )
 
                 # Predict on perturbed input x.
@@ -371,7 +364,8 @@ class NonSensitivity(PerturbationMetric):
         **kwargs,
     ) -> List[int]:
         """
-        Count the number of features in each explanation, for which model is not sensitive.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -396,6 +390,6 @@ class NonSensitivity(PerturbationMetric):
         """
 
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

@@ -16,16 +16,17 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class IROF(PerturbationMetric):
+class IROF(Metric):
     """
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
@@ -63,7 +64,7 @@ class IROF(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_baseline: str = "mean",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = True,
@@ -111,21 +112,11 @@ class IROF(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -137,6 +128,9 @@ class IROF(PerturbationMetric):
         # Save metric-specific attributes.
         self.segmentation_method = segmentation_method
         self.nr_channels = None
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -318,7 +312,6 @@ class IROF(PerturbationMetric):
                 arr=x_prev_perturbed,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
             )
             warn.warn_perturbation_caused_no_change(
                 x=x_prev_perturbed, x_perturbed=x_perturbed
@@ -377,15 +370,16 @@ class IROF(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[float]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -397,7 +391,9 @@ class IROF(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        kwargs:
+            Unused.
+        args:
             Unused.
 
         Returns
@@ -408,6 +404,6 @@ class IROF(PerturbationMetric):
 
         """
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

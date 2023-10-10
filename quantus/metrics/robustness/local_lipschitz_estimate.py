@@ -15,7 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -23,8 +23,13 @@ from quantus.helpers.enums import (
     EvaluationCategory,
 )
 
+from quantus.helpers.perturbation_utils import (
+    make_perturb_func,
+    make_changed_prediction_indices_func,
+)
 
-class LocalLipschitzEstimate(PerturbationMetric):
+
+class LocalLipschitzEstimate(Metric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -62,7 +67,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = True,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = gaussian_noise,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Callable = None,
         perturb_mean: float = 0.0,
@@ -126,21 +131,11 @@ class LocalLipschitzEstimate(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = gaussian_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_mean"] = perturb_mean
-        perturb_func_kwargs["perturb_std"] = perturb_std
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -163,7 +158,16 @@ class LocalLipschitzEstimate(PerturbationMetric):
         if norm_denominator is None:
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func,
+            perturb_func_kwargs,
+            perturb_mean=perturb_mean,
+            perturb_std=perturb_std,
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
+        self.max_func = np.max if return_nan_when_prediction_changes else np.nanmax
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -331,10 +335,9 @@ class LocalLipschitzEstimate(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 
@@ -348,10 +351,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -364,8 +364,8 @@ class LocalLipschitzEstimate(PerturbationMetric):
                     norm_denominator=self.norm_denominator,
                 )
                 similarities[instance_id, step_id] = similarity
-        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        return max_func(similarities, axis=1)
+
+        return self.max_func(similarities, axis=1)
 
     def custom_preprocess(
         self,

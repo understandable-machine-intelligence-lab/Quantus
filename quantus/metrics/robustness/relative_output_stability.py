@@ -8,27 +8,29 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
-from functools import partial
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import (
+    make_perturb_func,
+    make_changed_prediction_indices_func,
+)
 
 
-class RelativeOutputStability(PerturbationMetric):
+class RelativeOutputStability(Metric):
     """
     Relative Output Stability leverages the stability of an explanation with respect to the change in the output logits.
 
@@ -62,7 +64,7 @@ class RelativeOutputStability(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
@@ -109,12 +111,6 @@ class RelativeOutputStability(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_average_second_moment_estimate
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {"upper_bound": 0.2}
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -131,7 +127,12 @@ class RelativeOutputStability(PerturbationMetric):
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, upper_bound=0.2
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -300,9 +301,6 @@ class RelativeOutputStability(PerturbationMetric):
 
         """
         batch_size = x_batch.shape[0]
-        _explain_func = partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
         # Execute forward pass on provided inputs.
         logits = model.predict(x_batch)
 
@@ -316,7 +314,6 @@ class RelativeOutputStability(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
             # Generate explanations for perturbed input.
@@ -331,7 +328,7 @@ class RelativeOutputStability(PerturbationMetric):
             ros_batch[index] = ros
 
             # If perturbed input caused change in prediction, then it's ROS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 

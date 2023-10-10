@@ -13,16 +13,17 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class Completeness(PerturbationMetric):
+class Completeness(Metric):
     """
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
@@ -64,7 +65,7 @@ class Completeness(PerturbationMetric):
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         output_func: Optional[Callable] = lambda x: x,
         perturb_baseline: str = "black",
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -113,21 +114,11 @@ class Completeness(PerturbationMetric):
         """
         if normalise_func is None:
             normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -140,6 +131,9 @@ class Completeness(PerturbationMetric):
         if output_func is None:
             output_func = lambda x: x
         self.output_func = output_func
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -288,10 +282,7 @@ class Completeness(PerturbationMetric):
             The evaluation results.
         """
         x_baseline = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
-            **self.perturb_func_kwargs,
+            arr=x, indices=np.arange(0, x.size), indexed_axes=np.arange(0, x.ndim)
         )
 
         # Predict on input.
@@ -314,12 +305,11 @@ class Completeness(PerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[bool]:
         """
-        Checks if sum of attributions is equal to the difference between original prediction and
-        prediction on baseline value.
-
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -331,7 +321,7 @@ class Completeness(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        kwargs:
             Unused kwargs.
 
         Returns
@@ -339,12 +329,9 @@ class Completeness(PerturbationMetric):
 
         scores_batch:
             List of booleans.
-
-
         """
-        # TODO: For performance gains, replace the for loop below with vectorisation.
-        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
+
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

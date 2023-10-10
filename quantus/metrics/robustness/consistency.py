@@ -269,6 +269,16 @@ class Consistency(Metric):
         return np.sum(pred_same_a == pred_a) / len(diff_a)
 
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """
+
+        Parameters
+        ----------
+        data_batch
+
+        Returns
+        -------
+
+        """
         data_batch = super().batch_preprocess(data_batch)
 
         model = data_batch["model"]
@@ -296,15 +306,32 @@ class Consistency(Metric):
     @no_type_check
     def evaluate_batch(
         self,
-        *,
+        *args,
         a_batch: np.ndarray,
         i_batch: np.ndarray,
         a_label_batch: np.ndarray,
         y_pred_classes,
-        **_,
+        **kwargs,
     ) -> List[float]:
-        # TODO: For performance gains, replace the for loop below with vectorisation.
-        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        args:
+            Unused.
+        a_batch:
+
+        i_batch
+        a_label_batch
+        y_pred_classes
+        kwargs
+
+        Returns
+        -------
+
+        """
 
         return [
             self.evaluate_instance(a, i, a_label, y_pred_classes)

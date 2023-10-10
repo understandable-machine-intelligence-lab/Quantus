@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
@@ -25,9 +25,13 @@ from quantus.helpers.enums import (
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import (
+    make_perturb_func,
+    make_changed_prediction_indices_func,
+)
 
 
-class RelativeInputStability(PerturbationMetric):
+class RelativeInputStability(Metric):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data.
 
@@ -59,7 +63,7 @@ class RelativeInputStability(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
@@ -106,12 +110,6 @@ class RelativeInputStability(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_average_second_moment_estimate
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {"upper_bound": 0.2}
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -128,7 +126,12 @@ class RelativeInputStability(PerturbationMetric):
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, upper_bound=0.2
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -303,7 +306,6 @@ class RelativeInputStability(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
             # Generate explanations for perturbed input.
@@ -315,19 +317,13 @@ class RelativeInputStability(PerturbationMetric):
             )
             ris_batch[index] = ris
 
-            # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self._return_nan_when_prediction_changes:
-                continue
-
             # If perturbed input caused change in prediction, then it's RIS=nan.
-
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 
-            if len(changed_prediction_indices) == 0:
-                continue
-            ris_batch[index, changed_prediction_indices] = np.nan
+            if len(changed_prediction_indices) != 0:
+                ris_batch[index, changed_prediction_indices] = np.nan
 
         # Compute RIS.
         result = np.max(ris_batch, axis=0)

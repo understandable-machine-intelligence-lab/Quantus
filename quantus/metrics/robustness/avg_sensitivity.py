@@ -1,4 +1,5 @@
 """This module contains the implementation of the Avg-Sensitivity metric."""
+import functools
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -16,16 +17,20 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import (
+    make_perturb_func,
+    make_changed_prediction_indices_func,
+)
 
 
-class AvgSensitivity(PerturbationMetric):
+class AvgSensitivity(Metric):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 
@@ -62,7 +67,7 @@ class AvgSensitivity(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         lower_bound: float = 0.2,
         upper_bound: Optional[float] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -122,14 +127,6 @@ class AvgSensitivity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["lower_bound"] = lower_bound
-        perturb_func_kwargs["upper_bound"] = upper_bound
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -159,7 +156,16 @@ class AvgSensitivity(PerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.changed_prediction_indices = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
+        self.mean_func = np.mean if return_nan_when_prediction_changes else np.nanmean
+        self.perturb_func = make_perturb_func(
+            perturb_func,
+            perturb_func_kwargs,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -307,8 +313,8 @@ class AvgSensitivity(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -325,16 +331,10 @@ class AvgSensitivity(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
             )
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
@@ -348,10 +348,7 @@ class AvgSensitivity(PerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -363,8 +360,8 @@ class AvgSensitivity(PerturbationMetric):
                 denominator = self.norm_denominator(a=a_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
-        mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
-        return mean_func(similarities, axis=1)
+
+        return self.mean_func(similarities, axis=1)
 
     def custom_preprocess(
         self,

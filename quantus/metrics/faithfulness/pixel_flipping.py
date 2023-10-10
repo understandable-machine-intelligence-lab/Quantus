@@ -18,16 +18,17 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class PixelFlipping(PerturbationMetric):
+class PixelFlipping(Metric):
     """
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
@@ -61,7 +62,7 @@ class PixelFlipping(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -112,14 +113,6 @@ class PixelFlipping(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         if default_plot_func is None:
             default_plot_func = plotting.plot_pixel_flipping_experiment
 
@@ -128,8 +121,6 @@ class PixelFlipping(PerturbationMetric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -141,12 +132,15 @@ class PixelFlipping(PerturbationMetric):
         # Save metric-specific attributes.
         self.features_in_step = features_in_step
         self.return_auc_per_sample = return_auc_per_sample
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=("baseline value 'perturb_baseline'"),
+                sensitive_params="baseline value 'perturb_baseline'",
                 citation=(
                     "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
                     " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
@@ -307,7 +301,6 @@ class PixelFlipping(PerturbationMetric):
                 arr=x_perturbed,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
             )
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
@@ -367,15 +360,16 @@ class PixelFlipping(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[float | np.ndarray]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -394,6 +388,6 @@ class PixelFlipping(PerturbationMetric):
             The evaluation results.
         """
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

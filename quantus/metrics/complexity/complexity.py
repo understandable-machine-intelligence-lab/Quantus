@@ -252,10 +252,11 @@ class Complexity(Metric):
         return scipy.stats.entropy(pk=a)
 
     def evaluate_batch(
-        self, *, x_batch: np.ndarray, a_batch: np.ndarray, **_
+        self, *args, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
     ) -> List[float]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -263,7 +264,9 @@ class Complexity(Metric):
             The input to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        args:
+            Unused.
+        kwargs:
             Unused.
 
         Returns
@@ -273,6 +276,4 @@ class Complexity(Metric):
             List of floats.
 
         """
-        # TODO: For performance gains, replace the for loop below with vectorisation.
-        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
-        return [self.evaluate_instance(x, a) for x, a in zip(x_batch, a_batch)]
+        return [self.evaluate_instance(x=x, a=a) for x, a in zip(x_batch, a_batch)]

@@ -391,4 +391,6 @@ class ModelParameterRandomisation(Metric):
         return corr_coeffs
 
     def evaluate_batch(self, *args, **kwargs):
-        raise RuntimeError("`evaluate_batch` must never be called for `ModelParameterRandomisation`.")
+        raise RuntimeError(
+            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
+        )

@@ -8,7 +8,18 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Sequence, ClassVar, Generator, Set
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Sequence,
+    ClassVar,
+    Generator,
+    Set,
+    TypedDict,
+    TypeVar,
+)
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,6 +36,9 @@ from quantus.helpers.enums import (
     EvaluationCategory,
 )
 from quantus.helpers.model.model_interface import ModelInterface
+
+D = TypeVar("D", bound=Dict[str, Any])
+log = logging.getLogger(__name__)
 
 
 class Metric:
@@ -250,9 +264,9 @@ class Metric:
                     self.evaluation_scores = [
                         self.aggregate_func(self.evaluation_scores)
                     ]
-                except:
-                    print(
-                        "The aggregation of evaluation scores failed. Check that "
+                except Exception as ex:
+                    log.error(
+                        f"The aggregation of evaluation scores failed with {ex}. Check that "
                         "'aggregate_func' supplied is appropriate for the data "
                         "in 'evaluation_scores'."
                     )
@@ -614,9 +628,9 @@ class Metric:
 
     def generate_batches(
         self,
-        data: Dict[str, ...],
+        data: D,
         batch_size: int,
-    ) -> Generator[Dict[str, ...], None, None]:
+    ) -> Generator[D, None, None]:
         """
         Creates iterator to iterate over all batched instances in data dictionary.
         Each iterator output element is a keyword argument dictionary with
@@ -764,7 +778,7 @@ class Metric:
 
     @property
     def last_results(self):
-        print(
+        log.warning(
             "Warning: 'last_results' has been renamed to 'evaluation_scores'. "
             "'last_results' is removed in current version."
         )
@@ -772,18 +786,15 @@ class Metric:
 
     @property
     def all_results(self):
-        print(
+        log.warning(
             "Warning: 'all_results' has been renamed to 'all_evaluation_scores'. "
             "'all_results' is removed in current version."
         )
         return self.all_evaluation_scores
 
     def batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
-        """
-        Does computationally heavy pre-processing on batch level to avoid OOM.
-        By default, will only generate explanations if missing, in case metric requires custom
-        data, it must be overriden in respective metric.
-        """
+        """If `data_batch` has no `a_batch`, will compute explanations. This needs to be done on batch level to avoid OOM."""
+
         x_batch = data_batch["x_batch"]
 
         a_batch = data_batch.get("a_batch")
@@ -799,7 +810,25 @@ class Metric:
             # TODO: we must not modify global state during evaluation.
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
+        custom_batch = self.custom_batch_preprocess(data_batch)
+        data_batch.update(custom_batch)
         return data_batch
+
+    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
+        """
+        Implement this method if you need custom preprocessing of data
+        or simply for creating/initialising additional attributes or assertions
+        before a `data_batch` can be evaluated.
+
+        Parameters
+        ----------
+        data_batch
+
+        Returns
+        -------
+
+        """
+        return {}
 
     def explain_batch(
         self,

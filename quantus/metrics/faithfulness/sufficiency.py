@@ -279,6 +279,17 @@ class Sufficiency(Metric):
         return np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
 
     def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """
+
+
+        Parameters
+        ----------
+        data_batch
+
+        Returns
+        -------
+
+        """
         data_batch = super().batch_preprocess(data_batch)
         model = data_batch["model"]
         x_batch = data_batch["x_batch"]
@@ -304,13 +315,13 @@ class Sufficiency(Metric):
         data_batch.update(custom_batch)
         return data_batch
 
-    @no_type_check
     def evaluate_batch(
-        self, *, i_batch, a_sim_vector_batch, y_pred_classes, **_
+        self, *args, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
     ) -> List[float]:
         """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
-        TODO: write meaningful docstring about what does it compute.
         Parameters
         ----------
         i_batch:
@@ -319,15 +330,21 @@ class Sufficiency(Metric):
             The custom input to be evaluated on an instance-basis.
         y_pred_classes:
             The class predictions of the complete input dataset.
-        _:
-            unused.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
 
+        evaluation_scores:
+            List of measured sufficiency for each entry in the batch.
         """
 
         return [
-            self.evaluate_instance(i, a_sim_vector, y_pred_classes)
+            self.evaluate_instance(
+                i=i, a_sim_vector=a_sim_vector, y_pred_classes=y_pred_classes
+            )
             for i, a_sim_vector in zip(i_batch, a_sim_vector_batch)
         ]

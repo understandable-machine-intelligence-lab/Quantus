@@ -382,22 +382,27 @@ class Focus(Metric):
         ]
         return quandrant_a
 
-    @no_type_check
     def evaluate_batch(
-        self, *, a_batch: np.ndarray, c_batch: np.ndarray, **_
+        self, *args, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
     ) -> List[float]:
         """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
         Parameters
         ----------
         a_batch:
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         c_batch:
             The custom input to be evaluated on an batch-basis.
-        _:
-            unused.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
-
+        retval:
+            Evaluation result for batch.
         """
-        return [self.evaluate_instance(a, c) for a, c in zip(a_batch, c_batch)]
+        return [self.evaluate_instance(a=a, c=c) for a, c in zip(a_batch, c_batch)]

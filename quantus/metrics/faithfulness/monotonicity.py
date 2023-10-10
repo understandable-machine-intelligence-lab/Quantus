@@ -16,16 +16,17 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class Monotonicity(PerturbationMetric):
+class Monotonicity(Metric):
     """
     Implementation of Monotonicity metric by Arya at el., 2019.
 
@@ -64,7 +65,7 @@ class Monotonicity(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -112,21 +113,11 @@ class Monotonicity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -137,6 +128,9 @@ class Monotonicity(PerturbationMetric):
 
         # Save metric-specific attributes.
         self.features_in_step = features_in_step
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -295,7 +289,7 @@ class Monotonicity(PerturbationMetric):
 
         # Copy the input x but fill with baseline values.
         baseline_value = utils.get_baseline_value(
-            value=self.perturb_func_kwargs["perturb_baseline"],
+            value=self.perturb_func.keywords["perturb_baseline"],
             arr=x,
             return_shape=x.shape,  # TODO. Double-check this over using = (1,).
         )
@@ -310,7 +304,6 @@ class Monotonicity(PerturbationMetric):
                 arr=x_baseline,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
             )
 
             # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -359,15 +352,16 @@ class Monotonicity(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[bool]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -379,7 +373,9 @@ class Monotonicity(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        args:
+            Unused.
+        kwargs:
             Unused.
 
         Returns
@@ -387,10 +383,8 @@ class Monotonicity(PerturbationMetric):
 
         scores_batch:
             List of floats.
-
         """
-
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

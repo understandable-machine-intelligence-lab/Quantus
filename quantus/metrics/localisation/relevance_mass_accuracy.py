@@ -297,20 +297,26 @@ class RelevanceMassAccuracy(Metric):
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
     def evaluate_batch(
-        self, *, a_batch: np.ndarray, s_batch: np.ndarray, **_
+        self, *args, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
     ) -> List[float]:
         """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
         Parameters
         ----------
         a_batch:
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch:
             A np.ndarray which contains segmentation masks that matches the input.
-        _:
-            unused.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
-
+        retval:
+            A list of Any with the evaluation scores for the batch.
         """
-        return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]
+        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]

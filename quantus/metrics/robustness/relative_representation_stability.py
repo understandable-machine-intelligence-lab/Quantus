@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
-from functools import partial
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -16,20 +15,23 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import (
+    make_perturb_func,
+    make_changed_prediction_indices_func,
+)
 
 
-class RelativeRepresentationStability(PerturbationMetric):
+class RelativeRepresentationStability(Metric):
     """
     Relative Representation Stability leverages the stability of an explanation with respect
     to the change in the output logits.
@@ -64,7 +66,7 @@ class RelativeRepresentationStability(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable[[np.ndarray], np.ndarray]] = np.mean,
@@ -75,7 +77,7 @@ class RelativeRepresentationStability(PerturbationMetric):
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
         return_nan_when_prediction_changes: bool = True,
-        **kwargs: Dict[str, ...],
+        **kwargs,
     ):
         """
         Parameters
@@ -117,19 +119,11 @@ class RelativeRepresentationStability(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_average_second_moment_estimate
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {"upper_bound": 0.2}
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -146,7 +140,12 @@ class RelativeRepresentationStability(PerturbationMetric):
 
         self._layer_names = layer_names
         self._layer_indices = layer_indices
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, upper_bound=0.2
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -329,7 +328,6 @@ class RelativeRepresentationStability(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
             # Generate explanations for perturbed input.
@@ -349,7 +347,7 @@ class RelativeRepresentationStability(PerturbationMetric):
             )
             rrs_batch[index] = rrs
             # If perturbed input caused change in prediction, then it's RRS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 

@@ -14,16 +14,17 @@ from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class InputInvariance(PerturbationMetric):
+class InputInvariance(Metric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -55,6 +56,7 @@ class InputInvariance(PerturbationMetric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         input_shift: Union[int, float] = -1,
+        perturb_func=baseline_replacement_by_shift,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -101,19 +103,11 @@ class InputInvariance(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        perturb_func = baseline_replacement_by_shift
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["input_shift"] = input_shift
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -122,11 +116,15 @@ class InputInvariance(PerturbationMetric):
             **kwargs,
         )
 
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, input_shift=input_shift
+        )
+
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=("input shift 'input_shift'"),
+                sensitive_params="input shift 'input_shift'",
                 citation=(
                     "Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., "
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
@@ -279,11 +277,10 @@ class InputInvariance(PerturbationMetric):
             indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
             indexed_axes=np.arange(0, x_batch[0].ndim),
             arr=x_batch,
-            **self.perturb_func_kwargs,
         )
 
         # Get input shift.
-        input_shift = self.perturb_func_kwargs["input_shift"]
+        input_shift = self.perturb_func.keywords["input_shift"]
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -307,37 +304,19 @@ class InputInvariance(PerturbationMetric):
 
         return score
 
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
-    ) -> None:
+    def custom_preprocess(self, *args, **kwargs) -> None:
         """
-        Implementation of custom_preprocess_batch.
+        Additional explain_func assert, as the one in prepare() won't be executed when a_batch != None.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
         None
         """
-        # Additional explain_func assert, as the one in prepare() won't be
-        # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)

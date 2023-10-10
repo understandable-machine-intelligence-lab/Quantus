@@ -228,10 +228,7 @@ class EffectiveComplexity(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        a: np.ndarray,
-    ) -> int:
+    def evaluate_instance(self, a: np.ndarray) -> int:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -249,26 +246,25 @@ class EffectiveComplexity(Metric):
         a = a.flatten()
         return int(np.sum(a > self.eps))
 
-    def evaluate_batch(self, *, a_batch: np.ndarray, **_) -> List[int]:
+    def evaluate_batch(self, *args, a_batch: np.ndarray, **kwargs) -> List[int]:
         """
-        Count how many attributions exceed the threshold `eps`
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
 
-        _:
-            Unused
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
 
         scores_batch:
             List of integers.
-
         """
-        # TODO: For performance gains, replace the for loop below with vectorisation.
-        # https://github.com/understandable-machine-intelligence-lab/Quantus/issues/299
-
         return [self.evaluate_instance(a) for a in a_batch]

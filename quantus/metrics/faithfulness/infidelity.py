@@ -15,16 +15,17 @@ from quantus.functions.loss_func import mse
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class Infidelity(PerturbationMetric):
+class Infidelity(Metric):
     """
     Implementation of Infidelity by Yeh et al., 2019.
 
@@ -66,7 +67,9 @@ class Infidelity(PerturbationMetric):
         n_perturb_samples: int = 10,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func: Optional[
+            Callable[[np.ndarray], np.ndarray]
+        ] = baseline_replacement_by_indices,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
@@ -122,13 +125,6 @@ class Infidelity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -157,6 +153,9 @@ class Infidelity(PerturbationMetric):
         self.perturb_patch_sizes = perturb_patch_sizes
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -343,7 +342,6 @@ class Infidelity(PerturbationMetric):
                             arr=x_perturbed_pad,
                             indices=patch_slice,
                             indexed_axes=self.a_axes,
-                            **self.perturb_func_kwargs,
                         )
 
                         # Remove padding.
@@ -413,15 +411,16 @@ class Infidelity(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[float]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -433,7 +432,9 @@ class Infidelity(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        args:
+            Unused.
+        kwargs:
             Unused.
 
         Returns
@@ -441,10 +442,9 @@ class Infidelity(PerturbationMetric):
 
         scores_batch:
             List of floats.
-
         """
 
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

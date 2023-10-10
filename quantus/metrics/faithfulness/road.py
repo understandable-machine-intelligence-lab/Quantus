@@ -14,16 +14,17 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import noisy_linear_imputation
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class ROAD(PerturbationMetric):
+class ROAD(Metric):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
 
@@ -62,8 +63,7 @@ class ROAD(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
-        perturb_baseline: str = "black",
+        perturb_func: Callable = noisy_linear_imputation,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -89,9 +89,6 @@ class ROAD(PerturbationMetric):
         perturb_func: callable
             Input perturbation function. If None, the default value is used,
             default=baseline_replacement_by_indices.
-        perturb_baseline: string
-            Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
@@ -110,20 +107,11 @@ class ROAD(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = noisy_linear_imputation
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["noise"] = noise
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -137,15 +125,15 @@ class ROAD(PerturbationMetric):
             percentages = list(range(1, 100, 2))
         self.percentages = percentages
         self.a_size = None
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, noise=noise
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline', perturbation function 'perturb_func', "
-                    "percentage of pixels k removed per iteration 'percentage_in_step'"
-                ),
+                sensitive_params="perturbation function 'perturb_func'",
                 data_domain_applicability=(
                     f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
@@ -281,12 +269,10 @@ class ROAD(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
-           : list
+        list:
             The evaluation results.
         """
         # Order indices.
@@ -300,7 +286,6 @@ class ROAD(PerturbationMetric):
             x_perturbed = self.perturb_func(
                 arr=x,
                 indices=top_k_indices,
-                **self.perturb_func_kwargs,
             )
 
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
@@ -360,7 +345,7 @@ class ROAD(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
@@ -368,7 +353,8 @@ class ROAD(PerturbationMetric):
         **kwargs,
     ):
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -380,6 +366,10 @@ class ROAD(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -387,6 +377,6 @@ class ROAD(PerturbationMetric):
             The evaluation results.
         """
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

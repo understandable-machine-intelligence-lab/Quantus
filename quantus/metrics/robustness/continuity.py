@@ -16,16 +16,17 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class Continuity(PerturbationMetric):
+class Continuity(Metric):
     """
     Implementation of the Continuity test by Montavon et al., 2018.
 
@@ -65,7 +66,7 @@ class Continuity(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = translation_x_direction,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -123,20 +124,11 @@ class Continuity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = translation_x_direction
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -154,6 +146,9 @@ class Continuity(PerturbationMetric):
         self.nr_patches: Optional[int] = None
         self.dx = None
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -311,7 +306,6 @@ class Continuity(PerturbationMetric):
                 indices=np.arange(0, x.size),
                 indexed_axes=np.arange(0, x.ndim),
                 perturb_dx=dx_step,
-                **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
@@ -438,13 +432,15 @@ class Continuity(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[Dict[str, int]]:
         """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -454,11 +450,16 @@ class Continuity(PerturbationMetric):
             A np.ndarray which contains the input data that are explained.
         y_batch:
             A np.ndarray which contains the output labels that are explained.
-        _:
-            unused.
+        kwargs:
+            Unused.
+        args:
+            Unused.
 
         Returns
         -------
 
         """
-        return [self.evaluate_instance(model, x, y) for x, y in zip(x_batch, y_batch)]
+        return [
+            self.evaluate_instance(model=model, x=x, y=y)
+            for x, y in zip(x_batch, y_batch)
+        ]

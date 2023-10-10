@@ -16,16 +16,20 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import (
+    make_changed_prediction_indices_func,
+    make_perturb_func,
+)
 
 
-class MaxSensitivity(PerturbationMetric):
+class MaxSensitivity(Metric):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 
@@ -62,7 +66,7 @@ class MaxSensitivity(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         lower_bound: float = 0.2,
         upper_bound: Optional[float] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -122,14 +126,6 @@ class MaxSensitivity(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["lower_bound"] = lower_bound
-        perturb_func_kwargs["upper_bound"] = upper_bound
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -158,8 +154,18 @@ class MaxSensitivity(PerturbationMetric):
 
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
+
         self.norm_denominator = norm_denominator
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func,
+            perturb_func_kwargs,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
+        self.max_func = np.max if return_nan_when_prediction_changes else np.nanmax
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -323,10 +329,9 @@ class MaxSensitivity(PerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 
@@ -341,10 +346,7 @@ class MaxSensitivity(PerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -357,8 +359,7 @@ class MaxSensitivity(PerturbationMetric):
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
 
-        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        return max_func(similarities, axis=1)
+        return self.max_func(similarities, axis=1)
 
     def custom_preprocess(
         self,

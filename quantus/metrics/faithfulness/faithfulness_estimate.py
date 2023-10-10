@@ -16,16 +16,17 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.perturbation_utils import make_perturb_func
 
 
-class FaithfulnessEstimate(PerturbationMetric):
+class FaithfulnessEstimate(Metric):
     """
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
@@ -58,7 +59,7 @@ class FaithfulnessEstimate(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -109,20 +110,10 @@ class FaithfulnessEstimate(PerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             normalise_func_kwargs=normalise_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
@@ -137,6 +128,9 @@ class FaithfulnessEstimate(PerturbationMetric):
             similarity_func = correlation_pearson
         self.similarity_func = similarity_func
         self.features_in_step = features_in_step
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -311,7 +305,6 @@ class FaithfulnessEstimate(PerturbationMetric):
                 arr=x,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
             )
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
@@ -367,15 +360,16 @@ class FaithfulnessEstimate(PerturbationMetric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[float]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -387,7 +381,9 @@ class FaithfulnessEstimate(PerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        _:
+        args:
+            Unused.
+        kwargs:
             Unused.
 
         Returns
@@ -395,10 +391,9 @@ class FaithfulnessEstimate(PerturbationMetric):
 
         scores_batch:
             List of floats.
-
         """
 
         return [
-            self.evaluate_instance(model, x, y, a)
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]

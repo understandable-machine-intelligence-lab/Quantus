@@ -327,10 +327,16 @@ class AttributionLocalisation(Metric):
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
     def evaluate_batch(
-        self, *, x_batch: np.ndarray, a_batch: np.ndarray, s_batch: np.ndarray, **_
+        self,
+        *args,
+        x_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+        **kwargs,
     ) -> List[float]:
         """
-        TODO: write meaningful docstring about what does it compute.
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -340,13 +346,17 @@ class AttributionLocalisation(Metric):
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray
             A np.ndarray which contains segmentation masks that matches the input.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
-        evaluation_scores: list
-            a list of floats.
+        retval:
+            Evaluation result for batch.
         """
         return [
-            self.evaluate_instance(x, a, s)
+            self.evaluate_instance(x=x, a=a, s=s)
             for x, a, s in zip(x_batch, a_batch, s_batch)
         ]
