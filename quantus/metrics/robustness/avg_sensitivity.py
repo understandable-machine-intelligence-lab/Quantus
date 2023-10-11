@@ -139,8 +139,6 @@ class AvgSensitivity(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,

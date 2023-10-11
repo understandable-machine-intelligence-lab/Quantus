@@ -6,7 +6,6 @@
 
 from quantus.metrics.axiomatic import *
 from quantus.metrics.base import Metric
-from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.metrics.complexity import *
 from quantus.metrics.faithfulness import *
 from quantus.metrics.localisation import *

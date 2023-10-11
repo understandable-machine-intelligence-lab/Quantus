@@ -23,12 +23,13 @@ def make_perturb_func(
     perturb_func: PerturbFunc, perturb_func_kwargs: Mapping[str, ...] | None, **kwargs
 ) -> PerturbFunc | functools.partial:
     """A utility function to save few lines of code during perturbation metric initialization."""
-    if perturb_func_kwargs is None:
-        perturb_func_kwargs = {}
+    if perturb_func_kwargs is not None:
+        func_kwargs = kwargs.copy()
+        func_kwargs.update(perturb_func_kwargs)
+    else:
+        func_kwargs = kwargs
 
-    kwargs.update(perturb_func_kwargs)
-
-    return functools.partial(perturb_func, **perturb_func_kwargs)
+    return functools.partial(perturb_func, **func_kwargs)
 
 
 def make_changed_prediction_indices_func(

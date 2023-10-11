@@ -27,9 +27,14 @@ from quantus.helpers.enums import (
 from quantus.helpers.model.model_interface import ModelInterface
 
 if sys.version_info >= (3, 8):
-    from typing import final
+    from typing import final, LiteralString
 else:
-    from typing_extensions import final
+    from typing_extensions import final, LiteralString
+
+if sys.version_info >= (3, 10):
+    from typing import LiteralString
+else:
+    from typing_extensions import LiteralString
 
 D = TypeVar("D", bound=Dict[str, Any])
 log = logging.getLogger(__name__)
@@ -40,7 +45,7 @@ class Metric:
     Interface defining Metrics' API.
     """
 
-    name: ClassVar[str]
+    name: ClassVar[LiteralString]
     data_applicability: ClassVar[Set[DataType]]
     model_applicability: ClassVar[Set[ModelType]]
     score_direction: ClassVar[ScoreDirection]
@@ -804,10 +809,13 @@ class Metric:
             data_batch["a_batch"] = a_batch
 
         custom_batch = self.custom_batch_preprocess(data_batch)
-        data_batch.update(custom_batch)
+        if custom_batch is not None:
+            data_batch.update(custom_batch)
         return data_batch
 
-    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
+    def custom_batch_preprocess(
+        self, data_batch: Dict[str, ...]
+    ) -> Dict[str, ...] | None:
         """
         Implement this method if you need custom preprocessing of data
         or simply for creating/initialising additional attributes or assertions
@@ -821,7 +829,7 @@ class Metric:
         -------
 
         """
-        return {}
+        pass
 
     @final
     def explain_batch(

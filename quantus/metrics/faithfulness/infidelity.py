@@ -73,11 +73,9 @@ class Infidelity(Metric):
         n_perturb_samples: int = 10,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[
-            Callable[[np.ndarray], np.ndarray]
-        ] = baseline_replacement_by_indices,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = baseline_replacement_by_indices,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -136,8 +134,6 @@ class Infidelity(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,

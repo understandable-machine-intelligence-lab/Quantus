@@ -347,3 +347,41 @@ class ROAD(Metric):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
+
+    def evaluate_batch(
+        self,
+        *args,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[List[float]]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        args:
+            Unused.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        list
+            The evaluation results.
+        """
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
