@@ -27,7 +27,7 @@ from quantus.helpers import warn
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions import complexity_func
+#from quantus.functions import complexity_func
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -38,11 +38,11 @@ from quantus.helpers.enums import (
 
 # The existing rules.
 RULES_N_BINS = {
-            "freedman_diaconis": complexity_func.freedman_diaconis_rule,
-            "scotts": complexity_func.scotts_rule,
-            "square_root": complexity_func.square_root_choice,
-            "sturges_formula": complexity_func.sturges_formula,
-            "rice": complexity_func.rice_rule
+            "freedman_diaconis": freedman_diaconis_rule,
+            "scotts": scotts_rule,
+            "square_root": square_root_choice,
+            "sturges_formula": sturges_formula,
+            "rice": rice_rule
         }
 
 class eMPRT(Metric):
@@ -76,11 +76,13 @@ class eMPRT(Metric):
         nr_samples: Optional[int] = None,
         seed: int = 42,
         compute_delta: bool = True,
+        compute_rate_of_change: bool = True,
         compute_delta_explanation_vs_model: bool = True,
         compute_correlation: bool = True,
         compute_last_complexity: bool = True,
-        return_delta_explanation_vs_model: bool = True,
+        return_delta_explanation_vs_model: bool = False,
         return_fraction: bool = False,
+        return_rate_of_change: bool = True,
         return_average_sample_score: bool = False,
         return_correlation: bool = False,
         return_last_complexity: bool = False,
@@ -165,7 +167,7 @@ class eMPRT(Metric):
 
         # Save metric-specific attributes.
         if complexity_func is None:
-            complexity_func = complexity_func.discrete_entropy
+            complexity_func = entropy
 
         if complexity_func_kwargs is None:
             complexity_func_kwargs = {}
@@ -179,11 +181,13 @@ class eMPRT(Metric):
         self.layer_order = layer_order
         self.nr_samples = nr_samples
         self.compute_delta = compute_delta
+        self.compute_rate_of_change = compute_rate_of_change
         self.compute_delta_explanation_vs_model = compute_delta_explanation_vs_model
         self.compute_correlation = compute_correlation
         self.compute_last_complexity = compute_last_complexity
         self.return_average_sample_score = return_average_sample_score
         self.return_fraction = return_fraction
+        self.return_rate_of_change = return_rate_of_change
         self.return_delta_explanation_vs_model = return_delta_explanation_vs_model
         self.return_correlation = return_correlation
         self.return_last_complexity = return_last_complexity
@@ -196,7 +200,8 @@ class eMPRT(Metric):
                     self.return_correlation,
                     self.return_last_complexity,
                     self.return_delta_explanation,
-                    return_delta_explanation_vs_model
+                    self.return_delta_explanation_vs_model,
+                    self.return_rate_of_change
                 ]) == 1, "Set one of the possible 'return' arguments to True."
 
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -361,6 +366,7 @@ class eMPRT(Metric):
         self.fraction_model_scores = np.zeros((self.nr_samples))
         self.delta_explanation_vs_models = np.zeros((self.nr_samples))
         self.correlation_scores = np.zeros((self.nr_samples))
+        self.rate_of_change_scores = np.zeros((self.nr_samples))
         self.explanation_scores = {}
         self.model_scores = {}
 
@@ -390,7 +396,7 @@ class eMPRT(Metric):
                 # Compute entropy of the output layer.
                 self.model_scores["orig"] = []
                 for y_ix, y_pred in enumerate(model.predict(x_batch)):
-                    score = complexity_func.discrete_entropy(a=y_pred, x=y_pred)
+                    score = entropy(a=y_pred, x=y_pred)
                     self.model_scores["orig"].append(score)
 
             # Skip layers if computing delta.
@@ -451,7 +457,7 @@ class eMPRT(Metric):
             # Predict and save scores.
             y_preds = random_layer_model_wrapped.predict(x_batch)
             for y_ix, y_pred in enumerate(y_preds):
-                score = complexity_func.discrete_entropy(a=y_pred, x=y_pred)
+                score = entropy(a=y_pred, x=y_pred)
                 model_scores.append(score)
 
             # Save explanation_scores scores in a result dictionary.
@@ -498,6 +504,11 @@ class eMPRT(Metric):
         if self.compute_delta_explanation_vs_model:
             self.delta_explanation_vs_models = [b / a if a != 0 else np.nan for a, b in zip(self.fraction_model_scores, self.fraction_explanation_scores)]
 
+        # If compute delta skill score per sample (model and explanations).
+        if self.compute_rate_of_change:
+            scores = list(self.explanation_scores.values())
+            self.rate_of_change_scores = [(b - a) / a for a, b in zip(scores[0], scores[-1])]
+
         # If return
         if self.return_delta_explanation:
             self.evaluation_scores = self.delta_explanation_scores
@@ -520,6 +531,9 @@ class eMPRT(Metric):
 
         if self.return_last_complexity:
             self.evaluation_scores = self.last_complexity_scores
+
+        if self.return_rate_of_change:
+            self.evaluation_scores = self.rate_of_change_scores
 
         # If return one aggregate score for all samples.
         if self.return_aggregate:
@@ -669,7 +683,6 @@ class eMPRT(Metric):
         corr_coeffs = list(self.explanation_scores.values())[-1]
 
         return corr_coeffs
-
 
     def find_n_bins(self,
                    a_batch: np.array,

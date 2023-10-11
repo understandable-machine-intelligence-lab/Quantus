@@ -34,83 +34,20 @@ from quantus.helpers.enums import (
 )
 
 
-def smoothexplain(model, inputs, targets, **kwargs):
-
-    xai_noiselevel = kwargs.pop("xai_noiselevel", 0.1)
-    xai_n_noisedraws = kwargs.pop("xai_n_noisedraws", 1)
-
-    device = kwargs.get("device", None)
-    if not isinstance(inputs, torch.Tensor):
-        inputs = torch.Tensor(inputs).to(device)
-
-    if not isinstance(targets, torch.Tensor):
-        targets = torch.as_tensor(targets).to(device)
-
-    dims = tuple(range(1, inputs.ndim))
-    std = xai_noiselevel / (inputs.amax(dims, keepdim=True) - inputs.amin(dims, keepdim=True))
-
-    result = None
-    for n in range(xai_n_noisedraws):
-        # the last epsilon is defined as zero to compute the true output,
-        # and have SmoothGrad w/ n_iter = 1 === gradient
-        if n == xai_n_noisedraws - 1:
-            epsilon = torch.zeros_like(inputs)
-        else:
-            epsilon = torch.randn_like(inputs) * std
-
-        expl = quantus.explain(model, inputs + epsilon, targets, **kwargs)
-
-        if result is None:
-            result = expl / xai_n_noisedraws
-        else:
-            result += expl / xai_n_noisedraws
-
-    return result
-"""This module contains the implementation of the Model Parameter Randomisation Test metric."""
-
-# This file is part of Quantus.
-# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
-# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    Collection,
-    Iterable,
-)
-import numpy as np
-from tqdm.auto import tqdm
-
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.base import Metric
-from quantus.helpers.enums import (
-    ModelType,
-    DataType,
-    ScoreDirection,
-    EvaluationCategory,
-)
-
-
-class sMPRT(Metric):
+class MPRT(Metric):
     """
-    Implementation of the Sampling Model Parameter Randomisation Test by Adebayo et. al., 2018.
+    Implementation of the Model Parameter Randomisation Test by Adebayo et. al., 2018.
 
-    The Sampling Model Parameter Randomization measures the distance between the original attribution and a newly computed
+    The Model Parameter Randomization measures the distance between the original attribution and a newly computed
     attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
     at a time.
 
-    ...................
+    Assumptions:
+        - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
+        HOG and SSIM. We have set Spearman as the default value.
+
+    References:
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
 
     Attributes:
         -  _name: The name of the metric.
@@ -120,7 +57,7 @@ class sMPRT(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Sampling Model Parameter Randomisation Test"
+    name = "Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -130,8 +67,6 @@ class sMPRT(Metric):
         self,
         similarity_func: Callable = None,
         layer_order: str = "independent",
-        noisy_versions: int = 300,
-        noisy_level: float = 0.1,
         seed: int = 42,
         return_sample_correlation: bool = False,
         return_last_correlation: bool = False,
@@ -204,8 +139,6 @@ class sMPRT(Metric):
             similarity_func = correlation_spearman
         self.similarity_func = similarity_func
         self.layer_order = layer_order
-        self.noisy_versions = noisy_versions
-        self.noisy_level = noisy_level
         self.seed = seed
         self.return_sample_correlation = return_sample_correlation
         self.return_last_correlation = return_last_correlation
@@ -351,6 +284,8 @@ class sMPRT(Metric):
         a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
+        self.correlation_scores = np.zeros((len(x_batch)))
+        self.similarity_scores = {}
         self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
@@ -366,21 +301,19 @@ class sMPRT(Metric):
 
             similarity_scores = [None for _ in x_batch]
 
-            # Skip layers if last coefficient.
+            # Skip layers if computing delta.
             if self.skip_layers and (l_ix + 1) < len(model_iterator):
                 continue
 
             # Save correlation scores of no perturbation.
-            if l_ix == 0:
+            if l_ix == 0: # (l_ix == 0 and self.layer_order == "bottom_up") or (l_ix+1 == len(model_iterator) and self.layer_order == "top_down"):
 
                 # Generate an explanation with perturbed model.
-                # FIXME. With smoothexplain implementation.
-                a_batch_original = smoothexplain(
+                a_batch_original = self.explain_func(
                     model=model.get_model(),
                     inputs=x_batch,
                     targets=y_batch,
-                    **{**self.explain_func_kwargs, **{"xai_n_noisedraws": self.noisy_versions,
-                                                  "xai_noiselevel": self.noisy_level}},
+                    **self.explain_func_kwargs,
                 )
 
                 batch_iterator = enumerate(zip(a_batch, a_batch_original))
@@ -394,16 +327,16 @@ class sMPRT(Metric):
                         a_perturbed=a_ori,
                     )
                     similarity_scores[instance_id] = score
-                self.evaluation_scores["orig"] = similarity_scores[instance_id]
 
-            # FIXME. With smoothexplain implementation!
+                # Save similarity scores in a result dictionary.
+                self.similarity_scores["orig"] = similarity_scores
+
             # Generate an explanation with perturbed model.
-            a_batch_perturbed = smoothexplain(
+            a_batch_perturbed = self.explain_func(
                 model=random_layer_model,
                 inputs=x_batch,
                 targets=y_batch,
-                **{**self.explain_func_kwargs, **{"xai_n_noisedraws": self.noisy_versions,
-                                                  "xai_noiselevel": self.noisy_level}},
+                **self.explain_func_kwargs,
             )
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
@@ -419,7 +352,7 @@ class sMPRT(Metric):
                 similarity_scores[instance_id] = score
 
             # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
+            self.similarity_scores[layer_name] = similarity_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -431,10 +364,12 @@ class sMPRT(Metric):
         )
 
         if self.return_sample_correlation:
-            self.evaluation_scores = self.recompute_correlation_per_sample()
+            self.correlation_scores = self.recompute_correlation_per_sample()
+            self.evaluation_scores = self.correlation_scores
 
         elif self.return_last_correlation:
-            self.evaluation_scores = self.recompute_last_correlation_per_sample()
+            self.correlation_scores = self.recompute_last_correlation_per_sample()
+            self.evaluation_scores = self.correlation_scores
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -529,21 +464,21 @@ class sMPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.similarity_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
+            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
             "must be of type dict."
         )
         layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+            self.similarity_scores[list(self.similarity_scores.keys())[0]]
         )
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.evaluation_scores:
+            for layer in self.similarity_scores:
                 if layer == "orig":
                     continue
-                results[sample].append(float(self.evaluation_scores[layer][sample]))
+                results[sample].append(float(self.similarity_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
@@ -554,11 +489,14 @@ class sMPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.evaluation_scores, dict), (
+        assert isinstance(self.similarity_scores, dict), (
             "To compute the last correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
+            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
             "must be of type dict."
         )
-        corr_coeffs = list(self.evaluation_scores.values())[-1]
+        #if self.layer_order == "top_down":
+        #    corr_coeffs = list(self.similarity_scores.values())[-2]
+        #elif self.layer_order == "bottom_up":
+        corr_coeffs = list(self.similarity_scores.values())[-1]
 
         return corr_coeffs
