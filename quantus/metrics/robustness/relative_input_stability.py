@@ -39,7 +39,7 @@ else:
 
 
 @final
-class RelativeInputStability(Metric):
+class RelativeInputStability(Metric[List[float]]):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data.
 

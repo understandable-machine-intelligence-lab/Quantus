@@ -35,7 +35,7 @@ else:
 
 
 @final
-class LocalLipschitzEstimate(Metric):
+class LocalLipschitzEstimate(Metric[List[float]]):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 

@@ -29,7 +29,7 @@ else:
 
 
 @final
-class Consistency(Metric):
+class Consistency(Metric[List[float]]):
     """
     Implementation of the Consistency metric which measures the expected local consistency, i.e., the probability
     of the prediction label for a given datapoint coinciding with the prediction labels of other data points that

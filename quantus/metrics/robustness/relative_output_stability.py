@@ -39,7 +39,7 @@ else:
 
 
 @final
-class RelativeOutputStability(Metric):
+class RelativeOutputStability(Metric[List[float]]):
     """
     Relative Output Stability leverages the stability of an explanation with respect to the change in the output logits.
 

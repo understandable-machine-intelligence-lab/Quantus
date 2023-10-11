@@ -29,7 +29,7 @@ else:
 
 
 @final
-class TopKIntersection(Metric):
+class TopKIntersection(Metric[List[float]]):
     """
     Implementation of the top-k intersection by Theiner et al., 2021.
 

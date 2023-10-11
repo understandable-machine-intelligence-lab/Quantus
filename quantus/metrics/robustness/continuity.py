@@ -32,7 +32,7 @@ else:
 
 
 @final
-class Continuity(Metric):
+class Continuity(Metric[List[float]]):
     """
     Implementation of the Continuity test by Montavon et al., 2018.
 

@@ -29,7 +29,7 @@ else:
 
 
 @final
-class RelevanceRankAccuracy(Metric):
+class RelevanceRankAccuracy(Metric[List[float]]):
     """
     Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
 

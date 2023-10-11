@@ -48,9 +48,10 @@ else:
     from typing_extensions import LiteralString
 
 D = TypeVar("D", bound=Dict[str, Any])
+log = logging.getLogger(__name__)
+
 # Return value of __call__
 R = TypeVar("R")
-log = logging.getLogger(__name__)
 
 
 class Metric(Generic[R]):

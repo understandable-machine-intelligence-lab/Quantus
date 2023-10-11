@@ -37,7 +37,7 @@ else:
 
 
 @final
-class AvgSensitivity(Metric):
+class AvgSensitivity(Metric[List[float]]):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 

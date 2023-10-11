@@ -29,7 +29,7 @@ else:
 
 
 @final
-class PointingGame(Metric):
+class PointingGame(Metric[List[float]]):
     """
     Implementation of the Pointing Game by Zhang et al., 2018.
 

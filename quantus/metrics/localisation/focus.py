@@ -29,7 +29,7 @@ else:
 
 
 @final
-class Focus(Metric):
+class Focus(Metric[List[float]]):
     """
     Implementation of Focus evaluation strategy by Arias et. al. 2022
 

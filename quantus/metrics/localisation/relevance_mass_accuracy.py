@@ -29,7 +29,7 @@ else:
 
 
 @final
-class RelevanceMassAccuracy(Metric):
+class RelevanceMassAccuracy(Metric[List[float]]):
     """
     Implementation of the Relevance Mass Accuracy by Arras et al., 2021.
 

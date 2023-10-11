@@ -36,7 +36,7 @@ else:
 
 
 @final
-class MaxSensitivity(Metric):
+class MaxSensitivity(Metric[List[float]]):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 

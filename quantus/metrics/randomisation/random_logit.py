@@ -30,7 +30,7 @@ else:
 
 
 @final
-class RandomLogit(Metric):
+class RandomLogit(Metric[List[float]]):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
 

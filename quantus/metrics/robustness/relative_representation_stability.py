@@ -39,7 +39,7 @@ else:
 
 
 @final
-class RelativeRepresentationStability(Metric):
+class RelativeRepresentationStability(Metric[List[float]]):
     """
     Relative Representation Stability leverages the stability of an explanation with respect
     to the change in the output logits.
