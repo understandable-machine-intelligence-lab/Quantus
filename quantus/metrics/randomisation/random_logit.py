@@ -6,23 +6,30 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class RandomLogit(Metric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
@@ -326,14 +333,16 @@ class RandomLogit(Metric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> List[float]:
         """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
         Parameters
         ----------
@@ -345,8 +354,10 @@ class RandomLogit(Metric):
             A np.ndarray which contains the output labels that are explained.
         a_batch:
             A np.ndarray which contains pre-computed attributions i.e., explanations.
-        _:
-            unused.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
         Returns
         -------

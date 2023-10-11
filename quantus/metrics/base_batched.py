@@ -9,7 +9,6 @@ import warnings
 
 from quantus.metrics.base import Metric
 
-
 """Aliases to smoothen transition to uniform metric API."""
 
 

@@ -7,35 +7,29 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Sequence,
-    ClassVar,
-    Generator,
-    Set,
-    TypedDict,
-    TypeVar,
-)
 import logging
+import sys
+from abc import abstractmethod
+from typing import Any, Callable, ClassVar, Dict, Generator, Sequence, Set, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.utils import gen_batches
 from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
+from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
 from quantus.helpers.model.model_interface import ModelInterface
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 D = TypeVar("D", bound=Dict[str, Any])
 log = logging.getLogger(__name__)
@@ -316,6 +310,7 @@ class Metric:
         """
         raise NotImplementedError()
 
+    @final
     def general_preprocess(
         self,
         model,
@@ -626,6 +621,7 @@ class Metric:
         """
         pass
 
+    @final
     def generate_batches(
         self,
         data: D,
@@ -792,6 +788,7 @@ class Metric:
         )
         return self.all_evaluation_scores
 
+    @final
     def batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
         """If `data_batch` has no `a_batch`, will compute explanations. This needs to be done on batch level to avoid OOM."""
 
@@ -805,10 +802,6 @@ class Metric:
             y_batch = data_batch["y_batch"]
             a_batch = self.explain_batch(model, x_batch, y_batch)
             data_batch["a_batch"] = a_batch
-
-        if hasattr(self, "a_axes") and self.a_axes is None:
-            # TODO: we must not modify global state during evaluation.
-            self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         custom_batch = self.custom_batch_preprocess(data_batch)
         data_batch.update(custom_batch)
@@ -830,6 +823,7 @@ class Metric:
         """
         return {}
 
+    @final
     def explain_batch(
         self,
         model: ModelInterface,
@@ -837,7 +831,6 @@ class Metric:
         y_batch: np.ndarray,
     ) -> np.ndarray:
         """
-
         Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
         This method should primarily be used if you need to generate additional explanation
         in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.

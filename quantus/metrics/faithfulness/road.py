@@ -6,24 +6,31 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import noisy_linear_imputation
-from quantus.metrics.base import Metric
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class ROAD(Metric):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
@@ -300,6 +307,11 @@ class ROAD(Metric):
         # Return list of booleans for each percentage.
         return results_instance
 
+    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
+        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
+        if self.a_size is None:
+            self.a_size = data_batch["a_batch"][0, :, :].size
+
     def custom_postprocess(
         self,
         model: ModelInterface,
@@ -335,48 +347,3 @@ class ROAD(Metric):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
-
-    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
-        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
-        data_batch = super().batch_preprocess(data_batch)
-        # Infer the size of attributions.
-        self.a_size = data_batch["a_batch"][0, :, :].size
-        return data_batch
-
-    def evaluate_batch(
-        self,
-        *args,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        **kwargs,
-    ):
-        """
-        This method performs XAI evaluation on a single batch of explanations.
-        For more information on the specific logic, we refer the metric’s initialisation docstring.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        args:
-            Unused.
-        kwargs:
-            Unused.
-
-        Returns
-        -------
-        list
-            The evaluation results.
-        """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]

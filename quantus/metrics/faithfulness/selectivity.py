@@ -7,26 +7,31 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import itertools
+import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import plotting
-from quantus.helpers import utils
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import Metric
+from quantus.helpers import plotting, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class Selectivity(Metric):
     """
     Implementation of Selectivity test by Montavon et al., 2018.

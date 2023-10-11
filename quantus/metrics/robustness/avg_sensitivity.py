@@ -1,5 +1,27 @@
 """This module contains the implementation of the Avg-Sensitivity metric."""
 import functools
+import sys
+from typing import Any, Callable, Dict, List, Optional
+
+import numpy as np
+
+from quantus.functions import norm_func
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import perturb_batch, uniform_noise
+from quantus.functions.similarity_func import difference
+from quantus.helpers import asserts, warn
+from quantus.helpers.enums import (
+    DataType,
+    EvaluationCategory,
+    ModelType,
+    ScoreDirection,
+)
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import (
+    make_changed_prediction_indices_func,
+    make_perturb_func,
+)
+from quantus.metrics.base import Metric
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -7,29 +29,14 @@ import functools
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
-import numpy as np
 
-from quantus.helpers import asserts
-from quantus.functions import norm_func
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.functions.similarity_func import difference
-from quantus.metrics.base import Metric
-from quantus.helpers.enums import (
-    ModelType,
-    DataType,
-    ScoreDirection,
-    EvaluationCategory,
-)
-from quantus.helpers.perturbation_utils import (
-    make_perturb_func,
-    make_changed_prediction_indices_func,
-)
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class AvgSensitivity(Metric):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.

@@ -6,29 +6,35 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
-from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.base import Metric
+from quantus.functions.similarity_func import distance_euclidean, lipschitz_constant
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
-
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import (
-    make_perturb_func,
     make_changed_prediction_indices_func,
+    make_perturb_func,
 )
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class LocalLipschitzEstimate(Metric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
@@ -303,7 +309,7 @@ class LocalLipschitzEstimate(Metric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -318,6 +324,8 @@ class LocalLipschitzEstimate(Metric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
 
         Returns
         -------

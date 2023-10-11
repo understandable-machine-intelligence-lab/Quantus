@@ -6,21 +6,29 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional, no_type_check
+
 import numpy as np
 
-from quantus.helpers import warn
 from quantus.functions.discretise_func import top_n_sign
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.metrics.base import Metric
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class Consistency(Metric):
     """
     Implementation of the Consistency metric which measures the expected local consistency, i.e., the probability

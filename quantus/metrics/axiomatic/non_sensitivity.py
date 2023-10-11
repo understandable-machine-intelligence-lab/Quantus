@@ -6,24 +6,31 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class NonSensitivity(Metric):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
@@ -356,7 +363,7 @@ class NonSensitivity(Metric):
 
     def evaluate_batch(
         self,
-        *,
+        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
@@ -377,7 +384,8 @@ class NonSensitivity(Metric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-
+        args:
+            Unused.
         kwargs:
             Unused.
 

@@ -4,9 +4,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from quantus.metrics.axiomatic import *
 from quantus.metrics.base import Metric
 from quantus.metrics.base_perturbed import PerturbationMetric
-from quantus.metrics.axiomatic import *
 from quantus.metrics.complexity import *
 from quantus.metrics.faithfulness import *
 from quantus.metrics.localisation import *

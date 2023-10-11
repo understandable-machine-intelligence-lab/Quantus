@@ -385,6 +385,7 @@ def generate_tf_explanation(
         )
 
     elif method == "SmoothGrad":
+
         num_samples = kwargs.get("num_samples", 5)
         noise = kwargs.get("noise", 0.1)
         explainer = tf_explain.core.smoothgrad.SmoothGrad()

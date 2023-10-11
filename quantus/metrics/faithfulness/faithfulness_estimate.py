@@ -5,27 +5,32 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class FaithfulnessEstimate(Metric):
     """
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.

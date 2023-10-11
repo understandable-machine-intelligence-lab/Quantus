@@ -6,31 +6,39 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+
 import numpy as np
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
 
+import sys
 
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base import Metric
-from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.functions.perturb_func import perturb_batch, uniform_noise
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.perturbation_utils import (
-    make_perturb_func,
     make_changed_prediction_indices_func,
+    make_perturb_func,
 )
+from quantus.helpers.warn import warn_parameterisation
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
+@final
 class RelativeRepresentationStability(Metric):
     """
     Relative Representation Stability leverages the stability of an explanation with respect
