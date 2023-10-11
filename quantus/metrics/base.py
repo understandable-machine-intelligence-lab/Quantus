@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from abc import abstractmethod
 from typing import Any, Callable, ClassVar, Dict, Generator, Sequence, Set, TypeVar
@@ -27,9 +28,9 @@ from quantus.helpers.enums import (
 from quantus.helpers.model.model_interface import ModelInterface
 
 if sys.version_info >= (3, 8):
-    from typing import final, LiteralString
+    from typing import LiteralString, final
 else:
-    from typing_extensions import final, LiteralString
+    from typing_extensions import LiteralString, final
 
 if sys.version_info >= (3, 10):
     from typing import LiteralString
@@ -45,12 +46,19 @@ class Metric:
     Interface defining Metrics' API.
     """
 
+    # Class attributes.
     name: ClassVar[LiteralString]
     data_applicability: ClassVar[Set[DataType]]
     model_applicability: ClassVar[Set[ModelType]]
     score_direction: ClassVar[ScoreDirection]
     # can one metric fall into multiple categories?
     evaluation_category: ClassVar[EvaluationCategory]
+    # Instance attributes.
+    explain_func: Callable
+    explain_func_kwargs: Dict[str, ...]
+    a_axes: Sequence[int]
+    evaluation_scores: Any
+    all_evaluation_scores: Any
 
     def __init__(
         self,
@@ -113,19 +121,17 @@ class Metric:
         self.return_aggregate = return_aggregate
         self.aggregate_func = aggregate_func
         self.normalise_func = normalise_func
-
-        if normalise_func_kwargs is None:
-            normalise_func_kwargs = {}
-        self.normalise_func_kwargs = normalise_func_kwargs
+        self.normalise_func_kwargs = normalise_func_kwargs or {}
 
         self.default_plot_func = default_plot_func
-        self.disable_warnings = disable_warnings
-        self.display_progressbar = display_progressbar
+        # We need underscores here to avoid conflict with @property descriptor.
+        self._disable_warnings = disable_warnings
+        self._display_progressbar = display_progressbar
 
-        self.a_axes: Sequence[int] = None
+        self.a_axes = None
 
-        self.evaluation_scores: Any = []
-        self.all_evaluation_scores: Any = []
+        self.evaluation_scores = []
+        self.all_evaluation_scores = []
 
     def __call__(
         self,
@@ -388,7 +394,6 @@ class Metric:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch = utils.make_channel_first(x_batch, channel_first)
 
-        # TODO: can model be None?
         if model is not None:
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
@@ -401,9 +406,7 @@ class Metric:
 
         # Save as attribute, some metrics need it during processing.
         self.explain_func = explain_func
-        if explain_func_kwargs is None:
-            explain_func_kwargs = {}
-        self.explain_func_kwargs = explain_func_kwargs
+        self.explain_func_kwargs = explain_func_kwargs or {}
 
         # Include device in explain_func_kwargs.
         if device is not None and "device" not in self.explain_func_kwargs:
@@ -688,23 +691,16 @@ class Metric:
 
         n_batches = np.ceil(n_instances / batch_size)
 
-        # Create iterator for batch index.
-        iterator = tqdm(
-            total=n_batches,
-            disable=not self.display_progressbar,
-        )
-
-        # Iterate over batch index
-        for batch_idx in gen_batches(n_instances, batch_size):
-            # Calculate instance index for start and end of batch.
-            # Create batch dictionary with all specified batch instance values
-            batch = {
-                key: value[batch_idx.start : batch_idx.stop]
-                for key, value in batched_value_kwargs.items()
-            }
-            # Yield batch dictionary including single value keyword arguments.
-            yield {**batch, **single_value_kwargs}
-            iterator.update(min(batch_size, batch_idx.stop - batch_idx.start))
+        with tqdm(total=n_batches, disable=not self.display_progressbar) as pbar:
+            for batch_idx in gen_batches(n_instances, batch_size):
+                batch = {
+                    key: value[batch_idx.start : batch_idx.stop]
+                    for key, value in batched_value_kwargs.items()
+                }
+                # Yield batch dictionary including single value keyword arguments.
+                yield {**batch, **single_value_kwargs}
+                # Update progressbar by number of samples in this batch.
+                pbar.update(batch_idx.stop - batch_idx.start)
 
     def plot(
         self,
@@ -777,25 +773,13 @@ class Metric:
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-    @property
-    def last_results(self):
-        log.warning(
-            "Warning: 'last_results' has been renamed to 'evaluation_scores'. "
-            "'last_results' is removed in current version."
-        )
-        return self.evaluation_scores
-
-    @property
-    def all_results(self):
-        log.warning(
-            "Warning: 'all_results' has been renamed to 'all_evaluation_scores'. "
-            "'all_results' is removed in current version."
-        )
-        return self.all_evaluation_scores
-
     @final
     def batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
-        """If `data_batch` has no `a_batch`, will compute explanations. This needs to be done on batch level to avoid OOM."""
+        """
+        If `data_batch` has no `a_batch`, will compute explanations.
+        This needs to be done on batch level to avoid OOM. Additionally will set `a_axes` property if it is None,
+        this can be done earliest after we have first `a_batch`.
+        """
 
         x_batch = data_batch["x_batch"]
 
@@ -807,6 +791,9 @@ class Metric:
             y_batch = data_batch["y_batch"]
             a_batch = self.explain_batch(model, x_batch, y_batch)
             data_batch["a_batch"] = a_batch
+
+        if self.a_axes is None:
+            self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         custom_batch = self.custom_batch_preprocess(data_batch)
         if custom_batch is not None:
@@ -884,3 +871,29 @@ class Metric:
             a_batch = np.abs(a_batch)
 
         return a_batch
+
+    @property
+    def display_progressbar(self) -> bool:
+        """A helper to avoid polluting test outputs with tqdm progress bars."""
+        return (
+            self._display_progressbar
+            and
+            # Don't show progress bar in github actions.
+            os.environ.get("GITHUB_ACTIONS") != "true"
+            and
+            # Don't show progress bar when running unit tests.
+            "PYTEST" not in os.environ
+        )
+
+    @property
+    def disable_warnings(self) -> bool:
+        """A helper to avoid polluting test outputs with warnings."""
+        return (
+            not self._disable_warnings
+            and
+            # Don't show progress bar in github actions.
+            os.environ.get("GITHUB_ACTIONS") != "true"
+            and
+            # Don't show progress bar when running unit tests.
+            "PYTEST" not in os.environ
+        )

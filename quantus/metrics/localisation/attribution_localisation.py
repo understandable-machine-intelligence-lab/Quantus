@@ -122,9 +122,6 @@ class AttributionLocalisation(Metric):
         # Save metric-specific attributes.
         self.weighted = weighted
         self.max_size = max_size
-
-        # Asserts and warnings.
-        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,

@@ -455,10 +455,3 @@ class RegionPerturbation(Metric):
             self.evaluate_instance(model=model, x=x, y=y, a=a)
             for x, y, a in zip(x_batch, y_batch, a_batch)
         ]
-
-    def custom_batch_preprocess(self, data_batch: Dict[str, ...]):
-        """RegionPerturbation requires `a_axes` property to be set before evaluation."""
-        if self.a_axes is None:
-            self.a_axes = utils.infer_attribution_axes(
-                data_batch["a_batch"], data_batch["x_batch"]
-            )
