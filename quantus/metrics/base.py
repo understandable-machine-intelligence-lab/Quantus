@@ -38,9 +38,9 @@ from quantus.helpers.enums import (
 from quantus.helpers.model.model_interface import ModelInterface
 
 if sys.version_info >= (3, 8):
-    from typing import LiteralString, final
+    from typing import final
 else:
-    from typing_extensions import LiteralString, final
+    from typing_extensions import final
 
 if sys.version_info >= (3, 11):
     from typing import LiteralString
