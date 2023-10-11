@@ -768,7 +768,7 @@ def test_top_k_intersection(
     )
 
     if isinstance(expected, float):
-        assert all(round(s, 2) == round(expected, 2) for s in scores), "Test failed."
+        np.testing.assert_allclose(scores, expected, atol=0.01)
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
     else:
