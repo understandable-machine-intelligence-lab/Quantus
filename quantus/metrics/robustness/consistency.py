@@ -276,19 +276,10 @@ class Consistency(Metric):
             return 0
         return np.sum(pred_same_a == pred_a) / len(diff_a)
 
-    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
-        """
-
-        Parameters
-        ----------
-        data_batch
-
-        Returns
-        -------
-
-        """
-        data_batch = super().batch_preprocess(data_batch)
-
+    def custom_batch_preprocess(
+        self, data_batch: Dict[str, ...]
+    ) -> Dict[str, ...] | None:
+        """Compute additional arguments required for Consistency on batch-level."""
         model = data_batch["model"]
         x_batch = data_batch["x_batch"]
         x_input = model.shape_input(
@@ -302,14 +293,11 @@ class Consistency(Metric):
 
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        custom_batch = {
+        return {
             "i_batch": np.arange(x_batch.shape[0]),
             "a_label_batch": a_labels,
             "y_pred_classes": y_pred_classes,
         }
-
-        data_batch.update(custom_batch)
-        return data_batch
 
     @no_type_check
     def evaluate_batch(

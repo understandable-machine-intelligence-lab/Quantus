@@ -26,7 +26,8 @@ else:
     from typing_extensions import final
 
 
-class Sparseness(Metric):
+@final
+class Sparseness(Metric[List[float]]):
     """
     Implementation of Sparseness metric by Chalasani et al., 2020.
 

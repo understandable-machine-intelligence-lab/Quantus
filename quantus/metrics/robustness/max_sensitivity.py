@@ -303,7 +303,7 @@ class MaxSensitivity(Metric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        **_,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -318,6 +318,8 @@ class MaxSensitivity(Metric):
             The output to be evaluated on an instance-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
+        kwargs:
+            Unused.
 
         Returns
         -------

@@ -32,7 +32,7 @@ else:
 
 
 @final
-class MonotonicityCorrelation(Metric):
+class MonotonicityCorrelation(Metric[List[float]]):
     """
     Implementation of Monotonicity Correlation metric by Nguyen at el., 2020.
 

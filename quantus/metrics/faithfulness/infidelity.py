@@ -31,7 +31,7 @@ else:
 
 
 @final
-class Infidelity(Metric):
+class Infidelity(Metric[List[float]]):
     """
     Implementation of Infidelity by Yeh et al., 2019.
 

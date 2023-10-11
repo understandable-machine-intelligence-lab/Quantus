@@ -30,7 +30,7 @@ else:
 
 
 @final
-class Monotonicity(Metric):
+class Monotonicity(Metric[List[float]]):
     """
     Implementation of Monotonicity metric by Arya at el., 2019.
 

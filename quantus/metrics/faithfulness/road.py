@@ -31,7 +31,7 @@ else:
 
 
 @final
-class ROAD(Metric):
+class ROAD(Metric[List[float]]):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
 
@@ -307,6 +307,11 @@ class ROAD(Metric):
         # Return list of booleans for each percentage.
         return results_instance
 
+    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
+        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
+        if self.a_size is None:
+            self.a_size = data_batch["a_batch"][0, :, :].size
+
     def custom_postprocess(
         self,
         model: ModelInterface,
@@ -342,11 +347,6 @@ class ROAD(Metric):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
-
-    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> Dict[str, ...]:
-        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
-        if self.a_size is None:
-            self.a_size = data_batch["a_batch"][0, :, :].size
 
     def evaluate_batch(
         self,

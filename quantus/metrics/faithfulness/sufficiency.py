@@ -29,7 +29,7 @@ else:
 
 
 @final
-class Sufficiency(Metric):
+class Sufficiency(Metric[List[float]]):
     """
     Implementation of Sufficiency test by Dasgupta et al., 2022.
 
@@ -285,6 +285,32 @@ class Sufficiency(Metric):
             return 0
         return np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
 
+    def custom_batch_preprocess(
+        self, data_batch: Dict[str, ...]
+    ) -> Dict[str, np.ndarray]:
+        """Compute additional arguments required for Sufficiency evaluation on batch-level."""
+        model = data_batch["model"]
+        a_batch = data_batch["a_batch"]
+        x_batch = data_batch["x_batch"]
+
+        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
+        dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)
+        dist_matrix = self.normalise_func(dist_matrix)
+        a_sim_matrix = np.zeros_like(dist_matrix)
+        a_sim_matrix[dist_matrix <= self.threshold] = 1
+
+        # Predict on input.
+        x_input = model.shape_input(
+            x_batch, x_batch[0].shape, channel_first=True, batched=True
+        )
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+
+        return {
+            "i_batch": np.arange(x_batch.shape[0]),
+            "a_sim_vector_batch": a_sim_matrix,
+            "y_pred_classes": y_pred_classes,
+        }
+
     def evaluate_batch(
         self, *args, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
     ) -> List[float]:
@@ -318,28 +344,3 @@ class Sufficiency(Metric):
             )
             for i, a_sim_vector in zip(i_batch, a_sim_vector_batch)
         ]
-
-    def custom_batch_preprocess(
-        self, data_batch: Dict[str, ...]
-    ) -> Dict[str, np.ndarray]:
-        model = data_batch["model"]
-        a_batch = data_batch["a_batch"]
-        x_batch = data_batch["x_batch"]
-
-        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
-        dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)
-        dist_matrix = self.normalise_func(dist_matrix)
-        a_sim_matrix = np.zeros_like(dist_matrix)
-        a_sim_matrix[dist_matrix <= self.threshold] = 1
-
-        # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch[0].shape, channel_first=True, batched=True
-        )
-        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
-
-        return {
-            "i_batch": np.arange(x_batch.shape[0]),
-            "a_sim_vector_batch": a_sim_matrix,
-            "y_pred_classes": y_pred_classes,
-        }

@@ -32,7 +32,7 @@ else:
 
 
 @final
-class SensitivityN(Metric):
+class SensitivityN(Metric[List[float]]):
     """
     Implementation of Sensitivity-N test by Ancona et al., 2019.
 

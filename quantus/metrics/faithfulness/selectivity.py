@@ -32,7 +32,7 @@ else:
 
 
 @final
-class Selectivity(Metric):
+class Selectivity(Metric[List[float]]):
     """
     Implementation of Selectivity test by Montavon et al., 2018.
 

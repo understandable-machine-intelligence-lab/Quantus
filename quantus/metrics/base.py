@@ -11,7 +11,17 @@ import logging
 import os
 import sys
 from abc import abstractmethod
-from typing import Any, Callable, ClassVar, Dict, Generator, Sequence, Set, TypeVar
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Generator,
+    Sequence,
+    Set,
+    TypeVar,
+    Generic,
+)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,16 +42,18 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import LiteralString, final
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 11):
     from typing import LiteralString
 else:
     from typing_extensions import LiteralString
 
 D = TypeVar("D", bound=Dict[str, Any])
+# Return value of __call__
+R = TypeVar("R")
 log = logging.getLogger(__name__)
 
 
-class Metric:
+class Metric(Generic[R]):
     """
     Interface defining Metrics' API.
     """
@@ -149,7 +161,7 @@ class Metric:
         batch_size: int = 64,
         custom_batch: Any = None,
         **kwargs,
-    ):
+    ) -> R:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -293,7 +305,7 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
+        s_batch: np.ndarray | None,
         **kwargs,
     ):
         """
@@ -457,8 +469,8 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: np.ndarray | None,
         a_batch: np.ndarray | None,
-        s_batch: np.ndarray,
-        custom_batch: np.ndarray | None,
+        s_batch: np.ndarray | None,
+        custom_batch: Any,
     ) -> Dict[str, ...] | None:
         """
         Implement this method if you need custom preprocessing of data,
@@ -600,7 +612,7 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: np.ndarray | None,
         a_batch: np.ndarray | None,
-        s_batch: np.ndarray,
+        s_batch: np.ndarray | None,
         **kwargs,
     ):
         """

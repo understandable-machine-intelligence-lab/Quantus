@@ -5,9 +5,9 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import abc
-import warnings
 
 from quantus.metrics.base import Metric
+import logging
 
 """Aliases to smoothen transition to uniform metric API."""
 
@@ -17,7 +17,7 @@ class BatchedMetric(Metric, abc.ABC):
     """Alias to quantus.Metric, will be removed in next major release."""
 
     def __new__(cls, *args, **kwargs):
-        warnings.warn(
+        logging.warning(
             "BatchedMetric was deprecated, since it is just an alias to Metric. Please subclass Metric directly."
         )
         super().__new__(*args, **kwargs)

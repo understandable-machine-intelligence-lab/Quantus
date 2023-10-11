@@ -32,7 +32,7 @@ else:
 
 
 @final
-class RegionPerturbation(Metric):
+class RegionPerturbation(Metric[List[float]]):
     """
     Implementation of Region Perturbation by Samek et al., 2015.
 

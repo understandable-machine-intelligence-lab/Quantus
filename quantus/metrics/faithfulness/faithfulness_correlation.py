@@ -31,7 +31,7 @@ else:
 
 
 @final
-class FaithfulnessCorrelation(Metric):
+class FaithfulnessCorrelation(Metric[List[float]]):
     """
     Implementation of faithfulness correlation by Bhatt et al., 2020.
 

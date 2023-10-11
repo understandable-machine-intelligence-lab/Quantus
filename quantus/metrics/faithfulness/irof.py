@@ -30,7 +30,7 @@ else:
 
 
 @final
-class IROF(Metric):
+class IROF(Metric[List[float]]):
     """
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 

@@ -31,7 +31,7 @@ else:
 
 
 @final
-class NonSensitivity(Metric):
+class NonSensitivity(Metric[List[float]]):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 

@@ -31,7 +31,7 @@ else:
 
 
 @final
-class Completeness(Metric):
+class Completeness(Metric[List[float]]):
     """
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by

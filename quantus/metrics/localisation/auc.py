@@ -30,7 +30,7 @@ else:
 
 
 @final
-class AUC(Metric):
+class AUC(Metric[List[float]]):
     """
     Implementation of AUC metric by Fawcett et al., 2006.
 

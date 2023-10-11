@@ -31,7 +31,7 @@ else:
 
 
 @final
-class InputInvariance(Metric):
+class InputInvariance(Metric[List[float]]):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -312,18 +312,5 @@ class InputInvariance(Metric):
         return score
 
     def custom_preprocess(self, *args, **kwargs) -> None:
-        """
-        Additional explain_func assert, as the one in prepare() won't be executed when a_batch != None.
-
-        Parameters
-        ----------
-        args:
-            Unused.
-        kwargs:
-            Unused.
-
-        Returns
-        -------
-        None
-        """
+        """Additional explain_func assert, as the one in prepare() won't be executed when `a_batch != None.`"""
         asserts.assert_explain_func(explain_func=self.explain_func)

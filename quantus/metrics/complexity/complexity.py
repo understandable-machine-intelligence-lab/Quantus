@@ -28,7 +28,7 @@ else:
 
 
 @final
-class Complexity(Metric):
+class Complexity(Metric[List[float]]):
     """
     Implementation of Complexity metric by Bhatt et al., 2020.
 

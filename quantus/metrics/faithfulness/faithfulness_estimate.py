@@ -31,7 +31,7 @@ else:
 
 
 @final
-class FaithfulnessEstimate(Metric):
+class FaithfulnessEstimate(Metric[List[float]]):
     """
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 

@@ -26,7 +26,8 @@ else:
     from typing_extensions import final
 
 
-class EffectiveComplexity(Metric):
+@final
+class EffectiveComplexity(Metric[List[float]]):
     """
     Implementation of Effective complexity metric by Nguyen at el., 2020.
 

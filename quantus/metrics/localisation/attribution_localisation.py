@@ -29,7 +29,7 @@ else:
 
 
 @final
-class AttributionLocalisation(Metric):
+class AttributionLocalisation(Metric[List[float]]):
     """
     Implementation of the Attribution Localization by Kohlbrenner et al., 2020.
 
