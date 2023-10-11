@@ -17,10 +17,10 @@ from typing import (
     ClassVar,
     Dict,
     Generator,
+    Generic,
     Sequence,
     Set,
     TypeVar,
-    Generic,
 )
 
 import matplotlib.pyplot as plt
@@ -907,5 +907,4 @@ class Metric(Generic[R]):
             or "GITHUB_ACTIONS" not in os.environ
             # Don't show progress bar when running unit tests.
             or "PYTEST" in os.environ
-
         )

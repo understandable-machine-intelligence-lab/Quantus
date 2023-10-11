@@ -5,9 +5,9 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import abc
+import logging
 
 from quantus.metrics.base import Metric
-import logging
 
 """Aliases to smoothen transition to uniform metric API."""
 

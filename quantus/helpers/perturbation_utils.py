@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING, Callable, Mapping, Protocol
+import sys
+from typing import List, TYPE_CHECKING, Callable, Mapping
 import numpy as np
 import functools
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 
 if TYPE_CHECKING:

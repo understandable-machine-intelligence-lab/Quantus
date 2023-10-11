@@ -34,6 +34,7 @@ dependencies = [
     "scipy>=1.7.3",
     "tqdm>=4.62.3",
     "matplotlib>=3.3.4",
+    "typing_extensions; python_version <= '3.8'"
 ]
 
 dynamic = ["version"]
