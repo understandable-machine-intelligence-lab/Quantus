@@ -892,7 +892,7 @@ class Metric(Generic[R]):
             self._display_progressbar
             and
             # Don't show progress bar in github actions.
-            os.environ.get("GITHUB_ACTIONS") != "true"
+            "GITHUB_ACTIONS" not in os.environ
             and
             # Don't show progress bar when running unit tests.
             "PYTEST" not in os.environ
@@ -902,11 +902,10 @@ class Metric(Generic[R]):
     def disable_warnings(self) -> bool:
         """A helper to avoid polluting test outputs with warnings."""
         return (
-            not self._disable_warnings
-            and
+            self._disable_warnings
             # Don't show progress bar in github actions.
-            os.environ.get("GITHUB_ACTIONS") != "true"
-            and
+            or "GITHUB_ACTIONS" not in os.environ
             # Don't show progress bar when running unit tests.
-            "PYTEST" not in os.environ
+            or "PYTEST" in os.environ
+
         )
