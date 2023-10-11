@@ -1,9 +1,11 @@
 import click
 import os
 import logging
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Optional, Collection
 import json
 import sys
+from copy import deepcopy
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -30,6 +32,85 @@ from utils import arguments as argument_utils
 if not torch.cuda.is_available():
     sys.exit(77)
 
+def get_random_layer_generator(model, order: str = "top_down"):
+    """
+    In every iteration yields a copy of the model with one additional layer's parameters randomized.
+    For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+    set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+    Parameters
+    ----------
+    order: string
+        The various ways that a model's weights of a layer can be randomised.
+
+    Returns
+    -------
+    layer.name, random_layer_model: string, torch.nn
+        The layer name and the model.
+    """
+    original_parameters = model.state_dict()
+    random_layer_model = deepcopy(model)
+
+    modules = [
+        l
+        for l in random_layer_model.named_modules()
+        if (hasattr(l[1], "reset_parameters"))
+    ]
+
+    if order == "top_down":
+        modules = modules[::-1]
+
+    for module in modules:
+        if order == "independent":
+            random_layer_model.load_state_dict(original_parameters)
+        module[1].reset_parameters()
+        yield module[0], random_layer_model
+
+def eval_accuracy(model, loader, device):
+    """
+    Evaluates Model.
+    """
+
+    # Initialize running measures
+    n_correct = 0
+    n_predicted = 0
+    total_labels = []
+    total_predictions = []
+
+    # Set model to eval mode
+    model.eval()
+
+    # Iterate over data. Show a progress bar.
+    #with tqdm(total=len(loader)) as pbar:
+    for i, (inputs, labels) in enumerate(loader):
+
+        # Prepare inputs and labels
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
+        with torch.no_grad():
+
+            outputs = model(inputs)
+
+        # Check if binary or multi-class
+        if outputs.shape[-1] == 1:
+            preds = (outputs > 0).squeeze()
+        else:
+            preds = torch.argmax(outputs, dim=1)
+
+        # Update accuracy counters
+        n_correct += (preds == labels).float().sum()
+        n_predicted += len(labels)
+
+        # Update prediction lists
+        for lab in labels.cpu().detach().numpy():
+            total_labels.append(lab)
+        for pred in preds.cpu().detach().numpy():
+            total_predictions.append(pred)
+
+    # Return labels, predictions, accuracy and loss
+    return total_labels, total_predictions, (n_correct/n_predicted).cpu().detach().numpy()
+
 def smoothexplain(model, inputs, targets, **kwargs):
 
     xai_noiselevel = kwargs.pop("xai_noiselevel", 0.1)
@@ -45,7 +126,7 @@ def smoothexplain(model, inputs, targets, **kwargs):
     dims = tuple(range(1, inputs.ndim))
     std = xai_noiselevel * (inputs.amax(dims, keepdim=True) - inputs.amin(dims, keepdim=True))
 
-    result = np.zeros(inputs.shape)
+    result = None
     for n in range(xai_n_noisedraws):
         # the last epsilon is defined as zero to compute the true output,
         # and have SmoothGrad w/ n_iter = 1 === gradient
@@ -53,9 +134,13 @@ def smoothexplain(model, inputs, targets, **kwargs):
             epsilon = torch.zeros_like(inputs)
         else:
             epsilon = torch.randn_like(inputs) * std
-            
+        
         expl = quantus.explain(model, inputs + epsilon, targets, **kwargs)
-        result += expl / xai_n_noisedraws
+
+        if result is None:
+            result = expl / xai_n_noisedraws
+        else:
+            result += expl / xai_n_noisedraws
 
     return result
 
@@ -176,25 +261,25 @@ def plot_input(img, dst, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
 def main():
     pass
 
-@main.command(name="evaluate-randomisation")
-@click.argument("save-path", type=click.Path(), required=True)
-@click.argument("dataset-name", type=str, required=True)
-@click.argument("data-path", type=click.Path(), required=True)
-@click.argument("labelmap-path", type=click.Path(), required=True)
-@click.argument("model-name", type=str, required=True)
-@click.argument("xai-methodname", type=str, required=True)
-@click.argument("eval-metricname", type=str, required=True)
-@click.option("--nr-test-samples", type=int, default=1000, required=False)
-@click.option("--xai-n-noisedraws", type=int, default=1, required=False)
-@click.option("--xai-noiselevel", type=float, default=0.0, required=False)
-@click.option("--eval-layerorder", type=str, default="bottom_up", required=False)
-@click.option("--eval-normalise", type=bool, default=True, required=False)
-@click.option("--use-cpu", type=bool, default=False, required=False)
-@click.option("--batch-size", type=int, default=32, required=False)
-@click.option("--shuffle", type=bool, default=False, required=False)
-@click.option("--wandb-key", type=str, default="", required=False)
-@click.option("--wandb-projectname", type=str, default="", required=False)
-@click.option("--use-wandb", type=bool, default=True, required=False)
+# @main.command(name="evaluate-randomisation")
+# @click.argument("save-path", type=click.Path(), required=True)
+# @click.argument("dataset-name", type=str, required=True)
+# @click.argument("data-path", type=click.Path(), required=True)
+# @click.argument("labelmap-path", type=click.Path(), required=True)
+# @click.argument("model-name", type=str, required=True)
+# @click.argument("xai-methodname", type=str, required=True)
+# @click.argument("eval-metricname", type=str, required=True)
+# @click.option("--nr-test-samples", type=int, default=1000, required=False)
+# @click.option("--xai-n-noisedraws", type=int, default=1, required=False)
+# @click.option("--xai-noiselevel", type=float, default=0.0, required=False)
+# @click.option("--eval-layerorder", type=str, default="bottom_up", required=False)
+# @click.option("--eval-normalise", type=bool, default=True, required=False)
+# @click.option("--use-cpu", type=bool, default=False, required=False)
+# @click.option("--batch-size", type=int, default=32, required=False)
+# @click.option("--shuffle", type=bool, default=False, required=False)
+# @click.option("--wandb-key", type=str, default="", required=False)
+# @click.option("--wandb-projectname", type=str, default="", required=False)
+# @click.option("--use-wandb", type=bool, default=True, required=False)
 def evaluate_randomization(
         save_path,
         dataset_name,
@@ -284,11 +369,26 @@ def evaluate_randomization(
     model.eval()
 
     # xai-specific params:
-    eval_abs = True if xai_methodname in ["gradient"] else False
+    eval_abs = True if xai_methodname in ["gradient", "smoothgrad"] else False
     eval_normalise_func = quantus.normalise_func.normalise_by_relu if xai_methodname in ["grad-cam"] else quantus.normalise_func.normalise_by_average_second_moment_estimate
 
     # Prepare Quantus Eval
-    if eval_metricname == "smprt":
+
+    if eval_metricname == "model":
+        metric_kwargs = {
+            "layer_order": eval_layerorder,
+            "return_sample_correlation": False,
+            "abs": eval_abs,
+            "normalise": eval_normalise,
+            "normalise_func": eval_normalise_func,
+            "return_aggregate": False,
+            "aggregate_func": None,
+            "default_plot_func": None,
+            "disable_warnings": False,
+            "display_progressbar": False,
+        }
+        metric = lambda x: x
+    elif eval_metricname == "smprt":
         metric_kwargs = {
             "n_noisy_models": 1,
             "ng_std_level": 0.1,
@@ -381,7 +481,41 @@ def evaluate_randomization(
             "interpolate": (img_size, img_size),
             "interpolate_mode": "bilinear",
             "method": "LayerGradCam",
-        }
+        },
+        "gradient-noabs": {
+            "xai_lib": "zennit",
+            "attributor": zattr.Gradient,
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+            "device": device,
+        },
+        "smoothgrad": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "attributor_kwargs": {
+                "n_iter": 20,
+                "noise_level": 0.1
+            },
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+            "device": device,
+        },
+        "intgrad": {
+            "xai_lib": "zennit",
+            "attributor": zattr.IntegratedGradients,
+            "attributor_kwargs": {
+                "n_iter": 20,
+            },
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+            "device": device,
+        },
     }
 
     # Set up wandb
@@ -407,59 +541,85 @@ def evaluate_randomization(
             "metric_kwargs": metric_kwargs
         }
     )
+
     scores = {}
-    scores["explanation_scores"] = {}
-    if eval_metricname == "emprt":
-        scores["model_scores"] = {}
-        scores["delta_explanation_scores"] = []
-        scores["delta_model_scores"] = []
-        scores["fraction_explanation_scores"] = []
-        scores["fraction_model_scores"] = []
-        scores["delta_explanation_vs_models"] = []
-    # Iterate over Batches and Evaluate
-    for i, (batch, labels) in enumerate(loader):
-
-        print("Evaluating Batch {}/{}".format(i+1, len(loader)))
-
-        batch_results = metric(
-            model=model,
-            x_batch=batch.numpy(),
-            y_batch=labels.numpy(),
-            a_batch=None,
-            device=device,
-            explain_func=smoothexplain,
-            explain_func_kwargs={**XAI_METHOD_KWARGS[xai_methodname], "xai_n_noisedraws": xai_n_noisedraws, "xai_noiselevel": xai_noiselevel}
+    if eval_metricname == "model":
+        scores["accuracy"] = {}
+        n_layers = len(list(get_random_layer_generator(model, order=eval_layerorder)))
+        model_iterator = tqdm(
+            get_random_layer_generator(model, order=eval_layerorder),
+            total=n_layers,
+            disable=True,
         )
 
-        if eval_metricname == "smprt":
-            for k, v in batch_results.items():
-                if k not in scores["explanation_scores"].keys():
-                    scores["explanation_scores"][k] = []
-                scores["explanation_scores"][k] += v[0]
+        for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
-        elif eval_metricname == "emprt":
-            for k, v in metric.explanation_scores.items():
-                if k not in scores["explanation_scores"].keys():
-                    scores["explanation_scores"][k] = []
-                scores["explanation_scores"][k] += v
-            for k, v in metric.model_scores.items():
-                if k not in scores["model_scores"].keys():
-                    scores["model_scores"][k] = []
-                scores["model_scores"][k] += v
-            scores["delta_explanation_scores"] += metric.delta_explanation_scores
-            scores["delta_model_scores"] += metric.delta_model_scores
-            scores["fraction_explanation_scores"] += metric.fraction_explanation_scores
-            scores["fraction_model_scores"] += metric.fraction_model_scores
-            scores["delta_explanation_vs_models"] += metric.delta_explanation_vs_models
+            if l_ix == 0:
+                _, _, scores["accuracy"]["orig"] = eval_accuracy(model, loader, device)
+                scores["accuracy"]["orig"] = float(scores["accuracy"]["orig"])
+            _, _, scores["accuracy"][layer_name] = eval_accuracy(random_layer_model, loader, device)
+            scores["accuracy"][layer_name] = float(scores["accuracy"][layer_name])
 
-    resultsfile = os.path.join(save_path, "scores.json")
-    with open(resultsfile, "w") as jsonfile:
-        json.dump(scores, jsonfile)
+    else:
+        scores["explanation_scores"] = {}
+        if eval_metricname == "emprt":
+            scores["model_scores"] = {}
+            scores["delta_explanation_scores"] = []
+            scores["delta_model_scores"] = []
+            scores["fraction_explanation_scores"] = []
+            scores["fraction_model_scores"] = []
+            scores["delta_explanation_vs_models"] = []
+        # Iterate over Batches and Evaluate
+        
+        for i, (batch, labels) in enumerate(loader):
 
-    for k, v in scores["explanation_scores"].items():
-        wandb.log({
-            "mean-score": np.mean(v),
-        })
+            print("Evaluating Batch {}/{}".format(i+1, len(loader)))
+
+            batch_results = metric(
+                model=model,
+                x_batch=batch.numpy(),
+                y_batch=labels.numpy(),
+                a_batch=None,
+                device=device,
+                explain_func=smoothexplain,
+                explain_func_kwargs={**XAI_METHOD_KWARGS[xai_methodname], "xai_n_noisedraws": xai_n_noisedraws, "xai_noiselevel": xai_noiselevel}
+            )
+
+            if eval_metricname == "smprt":
+                for k, v in batch_results.items():
+                    if k not in scores["explanation_scores"].keys():
+                        scores["explanation_scores"][k] = []
+                    scores["explanation_scores"][k] += v[0]
+
+            elif eval_metricname == "emprt":
+                for k, v in metric.explanation_scores.items():
+                    if k not in scores["explanation_scores"].keys():
+                        scores["explanation_scores"][k] = []
+                    scores["explanation_scores"][k] += v
+                for k, v in metric.model_scores.items():
+                    if k not in scores["model_scores"].keys():
+                        scores["model_scores"][k] = []
+                    scores["model_scores"][k] += v
+                scores["delta_explanation_scores"] += metric.delta_explanation_scores
+                scores["delta_model_scores"] += metric.delta_model_scores
+                scores["fraction_explanation_scores"] += metric.fraction_explanation_scores
+                scores["fraction_model_scores"] += metric.fraction_model_scores
+                scores["delta_explanation_vs_models"] += metric.delta_explanation_vs_models
+
+    #resultsfile = os.path.join(save_path, "scores.json")
+    #with open(resultsfile, "w") as jsonfile:
+    #    json.dump(scores, jsonfile)
+
+    if eval_metricname == "model":
+        for k, v in scores["accuracy"].items():
+            wandb.log({
+                "mean-score": np.mean(v),
+            })
+    else:
+        for k, v in scores["explanation_scores"].items():
+            wandb.log({
+                "mean-score": np.mean(v),
+            })
     wandb.log({"scores": scores})
 
 @main.command(name="plot-attribution-results")
