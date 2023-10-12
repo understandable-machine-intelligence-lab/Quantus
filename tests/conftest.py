@@ -6,6 +6,9 @@ import tensorflow
 from tensorflow.keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import logging
+
+logging.basicConfig(level=logging.ERROR)
 
 from quantus.helpers.model.models import (
     LeNet,
