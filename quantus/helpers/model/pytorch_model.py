@@ -87,7 +87,7 @@ class PyTorchModel(ModelInterface):
                 setattr(linear_model, named_module[0], torch.nn.Identity())
 
                 logging.info("Argument softmax=False passed, but the passed model contains a module of type "
-                             "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().", named_module[0])
+                             "torch.nn.Softmax. Module at index 0 has been replaced with torch.nn.Identity().")
                 break
 
         return linear_model
