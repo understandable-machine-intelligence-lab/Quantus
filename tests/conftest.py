@@ -234,3 +234,12 @@ def load_mnist_model_softmax():
         torch.nn.Softmax(),
     )
     return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def log_packages():
+    import pip
+    print("-" * 100)
+    pip.main(["list"])
+    print("-" * 100)
+    yield
