@@ -287,7 +287,7 @@ class InputInvariance(Metric[List[float]]):
         )
 
         # Get input shift.
-        input_shift = self.perturb_func.keywords["input_shift"]
+        input_shift = self.perturb_func.keywords["input_shift"]  # type: ignore
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,

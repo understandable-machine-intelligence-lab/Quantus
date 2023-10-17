@@ -303,6 +303,7 @@ class MaxSensitivity(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        *args,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -318,6 +319,8 @@ class MaxSensitivity(Metric[List[float]]):
             The output to be evaluated on an instance-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
+        args:
+            Unused.
         kwargs:
             Unused.
 

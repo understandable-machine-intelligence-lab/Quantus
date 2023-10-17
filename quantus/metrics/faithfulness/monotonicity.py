@@ -293,7 +293,7 @@ class Monotonicity(Metric[List[float]]):
 
         # Copy the input x but fill with baseline values.
         baseline_value = utils.get_baseline_value(
-            value=self.perturb_func.keywords["perturb_baseline"],
+            value=self.perturb_func.keywords["perturb_baseline"],  # type: ignore
             arr=x,
             return_shape=x.shape,  # TODO. Double-check this over using = (1,).
         )
@@ -356,11 +356,11 @@ class Monotonicity(Metric[List[float]]):
 
     def evaluate_batch(
         self,
-        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        *args,
         **kwargs,
     ) -> List[bool]:
         """

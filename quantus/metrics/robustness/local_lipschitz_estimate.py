@@ -309,6 +309,7 @@ class LocalLipschitzEstimate(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        *args,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -324,6 +325,8 @@ class LocalLipschitzEstimate(Metric[List[float]]):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
+        args:
+            Unused.
         kwargs:
             Unused.
 

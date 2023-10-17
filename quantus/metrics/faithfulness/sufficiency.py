@@ -312,6 +312,7 @@ class Sufficiency(Metric[List[float]]):
             "y_pred_classes": y_pred_classes,
         }
 
+    @no_type_check
     def evaluate_batch(
         self, *args, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
     ) -> List[float]:

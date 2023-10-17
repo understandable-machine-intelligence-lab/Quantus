@@ -296,7 +296,7 @@ class Metric(Generic[R]):
         # Append the content of the last results to all results.
         self.all_evaluation_scores.extend(self.evaluation_scores)
 
-        return self.evaluation_scores
+        return self.evaluation_scores  # type: ignore
 
     @abstractmethod
     def evaluate_batch(

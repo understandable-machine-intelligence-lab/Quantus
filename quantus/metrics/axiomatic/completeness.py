@@ -308,11 +308,11 @@ class Completeness(Metric[List[float]]):
 
     def evaluate_batch(
         self,
-        *args,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        *args,
         **kwargs,
     ) -> List[bool]:
         """

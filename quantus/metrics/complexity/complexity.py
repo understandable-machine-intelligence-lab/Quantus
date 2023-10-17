@@ -259,7 +259,7 @@ class Complexity(Metric[List[float]]):
         return scipy.stats.entropy(pk=a)
 
     def evaluate_batch(
-        self, *args, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
+        self, x_batch: np.ndarray, a_batch: np.ndarray, *args, **kwargs
     ) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.

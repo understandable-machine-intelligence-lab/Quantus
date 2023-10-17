@@ -389,6 +389,7 @@ class Focus(Metric[List[float]]):
         ]
         return quandrant_a
 
+    @no_type_check
     def evaluate_batch(
         self, *args, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
     ) -> List[float]:
