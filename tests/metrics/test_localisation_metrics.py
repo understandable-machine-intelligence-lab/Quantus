@@ -649,7 +649,7 @@ def test_pointing_game(
             },
             {"min": 0.1, "max": 0.25},
         ),
-        pytest.mark.xfail(
+        pytest.param(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
