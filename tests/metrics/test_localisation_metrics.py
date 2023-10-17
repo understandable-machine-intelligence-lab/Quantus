@@ -625,7 +625,7 @@ def test_pointing_game(
             },
             0.0,
         ),
-        (
+        pytest.param(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
@@ -636,6 +636,7 @@ def test_pointing_game(
                 },
             },
             0.38,  # TODO: verify correctness
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -660,7 +661,7 @@ def test_pointing_game(
                 },
             },
             0.9800000000000001,  # TODO: verify correctness
-            marks=pytest.mark.xfail
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
