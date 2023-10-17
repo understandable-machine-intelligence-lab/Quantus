@@ -42,11 +42,6 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import final
 
-if sys.version_info >= (3, 11):
-    from typing import LiteralString
-else:
-    from typing_extensions import LiteralString
-
 D = TypeVar("D", bound=Dict[str, Any])
 log = logging.getLogger(__name__)
 
@@ -60,7 +55,7 @@ class Metric(Generic[R]):
     """
 
     # Class attributes.
-    name: ClassVar[LiteralString]
+    name: ClassVar[str]
     data_applicability: ClassVar[Set[DataType]]
     model_applicability: ClassVar[Set[ModelType]]
     score_direction: ClassVar[ScoreDirection]
