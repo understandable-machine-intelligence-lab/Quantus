@@ -660,7 +660,7 @@ def test_pointing_game(
                 },
             },
             0.9800000000000001,  # TODO: verify correctness
-            mark=pytest.mark.xfail
+            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_mnist_model"),
