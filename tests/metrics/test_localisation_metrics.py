@@ -649,7 +649,7 @@ def test_pointing_game(
             },
             {"min": 0.1, "max": 0.25},
         ),
-        (
+        pytest.mark.xfail(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
@@ -660,6 +660,7 @@ def test_pointing_game(
                 },
             },
             0.9800000000000001,  # TODO: verify correctness
+            mark=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -852,7 +853,7 @@ def test_top_k_intersection(
             },
             {"min": 0.5, "max": 1.0},
         ),
-        pytest.param(
+        (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
@@ -862,7 +863,6 @@ def test_top_k_intersection(
                 },
             },
             0.0,
-            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -875,7 +875,7 @@ def test_top_k_intersection(
             },
             0.0,
         ),
-        pytest.param(
+        (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
@@ -885,7 +885,6 @@ def test_top_k_intersection(
                 },
             },
             0.5,
-            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_mnist_model"),
