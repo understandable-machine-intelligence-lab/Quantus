@@ -22,6 +22,8 @@ Submodules
 
    quantus.helpers.asserts
    quantus.helpers.constants
+   quantus.helpers.enums
+   quantus.helpers.perturbation_utils
    quantus.helpers.plotting
    quantus.helpers.utils
    quantus.helpers.warn
