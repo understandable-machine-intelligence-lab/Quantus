@@ -277,8 +277,8 @@ class Consistency(Metric[List[float]]):
         return np.sum(pred_same_a == pred_a) / len(diff_a)
 
     def custom_batch_preprocess(
-        self, data_batch: Dict[str, ...]
-    ) -> Dict[str, ...] | None:
+        self, data_batch: Dict[str, Any]
+    ) -> Dict[str, np.ndarray]:
         """Compute additional arguments required for Consistency on batch-level."""
         model = data_batch["model"]
         x_batch = data_batch["x_batch"]

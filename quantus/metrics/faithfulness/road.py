@@ -307,7 +307,7 @@ class ROAD(Metric[List[float]]):
         # Return list of booleans for each percentage.
         return results_instance
 
-    def custom_batch_preprocess(self, data_batch: Dict[str, ...]) -> None:
+    def custom_batch_preprocess(self, data_batch: Dict[str, Any]) -> None:
         """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
         if self.a_size is None:
             self.a_size = data_batch["a_batch"][0, :, :].size

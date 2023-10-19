@@ -811,7 +811,7 @@ class Metric(Generic[R]):
 
     def custom_batch_preprocess(
         self, data_batch: Dict[str, Any]
-    ) -> Optional[Dict[str, ...]]:
+    ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data
         or simply for creating/initialising additional attributes or assertions
