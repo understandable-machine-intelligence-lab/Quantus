@@ -266,7 +266,11 @@ def generate_tf_explanation(
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
 
-    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+    chanel_first = (
+        kwargs["channel_first"]
+        if "channel_first" in kwargs
+        else infer_channel_first(inputs)
+    )
     inputs = make_channel_last(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)
@@ -477,7 +481,11 @@ def generate_captum_explanation(
          Returns np.ndarray of same shape as inputs.
     """
 
-    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+    chanel_first = (
+        kwargs["channel_first"]
+        if "channel_first" in kwargs
+        else infer_channel_first(inputs)
+    )
 
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
@@ -736,8 +744,13 @@ def generate_zennit_explanation(
 
     """
 
-    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+    chanel_first = (
+        kwargs["channel_first"]
+        if "channel_first" in kwargs
+        else infer_channel_first(inputs)
+    )
     softmax = kwargs.get("softmax", None)
+
     if softmax is not None:
         warnings.warn(
             f"Softmax argument has been passed to the explanation function. Different XAI "
