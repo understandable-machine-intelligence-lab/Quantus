@@ -756,8 +756,8 @@ def test_top_k_intersection(
     )
 
     if isinstance(expected, float):
-        print("Expected", expected)
-        print("Scores", scores)
+        # print("Expected", expected)
+        # print("Scores", scores)
         assert all(round(s, 2) == round(expected, 2) for s in scores), "Test failed."
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
