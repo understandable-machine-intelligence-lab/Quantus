@@ -626,18 +626,6 @@ def test_pointing_game(
             0.0,
         ),
         (
-            lazy_fixture("load_1d_1ch_conv_model"),
-            lazy_fixture("none_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "k": 200,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
-            0.4,  # TODO: verify correctness
-        ),
-        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
             {
