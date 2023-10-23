@@ -266,7 +266,7 @@ def generate_tf_explanation(
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
 
-    chanel_first = (
+    channel_first = (
         kwargs["channel_first"]
         if "channel_first" in kwargs
         else infer_channel_first(inputs)
@@ -481,7 +481,7 @@ def generate_captum_explanation(
          Returns np.ndarray of same shape as inputs.
     """
 
-    chanel_first = (
+    channel_first = (
         kwargs["channel_first"]
         if "channel_first" in kwargs
         else infer_channel_first(inputs)
@@ -548,7 +548,9 @@ def generate_captum_explanation(
         method = constants.DEPRECATED_XAI_METHODS_CAPTUM[method]
 
     if method in ["GradientShap", "DeepLift", "DeepLiftShap"]:
-        baselines = kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
+        baselines = (
+            kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
+        )
         attr_func = eval(method)
         explanation = f_reduce_axes(
             attr_func(model, **xai_lib_kwargs).attribute(
@@ -559,7 +561,9 @@ def generate_captum_explanation(
         )
 
     elif method == "IntegratedGradients":
-        baselines = kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
+        baselines = (
+            kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
+        )
         attr_func = eval(method)
         explanation = f_reduce_axes(
             attr_func(model, **xai_lib_kwargs).attribute(
@@ -746,7 +750,7 @@ def generate_zennit_explanation(
 
     """
 
-    chanel_first = (
+    channel_first = (
         kwargs["channel_first"]
         if "channel_first" in kwargs
         else infer_channel_first(inputs)
