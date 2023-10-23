@@ -548,22 +548,24 @@ def generate_captum_explanation(
         method = constants.DEPRECATED_XAI_METHODS_CAPTUM[method]
 
     if method in ["GradientShap", "DeepLift", "DeepLiftShap"]:
+        baselines = kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
         attr_func = eval(method)
         explanation = f_reduce_axes(
             attr_func(model, **xai_lib_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
-                baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
+                baselines=baselines,
             )
         )
 
     elif method == "IntegratedGradients":
+        baselines = kwargs["baseline"] if "baseline" in kwargs else torch.zeros_like(inputs)
         attr_func = eval(method)
         explanation = f_reduce_axes(
             attr_func(model, **xai_lib_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
-                baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
+                baselines=baselines,
                 n_steps=10,
                 method="riemann_trapezoid",
             )
