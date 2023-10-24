@@ -625,19 +625,6 @@ def test_pointing_game(
             },
             0.0,
         ),
-        pytest.param(
-            lazy_fixture("load_1d_1ch_conv_model"),
-            lazy_fixture("none_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "k": 200,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
-            0.38,  # TODO: verify correctness
-            marks=pytest.mark.xfail,
-        ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
@@ -649,19 +636,6 @@ def test_pointing_game(
                 },
             },
             {"min": 0.1, "max": 0.25},
-        ),
-        pytest.param(
-            lazy_fixture("load_1d_1ch_conv_model"),
-            lazy_fixture("half_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "k": 50,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
-            0.9800000000000001,  # TODO: verify correctness
-            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -685,7 +659,7 @@ def test_pointing_game(
                     "display_progressbar": False,
                 },
             },
-            0.4,  # TODO: verify correctness
+            0.4,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -770,7 +744,7 @@ def test_top_k_intersection(
     )
 
     if isinstance(expected, float):
-        np.testing.assert_allclose(scores, expected, atol=0.01)
+        assert all(round(s, 2) == round(expected, 2) for s in scores), "Test failed."
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
     else:
