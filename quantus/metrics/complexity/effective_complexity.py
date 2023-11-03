@@ -263,8 +263,7 @@ class EffectiveComplexity(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of integers.
+            The evaluation results.
         """
         return [self.evaluate_instance(a) for a in a_batch]

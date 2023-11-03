@@ -288,7 +288,7 @@ class NonSensitivity(Metric[List[float]]):
 
         Returns
         -------
-        integer
+        integer:
             The evaluation results.
         """
         a = a.flatten()
@@ -373,10 +373,8 @@ class NonSensitivity(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of integers.
-
+             The evaluation results.
         """
 
         return [

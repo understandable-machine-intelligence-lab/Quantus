@@ -404,7 +404,7 @@ class Focus(Metric[List[float]]):
 
         Returns
         -------
-        retval:
+        score_batch:
             Evaluation result for batch.
         """
         return [self.evaluate_instance(a=a, c=c) for a, c in zip(a_batch, c_batch)]

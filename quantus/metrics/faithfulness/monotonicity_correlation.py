@@ -399,7 +399,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
 
         Returns
         -------
-        List[float]
+        scores_batch:
             The evaluation results.
         """
 

@@ -281,8 +281,7 @@ class Sparseness(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of floats.
+            The evaluation results.
         """
         return [self.evaluate_instance(x=x, a=a) for x, a in zip(x_batch, a_batch)]

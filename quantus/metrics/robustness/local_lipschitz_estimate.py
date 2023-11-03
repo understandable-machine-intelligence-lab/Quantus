@@ -327,7 +327,7 @@ class LocalLipschitzEstimate(Metric[List[float]]):
 
         Returns
         -------
-           : np.ndarray
+        scores_batch: np.ndarray
             The batched evaluation results.
         """
 

@@ -325,7 +325,7 @@ class AvgSensitivity(Metric[List[float]]):
 
         Returns
         -------
-           : np.ndarray
+        scores_batch: np.ndarray
             The batched evaluation results.
         """
         batch_size = x_batch.shape[0]

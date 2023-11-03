@@ -444,7 +444,7 @@ class RegionPerturbation(Metric[List[float]]):
 
         Returns
         -------
-        list
+        scores_batch:
             The evaluation results.
         """
         return [

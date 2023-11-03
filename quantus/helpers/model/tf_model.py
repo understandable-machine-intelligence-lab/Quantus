@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple, List, Union
+from typing import Dict, Optional, Tuple, List, Union, Generator
 from keras.layers import Dense
 from keras import activations
 from keras import Model
@@ -23,7 +23,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import utils
 
 
-class TensorFlowModel(ModelInterface):
+class TensorFlowModel(ModelInterface[Model]):
     """Interface for tensorflow models."""
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
@@ -235,7 +235,9 @@ class TensorFlowModel(ModelInterface):
         """Set model's learnable parameters."""
         self.model.set_weights(original_parameters)
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, Model], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -418,3 +420,7 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len([i for i in self.model.layers if len(i.get_weights()) > 0])

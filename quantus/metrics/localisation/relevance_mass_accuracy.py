@@ -307,7 +307,7 @@ class RelevanceMassAccuracy(Metric[List[float]]):
 
         Returns
         -------
-        retval:
+        scores_batch:
             A list of Any with the evaluation scores for the batch.
         """
         return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]

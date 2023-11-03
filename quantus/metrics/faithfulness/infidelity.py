@@ -426,9 +426,8 @@ class Infidelity(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of floats.
+            The evaluation results.
         """
 
         return [

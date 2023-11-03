@@ -286,7 +286,7 @@ class Completeness(Metric[List[float]]):
 
         Returns
         -------
-           : boolean
+        score: boolean
             The evaluation results.
         """
         x_baseline = self.perturb_func(
@@ -333,9 +333,8 @@ class Completeness(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of booleans.
+            The evaluation results.
         """
 
         return [

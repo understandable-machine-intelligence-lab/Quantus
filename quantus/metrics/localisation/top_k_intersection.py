@@ -324,7 +324,7 @@ class TopKIntersection(Metric[List[float]]):
 
         Returns
         -------
-        retval:
+        scores_batch:
             Evaluation result for batch.
         """
         return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]

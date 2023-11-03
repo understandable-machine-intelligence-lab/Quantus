@@ -415,7 +415,7 @@ class Continuity(Metric[List[float]]):
                 self.similarity_func(
                     self.evaluation_scores[sample][self.nr_patches],
                     self.evaluation_scores[sample][ix_patch],
-                )
+                )  # noqa
                 for ix_patch in range(self.nr_patches)
                 for sample in self.evaluation_scores.keys()
             ]
@@ -445,7 +445,8 @@ class Continuity(Metric[List[float]]):
 
         Returns
         -------
-
+        scores_batch:
+            Evaluation results.
         """
         return [
             self.evaluate_instance(model=model, x=x, y=y)

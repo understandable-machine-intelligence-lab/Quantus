@@ -310,7 +310,11 @@ class Sufficiency(Metric[List[float]]):
 
     @no_type_check
     def evaluate_batch(
-        self, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
+        self,
+        i_batch: np.ndarray,
+        a_sim_vector_batch: np.ndarray,
+        y_pred_classes: np.ndarray,
+        **kwargs,
     ) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
@@ -329,7 +333,6 @@ class Sufficiency(Metric[List[float]]):
 
         Returns
         -------
-
         evaluation_scores:
             List of measured sufficiency for each entry in the batch.
         """

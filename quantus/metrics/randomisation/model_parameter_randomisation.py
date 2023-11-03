@@ -275,7 +275,7 @@ class ModelParameterRandomisation(Metric):
         self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
-        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
+        n_layers = model.random_layer_generator_length
         pbar = tqdm(
             total=n_layers * len(x_full_dataset), disable=not self.display_progressbar
         )
@@ -327,6 +327,33 @@ class ModelParameterRandomisation(Metric):
 
         return self.evaluation_scores
 
+    def compute_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+        assert isinstance(self.evaluation_scores, dict), (
+            "To compute the average correlation coefficient per sample for "
+            "Model Parameter Randomisation Test, 'last_result' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+        )
+        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in results:
+            for layer in self.evaluation_scores:
+                results[sample].append(float(self.evaluation_scores[layer][sample]))
+            results[sample] = np.mean(results[sample])
+
+        corr_coeffs = list(results.values())
+
+        return corr_coeffs
+
+    def evaluate_batch(self, *args, **kwargs):
+        raise RuntimeError(
+            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
+        )
+
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -365,28 +392,6 @@ class ModelParameterRandomisation(Metric):
                 a_batch_chunks.extend(a_chunk)
             return dict(a_batch=np.asarray(a_batch_chunks))
 
-    def compute_correlation_per_sample(
-        self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-        assert isinstance(self.evaluation_scores, dict), (
-            "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
-            "must be of type dict."
-        )
-        layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
-        )
-        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
-
-        for sample in results:
-            for layer in self.evaluation_scores:
-                results[sample].append(float(self.evaluation_scores[layer][sample]))
-            results[sample] = np.mean(results[sample])
-
-        corr_coeffs = list(results.values())
-
-        return corr_coeffs
-
     def generate_explanations(
         self,
         model: ModelInterface,
@@ -400,8 +405,3 @@ class ModelParameterRandomisation(Metric):
             y = y_batch[i.start : i.stop]
             a = self.explain_batch(model, x, y)
             yield a
-
-    def evaluate_batch(self, *args, **kwargs):
-        raise RuntimeError(
-            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
-        )

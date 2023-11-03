@@ -294,7 +294,7 @@ class AUC(Metric[List[float]]):
 
         Returns
         -------
-        retval:
+        scores_batch:
             Evaluation result for batch.
         """
         return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]

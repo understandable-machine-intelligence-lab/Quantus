@@ -368,9 +368,8 @@ class Monotonicity(Metric[List[float]]):
 
         Returns
         -------
-
         scores_batch:
-            List of floats.
+            The evaluation results.
         """
         return [
             self.evaluate_instance(model=model, x=x, y=y, a=a)

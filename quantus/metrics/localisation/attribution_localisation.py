@@ -340,7 +340,7 @@ class AttributionLocalisation(Metric[List[float]]):
 
         Returns
         -------
-        retval:
+        scores_batch:
             Evaluation result for batch.
         """
         return [

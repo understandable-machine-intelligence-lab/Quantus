@@ -302,7 +302,7 @@ class Consistency(Metric[List[float]]):
         a_batch: np.ndarray,
         i_batch: np.ndarray,
         a_label_batch: np.ndarray,
-        y_pred_classes,
+        y_pred_classes: np.ndarray,
         **kwargs,
     ) -> List[float]:
         """
@@ -312,14 +312,20 @@ class Consistency(Metric[List[float]]):
         Parameters
         ----------
         a_batch:
+            Batch of explanation to be evaluated.
         i_batch:
+            Batch of segmentations to be evaluated.
         a_label_batch:
+            Batch of discretised attribution labels.
         y_pred_classes:
-        kwargs
+            The class predictions of the complete input dataset.
+        kwargs:
+            Unused.
 
         Returns
         -------
-
+        scores_batch:
+            Evaluation results.
         """
 
         return [

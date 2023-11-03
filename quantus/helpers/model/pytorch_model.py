@@ -8,24 +8,25 @@
 import copy
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List, Union
+from typing import Any, Dict, Optional, Tuple, List, Union, Generator
 import warnings
 import logging
 
 import numpy as np
 import torch
+from torch import nn
 from functools import lru_cache
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 
 
-class PyTorchModel(ModelInterface):
+class PyTorchModel(ModelInterface[nn.Module]):
     """Interface for torch models."""
 
     def __init__(
         self,
-        model,
+        model: nn.Module,
         channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -232,7 +233,9 @@ class PyTorchModel(ModelInterface):
         """
         return self.model.state_dict()
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, nn.Module], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -446,3 +449,13 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len(
+            [
+                i
+                for i in self.model.named_modules()
+                if (hasattr(i[1], "reset_parameters"))
+            ]
+        )

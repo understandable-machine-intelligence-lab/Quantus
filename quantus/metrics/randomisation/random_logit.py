@@ -325,7 +325,8 @@ class RandomLogit(Metric[List[float]]):
 
         Returns
         -------
-
+        scores_batch:
+            Evaluation results.
         """
         return [
             self.evaluate_instance(model, x, y, a)
