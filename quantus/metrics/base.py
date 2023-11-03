@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Union,
     TYPE_CHECKING,
-    TypedDict,
 )
 
 import matplotlib.pyplot as plt
