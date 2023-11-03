@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, no_type_check
 import numpy as np
 from scipy.spatial.distance import cdist
 
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import warn
 from quantus.helpers.enums import (
     DataType,
@@ -283,12 +284,9 @@ class Sufficiency(Metric[List[float]]):
         return np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
 
     def custom_batch_preprocess(
-        self, data_batch: Dict[str, Any]
+        self, model: ModelInterface, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
     ) -> Dict[str, np.ndarray]:
         """Compute additional arguments required for Sufficiency evaluation on batch-level."""
-        model = data_batch["model"]
-        a_batch = data_batch["a_batch"]
-        x_batch = data_batch["x_batch"]
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)

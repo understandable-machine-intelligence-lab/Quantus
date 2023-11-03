@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, no_type_check
 import numpy as np
 
 from quantus.functions.discretise_func import top_n_sign
-from quantus.functions.normalise_func import normalise_by_max
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import warn
 from quantus.helpers.enums import (
     DataType,
@@ -274,16 +274,12 @@ class Consistency(Metric[List[float]]):
         return np.sum(pred_same_a == pred_a) / len(diff_a)
 
     def custom_batch_preprocess(
-        self, data_batch: Dict[str, Any]
+        self, model: ModelInterface, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
     ) -> Dict[str, np.ndarray]:
         """Compute additional arguments required for Consistency on batch-level."""
-        model = data_batch["model"]
-        x_batch = data_batch["x_batch"]
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-
-        a_batch = data_batch["a_batch"]
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
 
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))

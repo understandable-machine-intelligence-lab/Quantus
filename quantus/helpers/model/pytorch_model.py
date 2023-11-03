@@ -87,8 +87,11 @@ class PyTorchModel(ModelInterface[nn.Module]):
             if isinstance(named_module[1], torch.nn.Softmax):
                 setattr(linear_model, named_module[0], torch.nn.Identity())
 
-                logging.info("Argument softmax=False passed, but the passed model contains a module of type "
-                             "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().", named_module[0])
+                logging.info(
+                    "Argument softmax=False passed, but the passed model contains a module of type "
+                    "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().",
+                    named_module[0],
+                )
                 break
 
         return linear_model
@@ -119,8 +122,10 @@ class PyTorchModel(ModelInterface[nn.Module]):
             return self.model  # Case 1
 
         if self.softmax and not last_softmax:
-            logging.info("Argument softmax=True passed, but the passed model contains no module of type "
-                         "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer.")
+            logging.info(
+                "Argument softmax=True passed, but the passed model contains no module of type "
+                "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer."
+            )
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 3
 
         if not self.softmax and not last_softmax:
@@ -134,12 +139,14 @@ class PyTorchModel(ModelInterface[nn.Module]):
         )  # Warning for cases 2, 4, 5
 
         if self.softmax and last_softmax != -1:
-            logging.info("Argument softmax=True passed. The passed model contains a module of type "
-                         "torch.nn.Softmax, but it is not the last in the list of model's children ("
-                         "self.model.modules()). torch.nn.Softmax module is added as the output layer."
-                         "Make sure that the torch.nn.Softmax layer is the last module in the list "
-                         "of model's children (self.model.modules()) if and only if it is the actual last module "
-                         "applied before output.")
+            logging.info(
+                "Argument softmax=True passed. The passed model contains a module of type "
+                "torch.nn.Softmax, but it is not the last in the list of model's children ("
+                "self.model.modules()). torch.nn.Softmax module is added as the output layer."
+                "Make sure that the torch.nn.Softmax layer is the last module in the list "
+                "of model's children (self.model.modules()) if and only if it is the actual last module "
+                "applied before output."
+            )
 
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 2
 
@@ -366,7 +373,6 @@ class PyTorchModel(ModelInterface[nn.Module]):
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).

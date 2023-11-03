@@ -23,6 +23,9 @@ from typing import (
     Set,
     TypeVar,
     Optional,
+    Union,
+    TYPE_CHECKING,
+    TypedDict,
 )
 
 import matplotlib.pyplot as plt
@@ -44,6 +47,10 @@ if sys.version_info >= (3, 8):
     from typing import final
 else:
     from typing_extensions import final
+
+if TYPE_CHECKING:
+    import keras
+    from torch import nn
 
 D = TypeVar("D", bound=Dict[str, Any])
 log = logging.getLogger(__name__)
@@ -156,9 +163,9 @@ class Metric(Generic[R]):
 
     def __call__(
         self,
-        model,
+        model: Union[keras.Model, nn.Module, None],
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
@@ -344,9 +351,9 @@ class Metric(Generic[R]):
     @final
     def general_preprocess(
         self,
-        model,
+        model: Union[keras.Model, nn.Module, None],
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
@@ -433,7 +440,6 @@ class Metric(Generic[R]):
             self.explain_func_kwargs["device"] = device
 
         if a_batch is not None:
-            # If no explanations provided, we compute them ob batch-level to avoid OOM.
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
             asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -447,6 +453,7 @@ class Metric(Generic[R]):
                 a_batch = np.abs(a_batch)
 
         else:
+            # If no explanations provided, we will compute them on batch-level to avoid OOM.
             asserts.assert_explain_func(explain_func=self.explain_func)
 
         # Initialize data dictionary.
@@ -475,7 +482,7 @@ class Metric(Generic[R]):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         custom_batch: Any,
@@ -523,10 +530,10 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: np.ndarray | None,
-            >>>     a_batch: np.ndarray | None,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: np.ndarray | None,
+            >>>     custom_batch: Optional[np.ndarray],
             >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable': np.mean(x_batch)}
             >>>
@@ -534,8 +541,8 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: np.ndarray | None,
-            >>>     a: np.ndarray | None,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.float,
             >>> ) -> float:
@@ -545,10 +552,10 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: np.ndarray | None,
-            >>>     a_batch: np.ndarray | None,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: np.ndarray | None,
+            >>>     custom_batch: Optional[np.ndarray],
             >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
             >>>
@@ -556,8 +563,8 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: np.ndarray | None,
-            >>>     a: np.ndarray | None,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.int,
             >>> ) -> float:
@@ -568,10 +575,10 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: np.ndarray | None,
-            >>>     a_batch: np.ndarray | None,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: np.ndarray | None,
+            >>>     custom_batch: Optional[np.ndarray],
             >>> ) -> Dict[str, Any]:
             >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
             >>>
@@ -579,8 +586,8 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: np.ndarray | None,
-            >>>     a: np.ndarray | None,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>> ) -> float:
 
@@ -590,10 +597,10 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x_batch: np.ndarray,
-            >>>     y_batch: np.ndarray | None,
-            >>>     a_batch: np.ndarray | None,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
-            >>>     custom_batch: np.ndarray | None,
+            >>>     custom_batch: Optional[np.ndarray],
             >>> ) -> None:
             >>>     if np.any(np.all(a_batch < 0, axis=0)):
             >>>         raise ValueError("Attributions must not be all negative")
@@ -606,8 +613,8 @@ class Metric(Generic[R]):
             >>>     self,
             >>>     model: ModelInterface,
             >>>     x: np.ndarray,
-            >>>     y: np.ndarray | None,
-            >>>     a: np.ndarray | None,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>> ) -> float:
 
@@ -644,7 +651,7 @@ class Metric(Generic[R]):
 
         Returns
         -------
-        any
+        any:
             Can be implemented, optionally by the child class.
         """
         pass
@@ -680,7 +687,7 @@ class Metric(Generic[R]):
 
         Returns
         -------
-        iterator
+        iterator:
             Each iterator output element is a keyword argument dictionary (string keys).
 
         """
@@ -769,9 +776,7 @@ class Metric(Generic[R]):
             plt.savefig(fname=path_to_save, dpi=400)
 
     def interpret_scores(self):
-        """
-        Get an interpretation of the scores.
-        """
+        """Get an interpretation of the scores."""
         print(self.__init__.__doc__.split(".")[1].split("References")[0])
 
     @property
@@ -781,7 +786,7 @@ class Metric(Generic[R]):
 
         Returns
         -------
-        dict
+        dict:
             A dictionary with attributes if not excluded from pre-determined list.
         """
         attr_exclude = [
@@ -799,6 +804,16 @@ class Metric(Generic[R]):
         If `data_batch` has no `a_batch`, will compute explanations.
         This needs to be done on batch level to avoid OOM. Additionally will set `a_axes` property if it is None,
         this can be done earliest after we have first `a_batch`.
+
+        Parameters
+        ----------
+        data_batch:
+            A single entry yielded from the generator return by `self.generate_batches(...)`
+
+        Returns
+        -------
+        data_batch:
+            Dictionary, which is ready to be passed down to `self.evaluate_batch`.
         """
 
         x_batch = data_batch["x_batch"]
@@ -815,13 +830,18 @@ class Metric(Generic[R]):
         if self.a_axes is None:
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-        custom_batch = self.custom_batch_preprocess(data_batch)
+        custom_batch = self.custom_batch_preprocess(**data_batch)
         if custom_batch is not None:
             data_batch.update(custom_batch)
         return data_batch
 
     def custom_batch_preprocess(
-        self, data_batch: Dict[str, Any]
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data
@@ -830,18 +850,28 @@ class Metric(Generic[R]):
 
         Parameters
         ----------
-        data_batch
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        kwargs:
+            Optional, metric-specific parameters.
 
         Returns
         -------
-
+        dict:
+            Optional dictionary with additional kwargs, which will be passed to `self.evaluate_batch(...)`
         """
         pass
 
     @final
     def explain_batch(
         self,
-        model: ModelInterface,
+        model: Union[ModelInterface, keras.Model, nn.Module],
         x_batch: np.ndarray,
         y_batch: np.ndarray,
     ) -> np.ndarray:
@@ -849,22 +879,28 @@ class Metric(Generic[R]):
         Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
         This method should primarily be used if you need to generate additional explanation
         in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
-
-        Parameters
-        -------
-
-        model:
-        x_batch:
-        y_batch:
-
-
         It will do few things:
-            - call model.shape_input
-            - unwrap model
+            - call model.shape_input (if ModelInterface instance was provided)
+            - unwrap model (if ModelInterface instance was provided)
             - call explain_func
             - expand attribution channel
             - (optionally) normalize a_batch
             - (optionally) take np.abs of a_batch
+
+
+        Parameters
+        -------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+
+        Returns
+        -------
+        a_batch:
+            Batch of explanations ready to be evaluated.
         """
 
         if isinstance(model, ModelInterface):
