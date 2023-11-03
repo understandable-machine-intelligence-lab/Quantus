@@ -176,8 +176,8 @@ class ModelInterface(ABC, Generic[M]):
         """
         raise NotImplementedError()
 
-    @abstractmethod
     @property
+    @abstractmethod
     def random_layer_generator_length(self) -> int:
         """
         Count number of randomisable layers for `Model Parameter Randomisation`.
