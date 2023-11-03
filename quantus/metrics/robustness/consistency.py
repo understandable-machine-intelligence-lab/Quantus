@@ -66,7 +66,7 @@ class Consistency(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -98,9 +98,6 @@ class Consistency(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -137,8 +134,8 @@ class Consistency(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -148,7 +145,6 @@ class Consistency(Metric[List[float]]):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -237,15 +233,16 @@ class Consistency(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     @staticmethod
     def evaluate_instance(
         a: np.ndarray,
-        i: int = None,
-        a_label: np.ndarray = None,
-        y_pred_classes: np.ndarray = None,
+        i: int,
+        a_label: np.ndarray,
+        y_pred_classes: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -302,7 +299,6 @@ class Consistency(Metric[List[float]]):
     @no_type_check
     def evaluate_batch(
         self,
-        *args,
         a_batch: np.ndarray,
         i_batch: np.ndarray,
         a_label_batch: np.ndarray,
@@ -315,13 +311,10 @@ class Consistency(Metric[List[float]]):
 
         Parameters
         ----------
-        args:
-            Unused.
         a_batch:
-
-        i_batch
-        a_label_batch
-        y_pred_classes
+        i_batch:
+        a_label_batch:
+        y_pred_classes:
         kwargs
 
         Returns

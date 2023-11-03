@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, no_type_check
 
 import numpy as np
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.helpers import plotting, warn
 from quantus.helpers.enums import (
     DataType,
@@ -66,8 +65,8 @@ class Focus(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
-        default_plot_func: Optional[Callable] = plotting.plot_focus,
+        aggregate_func: Optional[Callable] = None,
+        default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -97,8 +96,8 @@ class Focus(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_focus
 
         # Save metric-specific attributes.
         self.mosaic_shape = mosaic_shape
@@ -135,8 +134,8 @@ class Focus(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -266,13 +265,14 @@ class Focus(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     def evaluate_instance(
         self,
         a: np.ndarray,
-        c: np.ndarray = None,
+        c: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -319,10 +319,9 @@ class Focus(Metric[List[float]]):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
+        custom_batch: np.ndarray,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
@@ -335,12 +334,10 @@ class Focus(Metric[List[float]]):
             A np.ndarray which contains the input data that are explained.
         y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
             Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -389,9 +386,8 @@ class Focus(Metric[List[float]]):
         ]
         return quandrant_a
 
-    @no_type_check
     def evaluate_batch(
-        self, *args, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
+        self, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
     ) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
@@ -403,8 +399,6 @@ class Focus(Metric[List[float]]):
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         c_batch:
             The custom input to be evaluated on an batch-basis.
-        args:
-            Unused.
         kwargs:
             Unused.
 

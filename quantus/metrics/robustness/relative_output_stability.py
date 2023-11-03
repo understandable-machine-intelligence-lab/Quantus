@@ -73,10 +73,10 @@ class RelativeOutputStability(Metric[List[float]]):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: Callable = uniform_noise,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
+        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         eps_min: float = 1e-6,
@@ -132,6 +132,10 @@ class RelativeOutputStability(Metric[List[float]]):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = uniform_noise
+
         self._nr_samples = nr_samples
         self._eps_min = eps_min
         self.perturb_func = make_perturb_func(
@@ -282,7 +286,6 @@ class RelativeOutputStability(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        *args,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -296,8 +299,6 @@ class RelativeOutputStability(Metric[List[float]]):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
         kwargs:
             Unused.
 

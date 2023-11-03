@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, no_type_check
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.helpers import warn
 from quantus.helpers.enums import (
     DataType,
@@ -69,7 +68,7 @@ class Sufficiency(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -110,8 +109,6 @@ class Sufficiency(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -148,8 +145,8 @@ class Sufficiency(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -159,7 +156,6 @@ class Sufficiency(Metric[List[float]]):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -248,14 +244,15 @@ class Sufficiency(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     @staticmethod
     def evaluate_instance(
-        i: int = None,
-        a_sim_vector: np.ndarray = None,
-        y_pred_classes: np.ndarray = None,
+        i: int,
+        a_sim_vector: np.ndarray,
+        y_pred_classes: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -313,7 +310,7 @@ class Sufficiency(Metric[List[float]]):
 
     @no_type_check
     def evaluate_batch(
-        self, *args, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
+        self, i_batch, a_sim_vector_batch, y_pred_classes, **kwargs
     ) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
@@ -327,8 +324,6 @@ class Sufficiency(Metric[List[float]]):
             The custom input to be evaluated on an instance-basis.
         y_pred_classes:
             The class predictions of the complete input dataset.
-        args:
-            Unused.
         kwargs:
             Unused.
 

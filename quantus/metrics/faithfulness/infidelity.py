@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 from quantus.functions.loss_func import mse
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.helpers import utils, warn
 from quantus.helpers.enums import (
@@ -75,11 +74,11 @@ class Infidelity(Metric[List[float]]):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = baseline_replacement_by_indices,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -126,8 +125,6 @@ class Infidelity(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -149,6 +146,9 @@ class Infidelity(Metric[List[float]]):
             else:
                 raise ValueError(f"loss_func must be in ['mse'] but is: {loss_func}")
         self.loss_func = loss_func
+
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
 
         if perturb_patch_sizes is None:
             perturb_patch_sizes = [4]
@@ -180,8 +180,8 @@ class Infidelity(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -191,7 +191,6 @@ class Infidelity(Metric[List[float]]):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -280,6 +279,7 @@ class Infidelity(Metric[List[float]]):
             model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -379,30 +379,18 @@ class Infidelity(Metric[List[float]]):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -417,7 +405,6 @@ class Infidelity(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        *args,
         **kwargs,
     ) -> List[float]:
         """
@@ -434,8 +421,6 @@ class Infidelity(Metric[List[float]]):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        args:
-            Unused.
         kwargs:
             Unused.
 

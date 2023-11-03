@@ -72,11 +72,11 @@ class Continuity(Metric[List[float]]):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = translation_x_direction,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -127,9 +127,6 @@ class Continuity(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -142,6 +139,9 @@ class Continuity(Metric[List[float]]):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = translation_x_direction
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -179,8 +179,8 @@ class Continuity(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -190,7 +190,6 @@ class Continuity(Metric[List[float]]):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -279,6 +278,7 @@ class Continuity(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -358,9 +358,7 @@ class Continuity(Metric[List[float]]):
                 # a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.normalise:
-                    a_perturbed_patch = self.normalise_func(
-                        a_perturbed_patch.flatten(), **self.normalise_func_kwargs
-                    )
+                    a_perturbed_patch = self.normalise_func(a_perturbed_patch.flatten())
 
                 if self.abs:
                     a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
@@ -373,31 +371,18 @@ class Continuity(Metric[List[float]]):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
+        kwargs:
+            Unused.
         Returns
         -------
         None.
@@ -441,7 +426,6 @@ class Continuity(Metric[List[float]]):
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
-        *args,
         **kwargs,
     ) -> List[Dict[str, int]]:
         """
@@ -457,8 +441,6 @@ class Continuity(Metric[List[float]]):
         y_batch:
             A np.ndarray which contains the output labels that are explained.
         kwargs:
-            Unused.
-        args:
             Unused.
 
         Returns

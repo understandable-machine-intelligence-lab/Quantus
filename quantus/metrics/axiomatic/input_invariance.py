@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
@@ -63,10 +62,10 @@ class InputInvariance(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         input_shift: Union[int, float] = -1,
-        perturb_func=baseline_replacement_by_shift,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -107,9 +106,6 @@ class InputInvariance(Metric[List[float]]):
         if abs:
             warn.warn_absolute_operation(word="not ")
 
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -122,6 +118,9 @@ class InputInvariance(Metric[List[float]]):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_shift
 
         self.perturb_func = make_perturb_func(
             perturb_func, perturb_func_kwargs, input_shift=input_shift
@@ -152,7 +151,6 @@ class InputInvariance(Metric[List[float]]):
         softmax: Optional[bool] = None,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -251,7 +249,6 @@ class InputInvariance(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -267,8 +264,6 @@ class InputInvariance(Metric[List[float]]):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
@@ -311,6 +306,6 @@ class InputInvariance(Metric[List[float]]):
 
         return score
 
-    def custom_preprocess(self, *args, **kwargs) -> None:
+    def custom_preprocess(self, **kwargs) -> None:
         """Additional explain_func assert, as the one in prepare() won't be executed when `a_batch != None.`"""
         asserts.assert_explain_func(explain_func=self.explain_func)

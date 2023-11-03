@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.helpers import warn
 from quantus.helpers.enums import (
     DataType,
@@ -60,7 +59,7 @@ class EffectiveComplexity(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -96,9 +95,6 @@ class EffectiveComplexity(Metric[List[float]]):
         if not abs:
             warn.warn_absolute_operation()
 
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -132,8 +128,8 @@ class EffectiveComplexity(Metric[List[float]]):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -143,7 +139,6 @@ class EffectiveComplexity(Metric[List[float]]):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -232,6 +227,7 @@ class EffectiveComplexity(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -253,7 +249,7 @@ class EffectiveComplexity(Metric[List[float]]):
         a = a.flatten()
         return int(np.sum(a > self.eps))
 
-    def evaluate_batch(self, *args, a_batch: np.ndarray, **kwargs) -> List[int]:
+    def evaluate_batch(self, a_batch: np.ndarray, **kwargs) -> List[int]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -262,9 +258,6 @@ class EffectiveComplexity(Metric[List[float]]):
         ----------
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-
-        args:
-            Unused.
         kwargs:
             Unused.
 

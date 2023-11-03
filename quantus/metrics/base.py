@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import sys
@@ -30,6 +31,7 @@ from sklearn.utils import gen_batches
 from tqdm.auto import tqdm
 
 from quantus.helpers import asserts, utils, warn
+from quantus.functions.normalise_func import normalise_by_max
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
@@ -64,16 +66,17 @@ class Metric(Generic[R]):
     evaluation_category: ClassVar[EvaluationCategory]
     # Instance attributes.
     explain_func: Callable
-    explain_func_kwargs: Dict[str, ...]
+    explain_func_kwargs: Dict[str, Any]
     a_axes: Sequence[int]
     evaluation_scores: Any
     all_evaluation_scores: Any
+    normalise_func: Optional[Callable[[np.ndarray], np.ndarray]]
 
     def __init__(
         self,
         abs: bool,
         normalise: bool,
-        normalise_func: Callable,
+        normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Callable,
@@ -121,6 +124,16 @@ class Metric(Generic[R]):
         kwargs: optional
             Keyword arguments.
         """
+
+        if aggregate_func is None:
+            aggregate_func = np.mean
+
+        if normalise_func is None:
+            normalise_func = normalise_by_max
+
+        if normalise_func_kwargs is not None:
+            normalise_func = functools.partial(normalise_func, **normalise_func_kwargs)
+
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
@@ -130,7 +143,6 @@ class Metric(Generic[R]):
         self.return_aggregate = return_aggregate
         self.aggregate_func = aggregate_func
         self.normalise_func = normalise_func
-        self.normalise_func_kwargs = normalise_func_kwargs or {}
 
         self.default_plot_func = default_plot_func
         # We need underscores here to avoid conflict with @property descriptor.
@@ -297,7 +309,6 @@ class Metric(Generic[R]):
     @abstractmethod
     def evaluate_batch(
         self,
-        *,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
@@ -429,7 +440,7 @@ class Metric(Generic[R]):
 
             # Normalise with specified keyword arguments if requested.
             if self.normalise:
-                a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+                a_batch = self.normalise_func(a_batch)
 
             # Take absolute if requested.
             if self.abs:
@@ -874,7 +885,7 @@ class Metric(Generic[R]):
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:
-            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+            a_batch = self.normalise_func(a_batch)
 
         if self.abs:
             a_batch = np.abs(a_batch)

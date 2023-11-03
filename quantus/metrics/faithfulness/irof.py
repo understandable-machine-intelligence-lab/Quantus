@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
@@ -68,11 +67,11 @@ class IROF(Metric[List[float]]):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = baseline_replacement_by_indices,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "mean",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = True,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -113,9 +112,6 @@ class IROF(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -128,6 +124,9 @@ class IROF(Metric[List[float]]):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         self.segmentation_method = segmentation_method
@@ -168,7 +167,6 @@ class IROF(Metric[List[float]]):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -257,6 +255,7 @@ class IROF(Metric[List[float]]):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -335,12 +334,8 @@ class IROF(Metric[List[float]]):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
@@ -378,7 +373,6 @@ class IROF(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        *args,
         **kwargs,
     ) -> List[float]:
         """
@@ -396,8 +390,6 @@ class IROF(Metric[List[float]]):
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
         kwargs:
-            Unused.
-        args:
             Unused.
 
         Returns

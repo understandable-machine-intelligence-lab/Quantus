@@ -9,7 +9,7 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -995,3 +995,10 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+T = TypeVar("T")
+
+
+def identity(x: T) -> T:
+    return x

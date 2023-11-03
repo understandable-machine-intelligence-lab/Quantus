@@ -7,12 +7,13 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
-from typing import Any, Callable, Collection, Dict, List, Optional, Union
+from typing import Any, Callable, Collection, Dict, List, Optional, Union, Generator
+
 
 import numpy as np
 from tqdm.auto import tqdm
+from sklearn.utils import gen_batches
 
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
@@ -62,7 +63,7 @@ class ModelParameterRandomisation(Metric):
 
     def __init__(
         self,
-        similarity_func: Callable = None,
+        similarity_func: Optional[Callable] = None,
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
@@ -71,7 +72,7 @@ class ModelParameterRandomisation(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = None,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -113,8 +114,6 @@ class ModelParameterRandomisation(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -159,8 +158,8 @@ class ModelParameterRandomisation(Metric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -170,7 +169,6 @@ class ModelParameterRandomisation(Metric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -253,7 +251,7 @@ class ModelParameterRandomisation(Metric):
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
-
+        self.batch_size = batch_size
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -268,54 +266,52 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model = data["model"]
-        x_batch = data["x_batch"]
-        y_batch = data["y_batch"]
-        a_batch = data["a_batch"]
-
-        if a_batch is None:
-            a_batch = self.explain_batch(model, x_batch, y_batch)
-
+        model: ModelInterface = data["model"]
+        # Here _batch refers to full dataset.
+        x_full_dataset = data["x_batch"]
+        y_full_dataset = data["y_batch"]
+        a_full_dataset = data["a_batch"]
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
-
-        model_iterator = tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
-            total=n_layers,
-            disable=not self.display_progressbar,
+        pbar = tqdm(
+            total=n_layers * len(x_full_dataset), disable=not self.display_progressbar
         )
+        if self.display_progressbar:
+            # Set property to False, so we display only 1 pbar.
+            self._display_progressbar = False
 
-        for layer_name, random_layer_model in model_iterator:
-            similarity_scores = [None for _ in x_batch]
+        def generate_y_batches():
+            for batch in gen_batches(len(a_full_dataset), batch_size):
+                yield a_full_dataset[batch.start : batch.stop]
 
-            # Generate an explanation with perturbed model.
-            a_batch_perturbed = self.explain_batch(
-                model=random_layer_model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-            )
+        with pbar as pbar:
+            for layer_name, random_layer_model in model.get_random_layer_generator(
+                order=self.layer_order, seed=self.seed
+            ):
+                pbar.desc = layer_name
 
-            batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.similarity_func(
-                    a_instance_perturbed.flatten(), a_instance.flatten()
+                similarity_scores = []
+                # Generate explanations on modified model in batches
+                a_perturbed_generator = self.generate_explanations(
+                    random_layer_model, x_full_dataset, y_full_dataset, batch_size
                 )
-                similarity_scores[instance_id] = result
 
-            # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
-
-        # Call post-processing.
-        self.custom_postprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-        )
+                for a_batch, a_batch_perturbed in zip(
+                    generate_y_batches(), a_perturbed_generator
+                ):
+                    for a_instance, a_instance_perturbed in zip(
+                        a_batch, a_batch_perturbed
+                    ):
+                        result = self.similarity_func(
+                            a_instance_perturbed.flatten(), a_instance.flatten()
+                        )
+                        similarity_scores.append(result)
+                        pbar.update(1)
+                # Save similarity scores in a result dictionary.
+                self.evaluation_scores[layer_name] = similarity_scores
 
         if self.return_sample_correlation:
             self.evaluation_scores = self.compute_correlation_per_sample()
@@ -335,11 +331,10 @@ class ModelParameterRandomisation(Metric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> None:
+        **kwargs,
+    ) -> Optional[Dict[str, np.ndarray]]:
         """
         Implementation of custom_preprocess_batch.
 
@@ -353,11 +348,8 @@ class ModelParameterRandomisation(Metric):
             A np.ndarray which contains the output labels that are explained.
         a_batch: np.ndarray, optional
             A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
+        kwargs:
+            Unused.
         Returns
         -------
         None
@@ -365,6 +357,13 @@ class ModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
+        if a_batch is None:
+            a_batch_chunks = []
+            for a_chunk in self.generate_explanations(
+                model, x_batch, y_batch, self.batch_size
+            ):
+                a_batch_chunks.extend(a_chunk)
+            return dict(a_batch=np.asarray(a_batch_chunks))
 
     def compute_correlation_per_sample(
         self,
@@ -387,6 +386,20 @@ class ModelParameterRandomisation(Metric):
         corr_coeffs = list(results.values())
 
         return corr_coeffs
+
+    def generate_explanations(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        batch_size: int,
+    ) -> Generator[np.ndarray, None, None]:
+        """Iterate over dataset in batches and generate explanations for complete dataset"""
+        for i in gen_batches(len(x_batch), batch_size):
+            x = x_batch[i.start : i.stop]
+            y = y_batch[i.start : i.stop]
+            a = self.explain_batch(model, x, y)
+            yield a
 
     def evaluate_batch(self, *args, **kwargs):
         raise RuntimeError(
