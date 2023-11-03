@@ -321,7 +321,7 @@ class Metric(Generic[R]):
         a_batch: np.ndarray,
         s_batch: Optional[np.ndarray],
         **kwargs,
-    ):
+    ) -> R:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
