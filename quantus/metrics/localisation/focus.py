@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
-from typing import Any, Callable, Dict, List, Optional, no_type_check
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 

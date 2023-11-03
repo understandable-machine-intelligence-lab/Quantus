@@ -25,6 +25,7 @@ from typing import (
     Optional,
     Union,
     TYPE_CHECKING,
+    no_type_check,
 )
 
 import matplotlib.pyplot as plt
@@ -160,6 +161,7 @@ class Metric(Generic[R]):
         self.evaluation_scores = []
         self.all_evaluation_scores = []
 
+    @no_type_check
     def __call__(
         self,
         model: Union[keras.Model, nn.Module, None],
@@ -313,6 +315,7 @@ class Metric(Generic[R]):
         return self.evaluation_scores  # type: ignore
 
     @abstractmethod
+    @no_type_check
     def evaluate_batch(
         self,
         model: ModelInterface,
@@ -479,12 +482,14 @@ class Metric(Generic[R]):
 
     def custom_preprocess(
         self,
+        *,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         custom_batch: Any,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data,
@@ -514,6 +519,9 @@ class Metric(Generic[R]):
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
             Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
+        kwargs:
+            Optional, metric-specific parameters.
+
 
         Returns
         -------
@@ -622,6 +630,7 @@ class Metric(Generic[R]):
 
     def custom_postprocess(
         self,
+        *,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: Optional[np.ndarray],
@@ -836,6 +845,7 @@ class Metric(Generic[R]):
 
     def custom_batch_preprocess(
         self,
+        *,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,

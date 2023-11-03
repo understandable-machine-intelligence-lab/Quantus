@@ -29,7 +29,7 @@ else:
 
 
 @final
-class PixelFlipping(Metric[List[float]]):
+class PixelFlipping(Metric[Union[float, List[float]]]):
     """
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
@@ -261,7 +261,7 @@ class PixelFlipping(Metric[List[float]]):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-    ) -> List[float]:
+    ) -> Union[float, List[float]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -354,7 +354,7 @@ class PixelFlipping(Metric[List[float]]):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         **kwargs,
-    ) -> List[List[float]]:
+    ) -> List[Union[float, List[float]]]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.

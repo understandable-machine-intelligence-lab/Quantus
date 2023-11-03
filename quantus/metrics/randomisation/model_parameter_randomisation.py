@@ -7,7 +7,16 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
-from typing import Any, Callable, Collection, Dict, List, Optional, Union, Generator
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    List,
+    Optional,
+    Union,
+    Generator,
+)
 
 
 import numpy as np
@@ -266,7 +275,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model: ModelInterface = data["model"]
+        model: ModelInterface = data["model"]  # type: ignore
         # Here _batch refers to full dataset.
         x_full_dataset = data["x_batch"]
         y_full_dataset = data["y_batch"]
@@ -349,11 +358,6 @@ class ModelParameterRandomisation(Metric):
 
         return corr_coeffs
 
-    def evaluate_batch(self, *args, **kwargs):
-        raise RuntimeError(
-            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
-        )
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -384,13 +388,16 @@ class ModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-        if a_batch is None:
-            a_batch_chunks = []
-            for a_chunk in self.generate_explanations(
-                model, x_batch, y_batch, self.batch_size
-            ):
-                a_batch_chunks.extend(a_chunk)
-            return dict(a_batch=np.asarray(a_batch_chunks))
+        if a_batch is not None:
+            # Just to silence mypy warnings
+            return None
+
+        a_batch_chunks = []
+        for a_chunk in self.generate_explanations(
+            model, x_batch, y_batch, self.batch_size
+        ):
+            a_batch_chunks.extend(a_chunk)
+        return dict(a_batch=np.asarray(a_batch_chunks))
 
     def generate_explanations(
         self,
@@ -405,3 +412,8 @@ class ModelParameterRandomisation(Metric):
             y = y_batch[i.start : i.stop]
             a = self.explain_batch(model, x, y)
             yield a
+
+    def evaluate_batch(self, *args, **kwargs):
+        raise RuntimeError(
+            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
+        )

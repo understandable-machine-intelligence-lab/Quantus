@@ -18,7 +18,6 @@ from quantus.helpers.enums import (
     ModelType,
     ScoreDirection,
 )
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base import Metric
 
 if sys.version_info >= (3, 8):
