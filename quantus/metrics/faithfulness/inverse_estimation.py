@@ -17,7 +17,7 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.metrics.base_perturbed import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -26,7 +26,7 @@ from quantus.helpers.enums import (
 )
 
 
-class InverseEstimation(PerturbationMetric):
+class InverseEstimation(Metric):
     """
     Implementation of Inverse Estimation experiment by Author et al., 2023.
 
@@ -51,7 +51,7 @@ class InverseEstimation(PerturbationMetric):
 
     def __init__(
         self,
-        metric_init: PerturbationMetric,
+        metric_init: Metric,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Callable = None,
@@ -245,10 +245,12 @@ class InverseEstimation(PerturbationMetric):
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        self.metric_init.return_aggregate = True
+        self.metric_init.return_aggregate = True  # Change this.
 
         # Run faithfulness experiment.
         self.metric_init.inverse_estimation = False
+        # Sort here to make it more general.
+        a_batch_inv = -np.array(a_batch)
         self.metric_init(
             model=model,
             x_batch=x_batch,
@@ -268,10 +270,11 @@ class InverseEstimation(PerturbationMetric):
             x_batch
         ), "To run the inverse estimation, the number of evaluation scores must match the number of instances in the batch."
         self.all_evaluation_scores_meta.extend(self.metric_init.evaluation_scores)
+        # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
         # Run inverse faithfulness experiment.
-        self.metric_init.inverse_estimation = True
+        self.metric_init.inverse_estimation = True  # make sure that the this is updated
         self.metric_init(
             model=model,
             x_batch=x_batch,
@@ -290,16 +293,17 @@ class InverseEstimation(PerturbationMetric):
         self.all_evaluation_scores_meta_inverse.extend(
             self.metric_init.evaluation_scores
         )
-        self.metric_init.evaluation_scores = []
 
-        # Compute the inverse.
+        # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
         inv_scores = np.array(self.all_evaluation_scores_meta) - np.array(
             self.all_evaluation_scores_meta_inverse
         )
+        self.metric_init.evaluation_scores = []
         self.evaluation_scores.extend(inv_scores)
 
+        # TODO. If all_evaluation_scores is empty, overwrite with inverse scores for the those last samples (keep iterator).
+        # Or skip and throw a warning.
         self.metric_init.all_evaluation_scores = []
-        # TODO. Implement a write-over of samples (len(x_batch) x len) with the inverse.
         self.all_evaluation_scores.extend(inv_scores)
 
         return inv_scores
@@ -334,9 +338,4 @@ class InverseEstimation(PerturbationMetric):
         None
         """
         # TODO. Implement aggregation method.
-
-        # Calculate accuracy for every number of most important pixels removed.
-        self.evaluation_scores = {
-            percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
-            for p_ix, percentage in enumerate(self.percentages)
-        }
+        pass
