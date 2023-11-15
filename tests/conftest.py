@@ -2,10 +2,10 @@ import pytest
 import pickle
 import torch
 import numpy as np
-import tensorflow
-from tensorflow.keras.datasets import cifar10
+from keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import os
 
 from quantus.helpers.model.models import (
     LeNet,
@@ -211,10 +211,10 @@ def titanic_dataset():
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax_not_last():
-    '''
+    """
     Model with a softmax layer not last in the list of modules. Used to test the logic of pytorch_model.py,
     method get_softmax_arg_model (see the method's documentation).
-    '''
+    """
     model = torch.nn.Sequential(
         torch.nn.Flatten(),
         torch.nn.Softmax(),
@@ -225,12 +225,18 @@ def load_mnist_model_softmax_not_last():
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax():
-    '''
+    """
     Model with a softmax layer last in the list of modules. Used to test the logic of pytorch_model.py,
     method get_softmax_arg_model (see the method's documentation).
-    '''
+    """
     model = torch.nn.Sequential(
         LeNet(),
         torch.nn.Softmax(),
     )
     return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_env():
+    """Set ENV var, so test outputs are not polluted by progress bars and warnings."""
+    os.environ["PYTEST"] = "1"

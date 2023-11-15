@@ -6,26 +6,43 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
 from quantus.functions import norm_func
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.functions.perturb_func import perturb_batch, uniform_noise
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import (
+    make_changed_prediction_indices_func,
+    make_perturb_func,
+)
+from quantus.metrics.base import Metric
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 
-class AvgSensitivity(BatchedPerturbationMetric):
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
+
+
+@final
+class AvgSensitivity(Metric[List[float]]):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 
@@ -52,7 +69,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.ROBUSTNESS
 
-
     def __init__(
         self,
         similarity_func: Optional[Callable] = None,
@@ -63,12 +79,12 @@ class AvgSensitivity(BatchedPerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Callable = uniform_noise,
         lower_bound: float = 0.2,
         upper_bound: Optional[float] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -120,24 +136,11 @@ class AvgSensitivity(BatchedPerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["lower_bound"] = lower_bound
-        perturb_func_kwargs["upper_bound"] = upper_bound
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -160,7 +163,16 @@ class AvgSensitivity(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.changed_prediction_indices = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
+        self.mean_func = np.mean if return_nan_when_prediction_changes else np.nanmean
+        self.perturb_func = make_perturb_func(
+            perturb_func,
+            perturb_func_kwargs,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -183,8 +195,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -194,7 +206,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -293,7 +304,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -308,42 +319,28 @@ class AvgSensitivity(BatchedPerturbationMetric):
             The output to be evaluated on an instance-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        kwargs:
+            Unused.
 
         Returns
         -------
-           : np.ndarray
+        scores_batch: np.ndarray
             The batched evaluation results.
         """
         batch_size = x_batch.shape[0]
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
         for step_id in range(self.nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
-            )
-
-            x_input = model.shape_input(
-                x=x_perturbed,
-                shape=x_batch.shape,
-                channel_first=True,
-                batched=True,
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
             )
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
@@ -353,29 +350,11 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 )
 
             # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x_input,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed,
-                    **self.normalise_func_kwargs,
-                )
-
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -387,35 +366,17 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 denominator = self.norm_denominator(a=a_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
-        mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
-        return mean_func(similarities, axis=1)
 
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> None:
+        return self.mean_func(similarities, axis=1)
+
+    def custom_preprocess(self, **kwargs) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------

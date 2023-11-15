@@ -6,23 +6,28 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class AttributionLocalisation(Metric):
+@final
+class AttributionLocalisation(Metric[List[float]]):
     """
     Implementation of the Attribution Localization by Kohlbrenner et al., 2020.
 
@@ -48,7 +53,6 @@ class AttributionLocalisation(Metric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.LOCALISATION
 
-
     def __init__(
         self,
         weighted: bool = False,
@@ -58,7 +62,7 @@ class AttributionLocalisation(Metric):
         normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         display_progressbar: bool = False,
         disable_warnings: bool = False,
@@ -94,8 +98,6 @@ class AttributionLocalisation(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         if not abs:
             warn.warn_absolute_operation()
@@ -116,9 +118,6 @@ class AttributionLocalisation(Metric):
         # Save metric-specific attributes.
         self.weighted = weighted
         self.max_size = max_size
-
-        # Asserts and warnings.
-        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -138,8 +137,8 @@ class AttributionLocalisation(Metric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -149,7 +148,6 @@ class AttributionLocalisation(Metric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -238,14 +236,13 @@ class AttributionLocalisation(Metric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     def evaluate_instance(
         self,
-        model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
     ) -> float:
@@ -254,12 +251,8 @@ class AttributionLocalisation(Metric):
 
         Parameters
         ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
         x: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
@@ -301,34 +294,56 @@ class AttributionLocalisation(Metric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
+        kwargs:
+            Unused.
         Returns
         -------
         None
         """
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+    def evaluate_batch(
+        self,
+        x_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        a_batch: np.ndarray
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray
+            A np.ndarray which contains segmentation masks that matches the input.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            Evaluation result for batch.
+        """
+        return [
+            self.evaluate_instance(x=x, a=a, s=s)
+            for x, a, s in zip(x_batch, a_batch, s_batch)
+        ]

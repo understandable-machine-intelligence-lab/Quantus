@@ -6,24 +6,31 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class NonSensitivity(PerturbationMetric):
+@final
+class NonSensitivity(Metric[List[float]]):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 
@@ -62,7 +69,7 @@ class NonSensitivity(PerturbationMetric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_baseline: str = "black",
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -111,26 +118,11 @@ class NonSensitivity(PerturbationMetric):
             Keyword arguments.
         """
 
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
-        perturb_func = perturb_func
-        perturb_func_kwargs = perturb_func_kwargs
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -139,10 +131,16 @@ class NonSensitivity(PerturbationMetric):
             **kwargs,
         )
 
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
         # Save metric-specific attributes.
         self.eps = eps
         self.n_samples = n_samples
         self.features_in_step = features_in_step
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -162,8 +160,8 @@ class NonSensitivity(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -173,7 +171,6 @@ class NonSensitivity(PerturbationMetric):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -262,6 +259,7 @@ class NonSensitivity(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -271,7 +269,6 @@ class NonSensitivity(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> int:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -291,7 +288,7 @@ class NonSensitivity(PerturbationMetric):
 
         Returns
         -------
-        integer
+        integer:
             The evaluation results.
         """
         a = a.flatten()
@@ -300,20 +297,17 @@ class NonSensitivity(PerturbationMetric):
 
         vars = []
         for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
-
             preds = []
             a_ix = a[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ].astype(int)
 
             for _ in range(self.n_samples):
-
                 # Perturb input by indices of attributions.
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
                     indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
                 )
 
                 # Predict on perturbed input x.
@@ -329,30 +323,18 @@ class NonSensitivity(PerturbationMetric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility to the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -363,3 +345,39 @@ class NonSensitivity(PerturbationMetric):
             features_in_step=self.features_in_step,
             input_shape=x_batch.shape[2:],
         )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[int]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+             The evaluation results.
+        """
+
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

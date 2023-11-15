@@ -7,27 +7,31 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import itertools
+import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import plotting
-from quantus.helpers import utils
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import asserts, plotting, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class RegionPerturbation(PerturbationMetric):
+@final
+class RegionPerturbation(Metric[List[float]]):
     """
     Implementation of Region Perturbation by Samek et al., 2015.
 
@@ -69,11 +73,11 @@ class RegionPerturbation(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -119,17 +123,6 @@ class RegionPerturbation(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         if default_plot_func is None:
             default_plot_func = plotting.plot_region_perturbation_experiment
 
@@ -138,8 +131,6 @@ class RegionPerturbation(PerturbationMetric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -148,10 +139,16 @@ class RegionPerturbation(PerturbationMetric):
             **kwargs,
         )
 
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
         # Save metric-specific attributes.
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -176,8 +173,8 @@ class RegionPerturbation(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -187,7 +184,6 @@ class RegionPerturbation(PerturbationMetric):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -276,6 +272,7 @@ class RegionPerturbation(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -285,7 +282,6 @@ class RegionPerturbation(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -327,7 +323,6 @@ class RegionPerturbation(PerturbationMetric):
             range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
         ]
         for top_left_coords in itertools.product(*axis_iterators):
-
             # Create slice for patch.
             patch_slice = utils.create_patch_slice(
                 patch_size=self.patch_size,
@@ -388,7 +383,6 @@ class RegionPerturbation(PerturbationMetric):
         # Increasingly perturb the input and store the decrease in function value.
         results = [None for _ in range(len(ordered_patches_no_overlap))]
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
-
             # Pad x_perturbed. The mode should probably depend on the used perturb_func?
             x_perturbed_pad = utils._pad_array(
                 x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
@@ -399,7 +393,6 @@ class RegionPerturbation(PerturbationMetric):
                 arr=x_perturbed_pad,
                 indices=patch_slice,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
             )
 
             # Remove padding.
@@ -423,3 +416,38 @@ class RegionPerturbation(PerturbationMetric):
         return np.mean(
             [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
         )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[List[float]]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            The evaluation results.
+        """
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

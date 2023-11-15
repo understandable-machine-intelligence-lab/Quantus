@@ -48,3 +48,8 @@ Run type checking using [mypy](https://github.com/python/mypy)
 ```shell
 python3 -m tox run -e type
 ```
+
+You can run all testing environments in parallel using multiprocessing by running:
+```shell
+python3 -m tox run-parallel
+```

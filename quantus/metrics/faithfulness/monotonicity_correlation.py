@@ -6,26 +6,32 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class MonotonicityCorrelation(PerturbationMetric):
+@final
+class MonotonicityCorrelation(Metric[List[float]]):
     """
     Implementation of Monotonicity Correlation metric by Nguyen at el., 2020.
 
@@ -65,11 +71,11 @@ class MonotonicityCorrelation(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "uniform",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -117,24 +123,11 @@ class MonotonicityCorrelation(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -146,11 +139,18 @@ class MonotonicityCorrelation(PerturbationMetric):
         # Save metric-specific attributes.
         if similarity_func is None:
             similarity_func = correlation_spearman
+
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
         self.similarity_func = similarity_func
 
         self.eps = eps
         self.nr_samples = nr_samples
         self.features_in_step = features_in_step
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -169,8 +169,8 @@ class MonotonicityCorrelation(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -272,6 +272,7 @@ class MonotonicityCorrelation(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -281,7 +282,6 @@ class MonotonicityCorrelation(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -296,8 +296,6 @@ class MonotonicityCorrelation(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -309,7 +307,7 @@ class MonotonicityCorrelation(PerturbationMetric):
         y_pred = float(model.predict(x_input)[:, y])
 
         inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-        inv_pred = inv_pred ** 2
+        inv_pred = inv_pred**2
 
         # Reshape attributions.
         a = a.flatten()
@@ -322,7 +320,6 @@ class MonotonicityCorrelation(PerturbationMetric):
         vars = [None for _ in range(n_perturbations)]
 
         for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
             # Perturb input by indices of attributions.
             a_ix = a_indices[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
@@ -331,12 +328,10 @@ class MonotonicityCorrelation(PerturbationMetric):
             y_pred_perturbs = []
 
             for s_ix in range(self.nr_samples):
-
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
                     indexed_axes=self.a_axes,
-                    **self.perturb_func_kwargs,
                 )
                 warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
@@ -354,30 +349,18 @@ class MonotonicityCorrelation(PerturbationMetric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -388,3 +371,45 @@ class MonotonicityCorrelation(PerturbationMetric):
             features_in_step=self.features_in_step,
             input_shape=x_batch.shape[2:],
         )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A model that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            The evaluation results.
+        """
+
+        # Evaluate explanations.
+        return [
+            self.evaluate_instance(
+                model=model,
+                x=x,
+                y=y,
+                a=a,
+            )
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

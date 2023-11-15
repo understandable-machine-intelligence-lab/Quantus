@@ -7,17 +7,19 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List, Union
+from typing import Any, Dict, Optional, Tuple, List, Union, Generator, TypeVar, Generic
 
 import numpy as np
 
+M = TypeVar("M")
 
-class ModelInterface(ABC):
+
+class ModelInterface(ABC, Generic[M]):
     """Base ModelInterface for torch and tensorflow models."""
 
     def __init__(
         self,
-        model,
+        model: M,
         channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -107,7 +109,9 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_random_layer_generator(self):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, M], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -171,3 +175,19 @@ class ModelInterface(ABC):
             2D tensor with shape (batch_size, None)
         """
         raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def random_layer_generator_length(self) -> int:
+        """
+        Count number of randomisable layers for `Model Parameter Randomisation`.
+        This property is needed to avoid `len(model.get_random_layer_generator())`,
+        because meterializing bigger models `num_layers` times in memory at ones
+        has shown to cause OOM errors.
+
+        Returns
+        -------
+        n:
+            Number of layers in model, which can be randomised.
+        """
+        raise NotImplementedError

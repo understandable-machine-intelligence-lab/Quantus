@@ -5,27 +5,32 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+import sys
 from typing import Any, Callable, Dict, List, Optional, Union
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
 from quantus.functions.loss_func import mse
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class Infidelity(PerturbationMetric):
+@final
+class Infidelity(Metric[List[float]]):
     """
     Implementation of Infidelity by Yeh et al., 2019.
 
@@ -69,11 +74,11 @@ class Infidelity(PerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -120,23 +125,12 @@ class Infidelity(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -153,11 +147,17 @@ class Infidelity(PerturbationMetric):
                 raise ValueError(f"loss_func must be in ['mse'] but is: {loss_func}")
         self.loss_func = loss_func
 
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
         if perturb_patch_sizes is None:
             perturb_patch_sizes = [4]
         self.perturb_patch_sizes = perturb_patch_sizes
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -180,8 +180,8 @@ class Infidelity(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -191,7 +191,6 @@ class Infidelity(PerturbationMetric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -280,6 +279,7 @@ class Infidelity(PerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -289,7 +289,6 @@ class Infidelity(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -297,15 +296,13 @@ class Infidelity(PerturbationMetric):
         Parameters
         ----------
         model: ModelInterface
-            A ModelInteface that is subject to explanation.
+            A ModelInterface that is subject to explanation.
         x: np.ndarray
             The input to be evaluated on an instance-basis.
         y: np.ndarray
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -320,11 +317,9 @@ class Infidelity(PerturbationMetric):
         results = []
 
         for _ in range(self.n_perturb_samples):
-
             sub_results = []
 
             for patch_size in self.perturb_patch_sizes:
-
                 pred_deltas = np.zeros(
                     (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
                 )
@@ -335,9 +330,7 @@ class Infidelity(PerturbationMetric):
                 pad_width = patch_size - 1
 
                 for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
-
                     for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
-
                         # Perturb input patch-wise.
                         x_perturbed_pad = utils._pad_array(
                             x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
@@ -351,7 +344,6 @@ class Infidelity(PerturbationMetric):
                             arr=x_perturbed_pad,
                             indices=patch_slice,
                             indexed_axes=self.a_axes,
-                            **self.perturb_func_kwargs,
                         )
 
                         # Remove padding.
@@ -387,30 +379,18 @@ class Infidelity(PerturbationMetric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -418,3 +398,39 @@ class Infidelity(PerturbationMetric):
         """
         # Infer number of input channels.
         self.nr_channels = x_batch.shape[1]
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            The evaluation results.
+        """
+
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]
