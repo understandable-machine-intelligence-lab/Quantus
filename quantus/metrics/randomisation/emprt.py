@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Randomisation Test metric."""
+"""This module contains the implementation of the enhanced Model Parameter Randomisation Test metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -17,14 +17,18 @@ from typing import (
     Collection,
     Iterable,
 )
+import os
 import numpy as np
 from tqdm.auto import tqdm
+import torch
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
+from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.similarity_func import correlation_spearman
+
+# from quantus.functions import complexity_func
 from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
@@ -34,20 +38,14 @@ from quantus.helpers.enums import (
 )
 
 
-class MPRT(Metric):
+class eMPRT(Metric):
     """
-    Implementation of the Model Parameter Randomisation Test by Adebayo et. al., 2018.
+    Implementation of the NAME by AUTHOR et. al., 2023.
 
-    The Model Parameter Randomization measures the distance between the original attribution and a newly computed
-    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
-    at a time.
-
-    Assumptions:
-        - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
-        HOG and SSIM. We have set Spearman as the default value.
+    INSERT DESC.
 
     References:
-        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
+        1) INSERT SOURCE
 
     Attributes:
         -  _name: The name of the metric.
@@ -57,22 +55,35 @@ class MPRT(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Model Parameter Randomisation Test"
+    name = "Enhanced Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
+    score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.RANDOMISATION
 
     def __init__(
         self,
-        similarity_func: Callable = None,
-        layer_order: str = "independent",
+        complexity_func: Optional[Callable] = None,
+        complexity_func_kwargs: Optional[dict] = None,
+        layer_order: str = "bottom_up",
+        nr_samples: Optional[int] = None,
         seed: int = 42,
-        return_sample_correlation: bool = False,
-        return_last_correlation: bool = False,
+        compute_delta: bool = True,
+        compute_rate_of_change: bool = True,
+        compute_delta_explanation_vs_model: bool = True,
+        compute_correlation: bool = True,
+        compute_last_complexity: bool = True,
+        return_delta_explanation_vs_model: bool = False,
+        return_fraction: bool = False,
+        return_rate_of_change: bool = True,
+        return_average_sample_score: bool = False,
+        return_correlation: bool = False,
+        return_last_complexity: bool = False,
+        return_delta_explanation: bool = False,
         skip_layers: bool = False,
-        abs: bool = True,
-        normalise: bool = True,
+        similarity_func: Optional[Callable] = None,
+        abs: bool = False,
+        normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -93,7 +104,7 @@ class MPRT(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_correlation: boolean
+        return_average_sample_score: boolean
             Indicates whether return one float per sample, representing the average
             correlation coefficient across the layers for that sample.
         abs: boolean
@@ -134,25 +145,64 @@ class MPRT(Metric):
             **kwargs,
         )
 
+        # Set seed for reproducibility.
+        if seed is not None:
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            os.environ["PYTHONHASHSEED"] = str(seed)
+
+            # torch.backends.cudnn.benchmark = False
+            # torch.backends.cudnn.deterministic = True
+            # torch.backends.cudnn.enabled = False
+
         # Save metric-specific attributes.
+        if complexity_func is None:
+            complexity_func = discrete_entropy
+
+        if complexity_func_kwargs is None:
+            complexity_func_kwargs = {}
+
         if similarity_func is None:
-            similarity_func = correlation_spearman
+            similarity_func = similarity_func.correlation_spearman
+
+        self.complexity_func = complexity_func
+        self.complexity_func_kwargs = complexity_func_kwargs
         self.similarity_func = similarity_func
         self.layer_order = layer_order
-        self.seed = seed
-        self.return_sample_correlation = return_sample_correlation
-        self.return_last_correlation = return_last_correlation
+        self.nr_samples = nr_samples
+        self.compute_delta = compute_delta
+        self.compute_rate_of_change = compute_rate_of_change
+        self.compute_delta_explanation_vs_model = compute_delta_explanation_vs_model
+        self.compute_correlation = compute_correlation
+        self.compute_last_complexity = compute_last_complexity
+        self.return_average_sample_score = return_average_sample_score
+        self.return_fraction = return_fraction
+        self.return_rate_of_change = return_rate_of_change
+        self.return_delta_explanation_vs_model = return_delta_explanation_vs_model
+        self.return_correlation = return_correlation
+        self.return_last_complexity = return_last_complexity
+        self.return_delta_explanation = return_delta_explanation
         self.skip_layers = skip_layers
 
-        if self.return_sample_correlation and self.return_last_correlation:
-            raise ValueError(
-                f"Both 'return_sample_correlation' and 'return_last_correlation' cannot be True. Pick one."
-            )
-
-        # Results are returned/saved as a dictionary not like in the super-class as a list.
-        self.evaluation_scores = {}
-
         # Asserts and warnings.
+        assert (
+            sum(
+                [
+                    self.return_fraction,
+                    self.return_average_sample_score,
+                    self.return_correlation,
+                    self.return_last_complexity,
+                    self.return_delta_explanation,
+                    self.return_delta_explanation_vs_model,
+                    self.return_rate_of_change,
+                ]
+            )
+            == 1
+        ), "Set one of the possible 'return' arguments to True."
+
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
             warn.warn_parameterisation(
@@ -183,6 +233,7 @@ class MPRT(Metric):
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
+        attributions_path: str = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -280,39 +331,51 @@ class MPRT(Metric):
             softmax=softmax,
             device=device,
         )
+
+        # Get model and data.
         model = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]
 
-        # Results are returned/saved as a dictionary not as a list as in the super-class.
-        self.correlation_scores = np.zeros((len(x_batch)))
-        self.similarity_scores = {}
-        self.evaluation_scores = {}
-
         # Get number of iterations from number of layers.
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
-
         model_iterator = tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
+            model.get_random_layer_generator(order=self.layer_order),
             total=n_layers,
             disable=not self.display_progressbar,
         )
 
+        # Get the number of bins for discrete entropy calculation.
+        if "n_bins" not in self.complexity_func_kwargs:
+            self.find_n_bins(
+                a_batch=a_batch,
+                n_bins_default=self.complexity_func_kwargs.get("n_bins_default", 100),
+                min_n_bins=self.complexity_func_kwargs.get("min_n_bins", 10),
+                max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200),
+                debug=self.complexity_func_kwargs.get("debug", False),
+            )
+
+        # Compute the explanation_scores given uniformly sampled explanation.
+        if self.nr_samples is None:
+            self.nr_samples = len(a_batch)
+
+        # Initialise arrays.
+        self.delta_explanation_scores = np.zeros((self.nr_samples))
+        self.delta_model_scores = np.zeros((self.nr_samples))
+        self.fraction_explanation_scores = np.zeros((self.nr_samples))
+        self.fraction_model_scores = np.zeros((self.nr_samples))
+        self.delta_explanation_vs_models = np.zeros((self.nr_samples))
+        self.correlation_scores = np.zeros((self.nr_samples))
+        self.rate_of_change_scores = np.zeros((self.nr_samples))
+        self.explanation_scores = {}
+        self.model_scores = {}
+
         for l_ix, (layer_name, random_layer_model) in enumerate(model_iterator):
 
-            similarity_scores = [None for _ in x_batch]
+            if l_ix == 0:
 
-            # Skip layers if computing delta.
-            if self.skip_layers and (l_ix + 1) < len(model_iterator):
-                continue
-
-            # Save correlation scores of no perturbation.
-            if (
-                l_ix == 0
-            ):  # (l_ix == 0 and self.layer_order == "bottom_up") or (l_ix+1 == len(model_iterator) and self.layer_order == "top_down"):
-
-                # Generate an explanation with original model.
+                # Generate an explanation with perturbed model.
                 a_batch_original = self.explain_func(
                     model=model.get_model(),
                     inputs=x_batch,
@@ -320,20 +383,33 @@ class MPRT(Metric):
                     **self.explain_func_kwargs,
                 )
 
-                batch_iterator = enumerate(zip(a_batch, a_batch_original))
-                for instance_id, (a_instance, a_ori) in batch_iterator:
+                self.explanation_scores["orig"] = []
+                for a_ix, a_ori in enumerate(a_batch_original):
                     score = self.evaluate_instance(
                         model=model,
-                        x=None,
+                        x=x_batch[0],
                         y=None,
                         s=None,
-                        a=a_instance,
-                        a_perturbed=a_ori,
+                        a=a_ori,
                     )
-                    similarity_scores[instance_id] = score
+                    self.explanation_scores["orig"].append(score)
 
-                # Save similarity scores in a result dictionary.
-                self.similarity_scores["orig"] = similarity_scores
+                # Compute entropy of the output layer.
+                self.model_scores["orig"] = []
+                for y_ix, y_pred in enumerate(model.predict(x_batch)):
+                    score = entropy(a=y_pred, x=y_pred)
+                    self.model_scores["orig"].append(score)
+
+            # Skip layers if computing delta.
+            if (
+                self.skip_layers
+                and self.compute_delta
+                and (l_ix + 1) < len(model_iterator)
+            ):
+                continue
+
+            # Score explanation complexity.
+            explanation_scores = []
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
@@ -343,20 +419,71 @@ class MPRT(Metric):
                 **self.explain_func_kwargs,
             )
 
+            # Get id for storing data.
+            if attributions_path is not None:
+                savepath = os.path.join(attributions_path, f"{l_ix}-{layer_name}")
+                os.makedirs(savepath, exist_ok=True)
+                last_id = 0
+                for fname in os.listdir(savepath):
+                    if "original_attribution_" in fname:
+                        id = (
+                            int(fname.split("original_attribution_")[1].split(".")[0])
+                            > last_id
+                        )
+                        if id > last_id:
+                            last_id = id
+
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
+            for instance_id, (a_ix, a_perturbed) in batch_iterator:
                 score = self.evaluate_instance(
                     model=random_layer_model,
-                    x=None,
+                    x=x_batch[0],
                     y=None,
                     s=None,
-                    a=a_instance,
-                    a_perturbed=a_instance_perturbed,
+                    a=a_perturbed,
                 )
-                similarity_scores[instance_id] = score
+                explanation_scores.append(score)
 
-            # Save similarity scores in a result dictionary.
-            self.similarity_scores[layer_name] = similarity_scores
+                # Save data.
+                if attributions_path is not None:
+                    np.save(
+                        os.path.join(savepath, f"input_{last_id+instance_id}.npy"),
+                        x_batch[instance_id],
+                    )
+                    np.save(
+                        os.path.join(
+                            savepath, f"original_attribution_{last_id+instance_id}.npy"
+                        ),
+                        a_ix,
+                    )
+                    np.save(
+                        os.path.join(
+                            savepath, f"perturbed_attribution_{last_id+instance_id}.npy"
+                        ),
+                        a_perturbed,
+                    )
+
+            # Score the model complexity.
+            model_scores = []
+
+            # Wrap the model.
+            random_layer_model_wrapped = utils.get_wrapped_model(
+                model=random_layer_model,
+                channel_first=channel_first,
+                softmax=softmax,
+                device=device,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+
+            # Predict and save scores.
+            y_preds = random_layer_model_wrapped.predict(x_batch)
+            for y_ix, y_pred in enumerate(y_preds):
+                score = entropy(a=y_pred, x=y_pred)
+                model_scores.append(score)
+
+            # Save explanation_scores scores in a result dictionary.
+            self.explanation_scores[layer_name] = explanation_scores
+            self.model_scores[layer_name] = model_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -367,21 +494,84 @@ class MPRT(Metric):
             s_batch=s_batch,
         )
 
-        if self.return_sample_correlation:
-            self.correlation_scores = self.recompute_correlation_per_sample()
-            self.evaluation_scores = self.correlation_scores
-
-        elif self.return_last_correlation:
-            self.correlation_scores = self.recompute_last_correlation_per_sample()
-            self.evaluation_scores = self.correlation_scores
-
-        if self.return_aggregate:
-            assert self.return_sample_correlation, (
-                "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute te aggregat"
+        # If compute correlation score (model and explanations)
+        if self.compute_correlation:
+            self.correlation_scores = (
+                self.recompute_model_explanation_correlation_per_sample()
             )
+
+        # If compute the last complexity score.
+        if self.compute_last_complexity:
+            self.last_complexity_scores = self.recompute_last_correlation_per_sample()
+
+        # If compute delta score per sample (model and explanations).
+        if self.compute_delta:
+
+            # Compute deltas for explanation scores.
+            scores = list(self.explanation_scores.values())
+            self.delta_explanation_scores = [
+                b - a for a, b in zip(scores[0], scores[-1])
+            ]
+
+            # Compute deltas for model scores.
+            scores = list(self.model_scores.values())
+            self.delta_model_scores = [b - a for a, b in zip(scores[0], scores[-1])]
+
+            # Compute fraction for explanation scores.
+            scores = list(self.explanation_scores.values())
+            self.fraction_explanation_scores = [
+                b / a if a != 0 else np.nan for a, b in zip(scores[0], scores[-1])
+            ]  # eMPRT original!
+
+            # Compute fraction for explanation scores.
+            scores = list(self.model_scores.values())
+            self.fraction_model_scores = [
+                b / a if a != 0 else np.nan for a, b in zip(scores[0], scores[-1])
+            ]
+
+        # If compute delta skill score per sample (model and explanations).
+        if self.compute_delta_explanation_vs_model:
+            self.delta_explanation_vs_models = [
+                b / a if a != 0 else np.nan
+                for a, b in zip(
+                    self.fraction_model_scores, self.fraction_explanation_scores
+                )
+            ]
+
+        # If compute delta skill score per sample (model and explanations).
+        if self.compute_rate_of_change:
+            scores = list(self.explanation_scores.values())
+            self.rate_of_change_scores = [
+                (b - a) / a for a, b in zip(scores[0], scores[-1])
+            ]
+
+        # If return one score per sample.
+        if self.return_average_sample_score:
+            self.evaluation_scores = self.recompute_average_complexity_per_sample()
+
+        # If return delta score per sample.
+        if self.return_fraction:
+            self.evaluation_scores = self.fraction_explanation_scores
+
+        # If return delta score per sample.
+        if self.return_delta_explanation_vs_model:
+            self.evaluation_scores = self.delta_explanation_vs_models
+
+        # If return delta score per sample.
+        if self.return_correlation:
+            self.evaluation_scores = self.correlation_scores
+
+        if self.return_last_complexity:
+            self.evaluation_scores = self.last_complexity_scores
+
+        if self.return_rate_of_change:
+            self.evaluation_scores = self.rate_of_change_scores
+
+        # If return one aggregate score for all samples.
+        if self.return_aggregate:
             self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
+        # Return all_evaluation_scores according to Quantus.
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
@@ -393,7 +583,6 @@ class MPRT(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -412,8 +601,6 @@ class MPRT(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
 
         Returns
         -------
@@ -421,13 +608,13 @@ class MPRT(Metric):
             The evaluation results.
         """
         if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+            a = self.normalise_func(a, **self.normalise_func_kwargs)
 
         if self.abs:
-            a_perturbed = np.abs(a_perturbed)
+            a = np.abs(a)
 
         # Compute distance measure.
-        return self.similarity_func(a_perturbed.flatten(), a.flatten())
+        return self.complexity_func(a=a, x=x, **self.complexity_func_kwargs)
 
     def custom_preprocess(
         self,
@@ -462,27 +649,60 @@ class MPRT(Metric):
         """
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
+
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def recompute_correlation_per_sample(
+    def recompute_model_explanation_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.similarity_scores, dict), (
-            "To compute the average correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
+        assert isinstance(self.explanation_scores, dict), (
+            "To compute the correlation between model and explanation per sample for "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
             "must be of type dict."
         )
         layer_length = len(
-            self.similarity_scores[list(self.similarity_scores.keys())[0]]
+            self.explanation_scores[list(self.explanation_scores.keys())[0]]
+        )
+        explanation_scores: Dict[int, list] = {
+            sample: [] for sample in range(layer_length)
+        }
+        model_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in explanation_scores.keys():
+            for layer in self.explanation_scores:
+                explanation_scores[sample].append(
+                    float(self.explanation_scores[layer][sample])
+                )
+                model_scores[sample].append(float(self.model_scores[layer][sample]))
+
+        corr_coeffs = []
+        for sample in explanation_scores.keys():
+            corr_coeffs.append(
+                self.similarity_func(model_scores[sample], explanation_scores[sample])
+            )
+
+        return corr_coeffs
+
+    def recompute_average_complexity_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.explanation_scores, dict), (
+            "To compute the average correlation coefficient per sample for "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.explanation_scores[list(self.explanation_scores.keys())[0]]
         )
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.similarity_scores:
+            for layer in self.explanation_scores:
                 if layer == "orig":
                     continue
-                results[sample].append(float(self.similarity_scores[layer][sample]))
+                results[sample].append(float(self.explanation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
@@ -493,12 +713,46 @@ class MPRT(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.similarity_scores, dict), (
+        assert isinstance(self.explanation_scores, dict), (
             "To compute the last correlation coefficient per sample for "
-            "enhanced Model Parameter Randomisation Test, 'similarity_scores' "
+            "Model Parameter Randomisation Test, 'explanation_scores' "
             "must be of type dict."
         )
-        # Return the correlation coefficient of the fully randomised model.
-        corr_coeffs = list(self.similarity_scores.values())[-1]
+        corr_coeffs = list(self.explanation_scores.values())[-1]
 
         return corr_coeffs
+
+    def find_n_bins(
+        self,
+        a_batch: np.array,
+        n_bins_default: int = 100,
+        min_n_bins: int = 10,
+        max_n_bins: int = 200,
+        debug: bool = True,
+    ) -> None:
+
+        if self.normalise:
+            a_batch = self.normalise_func(a, **self.normalise_func_kwargs)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+
+        rule_name = self.complexity_func_kwargs.get("rule", None)
+        rule = RULES_N_BINS.get(rule_name)
+
+        if debug:
+            print(f"\tMax and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
+
+        if not rule:
+            self.complexity_func_kwargs["n_bins"] = n_bins_default
+            if debug:
+                print(f"\tNo rule found, 'n_bins' set to 100.")
+            return None
+
+        n_bins = rule(a_batch=a_batch)
+        n_bins = max(min(n_bins, max_n_bins), min_n_bins)
+        self.complexity_func_kwargs["n_bins"] = n_bins
+
+        if debug:
+            print(
+                f"\tRule '{rule_name}' -> n_bins={n_bins} but with min={min_n_bins} and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}."
+            )

@@ -20,7 +20,7 @@ class ModelInterface(ABC, Generic[M]):
     def __init__(
         self,
         model: M,
-        channel_first: bool = True,
+        channel_first: Optional[bool] = None,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
     ):

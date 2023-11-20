@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Sensitivity metric."""
+"""This module contains the implementation of the Efficient Model Parameter Randomisation Test metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -15,7 +15,9 @@ from typing import (
     List,
     Optional,
     Union,
+    Tuple,
     Generator,
+    Iterable,
 )
 
 
@@ -24,7 +26,10 @@ from tqdm.auto import tqdm
 from sklearn.utils import gen_batches
 
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.helpers import asserts, warn
+from quantus.functions.complexity_func import discrete_entropy, entropy
+from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
+from quantus.functions import n_bins_func
+from quantus.helpers import asserts, warn, utils
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
@@ -39,16 +44,27 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import final
 
+AVAILABLE_N_BINS_ALGORITHMS = {
+    "Freedman Diaconis": n_bins_func.freedman_diaconis_rule,
+    "Scotts": n_bins_func.scotts_rule,
+    "Square Root": n_bins_func.square_root_choice,
+    "Sturges Formula": n_bins_func.sturges_formula,
+    "Rice": n_bins_func.rice_rule,
+}
+
 
 @final
 class EfficientModelParameterRandomisation(Metric):
     """
     Implementation of the Efficient Model Parameter Randomization Method by Hedström et. al., 2023.
 
-    The Efficient Model Parameter Randomization measures replaces the layer-by-layer pairwise comparison between e and ˆe of MPRT by instead computing the relative rise in explanation complexity using only two model states, i.e., the original- and fully randomised model version
+    The Efficient Model Parameter Randomisation measures replaces the layer-by-layer pairwise comparison
+    between e and ˆe of MPRT by instead computing the relative rise in explanation complexity using only
+    two model states, i.e., the original- and fully randomised model version
 
     References:
-        1) Hedström, Anna, et al. "Sanity Checks Revisited: An Exploration to Repair the Model Parameter Randomisation Test." XAI in Action: Past, Present, and Future Applications. 2023.
+        1) Hedström, Anna, et al. "Sanity Checks Revisited: An Exploration to Repair the Model Parameter
+        Randomisation Test." XAI in Action: Past, Present, and Future Applications. 2023.
 
     Attributes:
         -  _name: The name of the metric.
@@ -58,20 +74,23 @@ class EfficientModelParameterRandomisation(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Efficient Model Parameter Randomisation"
+    name = "Efficient Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
+    score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.RANDOMISATION
 
     def __init__(
         self,
+        complexity_func: Optional[Callable] = None,
+        complexity_func_kwargs: Optional[dict] = None,
         similarity_func: Optional[Callable] = None,
-        layer_order: str = "independent",
+        layer_order: str = "bottom_up",
         seed: int = 42,
-        return_sample_correlation: bool = False,
-        abs: bool = True,
-        normalise: bool = True,
+        compute_extra_scores: bool = False,
+        skip_layers: bool = True,
+        abs: bool = False,
+        normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
@@ -92,9 +111,15 @@ class EfficientModelParameterRandomisation(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_correlation: boolean
-            Indicates whether return one float per sample, representing the average
-            correlation coefficient across the layers for that sample.
+        return_average_correlation: boolean
+            Indicates whether to return one float per sample, computing the average
+            correlation coefficient across the layers for a given sample.
+        return_last_correlation: boolean
+            Indicates whether to return one float per sample, computing the explanation
+            correlation coefficient for the full model randomisation (not layer-wise) of a sample.
+        skip_layers: boolean
+            Indicates if explanation similarity should be computed only once; between the
+            original and fully randomised model, instead of in a layer-by-layer basis.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=True.
         normalise: boolean
@@ -132,17 +157,35 @@ class EfficientModelParameterRandomisation(Metric):
         )
 
         # Save metric-specific attributes.
+        if complexity_func is None:
+            complexity_func = discrete_entropy
+
+        if complexity_func_kwargs is None:
+            complexity_func_kwargs = {}
+
+        if normalise_func is None:
+            normalise_func = normalise_by_average_second_moment_estimate
+
+        if normalise_func_kwargs is None:
+            normalise_func_kwargs = {}
+
         if similarity_func is None:
             similarity_func = correlation_spearman
+
+        self.complexity_func = complexity_func
+        self.complexity_func_kwargs = complexity_func_kwargs
+        self.normalise_func = normalise_func
+        self.abs = abs
+        self.normalise_func_kwargs = normalise_func_kwargs
         self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.seed = seed
-        self.return_sample_correlation = return_sample_correlation
+        self.compute_extra_scores = compute_extra_scores
+        self.skip_layers = skip_layers
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.evaluation_scores = {}
 
-        # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
             warn.warn_parameterisation(
@@ -169,7 +212,7 @@ class EfficientModelParameterRandomisation(Metric):
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
-        softmax: Optional[bool] = False,
+        softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
         **kwargs,
@@ -255,6 +298,7 @@ class EfficientModelParameterRandomisation(Metric):
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
         self.batch_size = batch_size
+
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -270,10 +314,12 @@ class EfficientModelParameterRandomisation(Metric):
             device=device,
         )
         model: ModelInterface = data["model"]  # type: ignore
+
         # Here _batch refers to full dataset.
         x_full_dataset = data["x_batch"]
         y_full_dataset = data["y_batch"]
         a_full_dataset = data["a_batch"]
+
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
@@ -286,71 +332,207 @@ class EfficientModelParameterRandomisation(Metric):
             # Set property to False, so we display only 1 pbar.
             self._display_progressbar = False
 
+        # Get the number of bins for discrete entropy calculation.
+        if "n_bins" not in self.complexity_func_kwargs:
+            if a_batch is None:
+                a_batch = self.explain_batch(
+                    model=model,
+                    x_batch=x_full_dataset,
+                    y_batch=y_full_dataset,
+                )
+            self.find_n_bins(
+                a_batch=a_batch,
+                n_bins_default=self.complexity_func_kwargs.get("n_bins_default", 100),
+                min_n_bins=self.complexity_func_kwargs.get("min_n_bins", 10),
+                max_n_bins=self.complexity_func_kwargs.get("max_n_bins", 200),
+                debug=self.complexity_func_kwargs.get("debug", False),
+            )
+
         def generate_y_batches():
             for batch in gen_batches(len(a_full_dataset), batch_size):
                 yield a_full_dataset[batch.start : batch.stop]
 
+        self.explanation_scores_by_layer = {}
+        self.model_scores_by_layer = {}
+
         with pbar as pbar:
-            for layer_name, random_layer_model in model.get_random_layer_generator(
-                order=self.layer_order, seed=self.seed
+            for l_ix, (layer_name, random_layer_model) in enumerate(
+                model.get_random_layer_generator(order=self.layer_order, seed=self.seed)
             ):
                 pbar.desc = layer_name
 
-                similarity_scores = []
-                # Generate explanations on modified model in batches
-                a_perturbed_generator = self.generate_explanations(
-                    random_layer_model, x_full_dataset, y_full_dataset, batch_size
-                )
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
 
-                for a_batch, a_batch_perturbed in zip(
-                    generate_y_batches(), a_perturbed_generator
-                ):
-                    for a_instance, a_instance_perturbed in zip(
-                        a_batch, a_batch_perturbed
+                if l_ix == 0:
+                    # Generate explanations on modified model in batches.
+                    a_original_generator = self.generate_explanations(
+                        model.get_model(), x_full_dataset, y_full_dataset, batch_size
+                    )
+
+                    # Compute the complexity of explanations of the original model.
+                    self.explanation_scores_by_layer["orig"] = []
+                    for a_batch, a_batch_original in zip(
+                        generate_y_batches(), a_original_generator
                     ):
-                        result = self.similarity_func(
-                            a_instance_perturbed.flatten(), a_instance.flatten()
-                        )
-                        similarity_scores.append(result)
-                        pbar.update(1)
-                # Save similarity scores in a result dictionary.
-                self.evaluation_scores[layer_name] = similarity_scores
+                        for a_instance, a_instance_original in zip(
+                            a_batch, a_batch_original
+                        ):
+                            score = self.evaluate_instance(
+                                model=model,
+                                x=x_batch[0],
+                                y=None,
+                                s=None,
+                                a=a_instance_original,
+                            )
+                            self.explanation_scores_by_layer["orig"].append(score)
+                            pbar.update(1)
 
-        if self.return_sample_correlation:
-            self.evaluation_scores = self.compute_correlation_per_sample()
+                    # Compute the similarity of outputs of the original model.
+                    self.model_scores_by_layer["orig"] = []
+                    y_preds = model.predict(x_full_dataset)
+                    for y_ix, y_pred in enumerate(y_preds):
+                        score = entropy(a=y_pred, x=y_pred)
+                        self.model_scores_by_layer["orig"].append(score)
+
+            # Generate explanations on modified model in batches.
+            a_perturbed_generator = self.generate_explanations(
+                random_layer_model, x_full_dataset, y_full_dataset, batch_size
+            )
+
+            # Compute the complexity of explanations of the perturbed model.
+            self.explanation_scores_by_layer[layer_name] = []
+            for a_batch, a_batch_perturbed in zip(
+                generate_y_batches(), a_perturbed_generator
+            ):
+                for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
+                    score = self.evaluate_instance(
+                        model=random_layer_model,
+                        x=None,
+                        y=None,
+                        s=None,
+                        a=a_instance_perturbed,
+                    )
+                    self.explanation_scores_by_layer[layer_name].append(score)
+                    pbar.update(1)
+
+            # Wrap the model.
+            random_layer_model_wrapped = utils.get_wrapped_model(
+                model=random_layer_model,
+                channel_first=channel_first,
+                softmax=softmax,
+                device=device,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+            # Reshape input according to model (PyTorch or Keras/Torch).
+            x_full_dataset = model.shape_input(
+                x=x_full_dataset,
+                shape=x_full_dataset.shape,
+                channel_first=channel_first,
+                batched=True,
+            )
+
+            # Predict and save complexity scores of the perturbed model outputs.
+            self.model_scores_by_layer[layer_name] = []
+            print("!!", x_full_dataset.shape)
+            y_preds = random_layer_model_wrapped.predict(x_full_dataset)
+            for y_ix, y_pred in enumerate(y_preds):
+                score = entropy(a=y_pred, x=y_pred)
+                self.model_scores_by_layer[layer_name].append(score)
+
+        # Save evaluation scores as the relative rise in complexity.
+        explanation_scores = list(self.explanation_scores_by_layer.values())
+        self.evaluation_scores = [
+            (b - a) / a for a, b in zip(explanation_scores[0], explanation_scores[-1])
+        ]
+
+        # Compute extra scores and save the results in metric attributes.
+        if self.compute_extra_scores:
+            self.scores_extra = {}
+
+            # Compute absolute deltas for explanation scores.
+            self.scores_extra["delta_explanation_scores"] = [
+                b - a for a, b in zip(explanation_scores[0], explanation_scores[-1])
+            ]
+
+            # Compute simple fraction for explanation scores.
+            self.scores_extra["scores_fraction_explanation"] = [
+                b / a if a != 0 else np.nan
+                for a, b in zip(explanation_scores[0], explanation_scores[-1])
+            ]
+
+            # Compute absolute deltas for model scores.
+            model_scores = list(self.model_scores_by_layer.values())
+            self.scores_extra["scores_delta_model"] = [
+                b - a for a, b in zip(model_scores[0], model_scores[-1])
+            ]
+
+            # Compute simple fraction for model scores.
+            self.scores_extra["scores_fraction_model"] = [
+                b / a if a != 0 else np.nan
+                for a, b in zip(model_scores[0], model_scores[-1])
+            ]
+
+            # Compute delta skill score per sample (model versus explanation).
+            self.scores_extra["delta_explanation_vs_models"] = [
+                b / a if a != 0 else np.nan
+                for a, b in zip(
+                    self.scores_extra["scores_fraction_model"],
+                    self.scores_extra["scores_fraction_explanation"],
+                )
+            ]
+            # Compute the average complexity scores, per sample.
+            self.scores_extra[
+                "scores_average_complexity"
+            ] = self.recompute_average_complexity_per_sample()
+
+            # Compute the correlation coefficient between the model and explanation complexity, per sample.
+            self.scores_extra[
+                "scores_correlation_model_vs_explanation_complexity"
+            ] = self.recompute_model_explanation_correlation_per_sample()
 
         if self.return_aggregate:
-            assert self.return_sample_correlation, (
-                "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute te aggregat"
-            )
             self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
+        # Return all_evaluation_scores according to Quantus.
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
 
-    def compute_correlation_per_sample(
+    def evaluate_instance(
         self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-        assert isinstance(self.evaluation_scores, dict), (
-            "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
-            "must be of type dict."
-        )
-        layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
-        )
-        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+        model: ModelInterface,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
-        for sample in results:
-            for layer in self.evaluation_scores:
-                results[sample].append(float(self.evaluation_scores[layer][sample]))
-            results[sample] = np.mean(results[sample])
+        Parameters
+        ----------
+        i: integer
+            The evaluation instance.
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
 
-        corr_coeffs = list(results.values())
-
-        return corr_coeffs
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Compute complexity measure.
+        return self.complexity_func(a=a, x=x, **self.complexity_func_kwargs)
 
     def custom_preprocess(
         self,
@@ -382,8 +564,7 @@ class EfficientModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-        if a_batch is not None:
-            # Just to silence mypy warnings
+        if a_batch is not None:  # Just to silence mypy warnings
             return None
 
         a_batch_chunks = []
@@ -409,5 +590,145 @@ class EfficientModelParameterRandomisation(Metric):
 
     def evaluate_batch(self, *args, **kwargs):
         raise RuntimeError(
-            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
+            "`evaluate_batch` must never be called for `Model Parameter Randomisation`."
         )
+
+    def recompute_model_explanation_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.explanation_scores_by_layer, dict), (
+            "To compute the correlation between model and explanation per sample for "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.explanation_scores_by_layer[
+                list(self.explanation_scores_by_layer.keys())[0]
+            ]
+        )
+        explanation_scores: Dict[int, list] = {
+            sample: [] for sample in range(layer_length)
+        }
+        model_scores: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in explanation_scores.keys():
+            for layer in self.explanation_scores_by_layer:
+                explanation_scores[sample].append(
+                    float(self.explanation_scores_by_layer[layer][sample])
+                )
+                model_scores[sample].append(
+                    float(self.model_scores_by_layer[layer][sample])
+                )
+
+        corr_coeffs = []
+        for sample in explanation_scores.keys():
+            corr_coeffs.append(
+                self.similarity_func(model_scores[sample], explanation_scores[sample])
+            )
+
+        return corr_coeffs
+
+    def recompute_average_complexity_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.explanation_scores_by_layer, dict), (
+            "To compute the average correlation coefficient per sample for "
+            "enhanced Model Parameter Randomisation Test, 'explanation_scores' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.explanation_scores_by_layer[
+                list(self.explanation_scores_by_layer.keys())[0]
+            ]
+        )
+        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in results:
+            for layer in self.explanation_scores_by_layer:
+                if layer == "orig":
+                    continue
+                results[sample].append(
+                    float(self.explanation_scores_by_layer[layer][sample])
+                )
+            results[sample] = np.mean(results[sample])
+
+        corr_coeffs = list(results.values())
+
+        return corr_coeffs
+
+    def recompute_last_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.explanation_scores_by_layer, dict), (
+            "To compute the last correlation coefficient per sample for "
+            "Model Parameter Randomisation Test, 'explanation_scores' "
+            "must be of type dict."
+        )
+        corr_coeffs = list(self.explanation_scores_by_layer.values())[-1]
+        corr_coeffs = [float(c) for c in corr_coeffs]
+        return corr_coeffs
+
+    def find_n_bins(
+        self,
+        a_batch: np.array,
+        n_bins_default: int = 100,
+        min_n_bins: int = 10,
+        max_n_bins: int = 200,
+        debug: bool = True,
+    ) -> None:
+        """
+        Find the number of bins for discrete entropy calculation.
+
+        Parameters
+        ----------
+        a_batch: np.array
+            Explanatio array to calculate entropy on.
+        n_bins_default: int
+            Default number of bins to use if no rule is found, default=100.
+        min_n_bins: int
+            Minimum number of bins to use, default=10.
+        max_n_bins: int
+            Maximum number of bins to use, default=200.
+        debug: boolean
+            Indicates whether to print debug information, default=True.
+
+        Returns
+        -------
+        None
+        """
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+
+        if self.abs:
+            a_batch = np.abs(a_batch)
+
+        if debug:
+            print(f"\tMax and min value of a_batch=({a_batch.min()}, {a_batch.max()})")
+
+        try:
+            rule_name = self.complexity_func_kwargs.get("rule", None)
+            rule_function = AVAILABLE_N_BINS_ALGORITHMS.get(rule_name)
+        except:
+            print(
+                f"Attempted to use a rule '{rule_name}' that is not available in existing rules: "
+                f"{AVAILABLE_N_BINS_ALGORITHMS.keys()}."
+            )
+
+        if not rule_function:
+            self.complexity_func_kwargs["n_bins"] = n_bins_default
+            if debug:
+                print(f"\tNo rule found, 'n_bins' set to 100.")
+            return None
+
+        n_bins = rule_function(a_batch=a_batch)
+        n_bins = max(min(n_bins, max_n_bins), min_n_bins)
+        self.complexity_func_kwargs["n_bins"] = n_bins
+
+        if debug:
+            print(
+                f"\tRule '{rule_name}' -> n_bins={n_bins} but with min={min_n_bins} "
+                f"and max={max_n_bins}, 'n_bins' set to {self.complexity_func_kwargs['n_bins']}."
+            )

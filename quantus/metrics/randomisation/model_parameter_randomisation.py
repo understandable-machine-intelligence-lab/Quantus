@@ -326,18 +326,19 @@ class ModelParameterRandomisation(Metric):
             ):
                 pbar.desc = layer_name
 
-                similarity_scores = []
-
                 # Skip layers if computing delta.
                 if self.skip_layers and (l_ix + 1) < n_layers:
                     continue
 
                 if l_ix == 0:
-                    # Generate explanations on modified model in batches
+
+                    # Generate explanations on modified model in batches.
                     a_original_generator = self.generate_explanations(
                         model.get_model(), x_full_dataset, y_full_dataset, batch_size
                     )
 
+                    # Compute the similarity of explanations of the original model.
+                    self.evaluation_scores["original"] = []
                     for a_batch, a_batch_original in zip(
                         generate_y_batches(), a_original_generator
                     ):
@@ -352,17 +353,18 @@ class ModelParameterRandomisation(Metric):
                                 a=a_instance,
                                 a_perturbed=a_instance_original,
                             )
-                            similarity_scores.append(score)
+                            # Save similarity scores in a result dictionary.
+                            self.evaluation_scores["original"].append(score)
                             pbar.update(1)
 
-                    # Save similarity scores in a result dictionary.
-                    self.evaluation_scores["original"] = similarity_scores
+            self.evaluation_scores[layer_name] = []
 
-            # Generate explanations on modified model in batches
+            # Generate explanations on modified model in batches.
             a_perturbed_generator = self.generate_explanations(
                 random_layer_model, x_full_dataset, y_full_dataset, batch_size
             )
 
+            # Compute the similarity of explanations of the perturbed model.
             for a_batch, a_batch_perturbed in zip(
                 generate_y_batches(), a_perturbed_generator
             ):
@@ -375,11 +377,8 @@ class ModelParameterRandomisation(Metric):
                         a=a_instance,
                         a_perturbed=a_instance_perturbed,
                     )
-                    similarity_scores.append(score)
+                    self.evaluation_scores[layer_name].append(score)
                     pbar.update(1)
-
-            # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
 
         if self.return_average_correlation:
             self.evaluation_scores = self.recompute_average_correlation_per_sample()
@@ -394,6 +393,7 @@ class ModelParameterRandomisation(Metric):
             )
             self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
+        # Return all_evaluation_scores according to Quantus.
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores

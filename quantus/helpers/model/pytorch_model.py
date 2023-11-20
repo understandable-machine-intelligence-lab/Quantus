@@ -27,7 +27,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
     def __init__(
         self,
         model: nn.Module,
-        channel_first: bool = True,
+        channel_first: bool = False,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         device: Optional[str] = None,
