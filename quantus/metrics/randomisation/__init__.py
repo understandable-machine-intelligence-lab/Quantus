@@ -7,4 +7,7 @@
 from quantus.metrics.randomisation.model_parameter_randomisation import (
     ModelParameterRandomisation,
 )
+from quantus.metrics.randomisation.efficient_model_parameter_randomisation import (
+    EfficientModelParameterRandomisation,
+)
 from quantus.metrics.randomisation.random_logit import RandomLogit

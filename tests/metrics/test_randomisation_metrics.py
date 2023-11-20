@@ -16,7 +16,7 @@ def explain_func_stub(*args, **kwargs):
     return np.random.uniform(low=0, high=0.5, size=input_shape)
 
 
-@pytest.mark.randomisation
+@pytest.mark.mprt
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -221,7 +221,7 @@ def explain_func_stub(*args, **kwargs):
                     },
                 },
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("titanic_model_tf"),
@@ -236,7 +236,61 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {"explain_func": explain_func_stub},
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "top_down",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": True,
+                    "return_last_correlation": False,
+                    "skip_layers": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "bottom_up",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": False,
+                    "return_last_correlation": True,
+                    "skip_layers": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "bottom_up",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": False,
+                    "return_last_correlation": True,
+                    "skip_layers": True,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )
@@ -279,23 +333,29 @@ def test_model_parameter_randomisation(
             )
         return
 
-    scores_layers = ModelParameterRandomisation(**init_params)(
+    scores = ModelParameterRandomisation(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
     )
-    if isinstance(expected, float):
-        assert all(
-            s == expected for layer, scores in scores_layers.items() for s in scores
-        ), "Test failed."
-    else:
-        assert all(
-            ((s > expected["min"]) & (s < expected["max"]))
-            for layer, scores in scores_layers.items()
-            for s in scores
-        ), "Test failed."
+
+    if isinstance(scores, dict):
+        for layer, scores_layer in scores.items():
+            out_of_range_scores = [
+                s for s in scores_layer if not (expected["min"] <= s <= expected["max"])
+            ]
+            assert (
+                not out_of_range_scores
+            ), f"Test failed for layer {layer}. Out of range scores: {out_of_range_scores}"
+    elif isinstance(scores, list):
+        out_of_range_scores = [
+            s for s in scores if not (expected["min"] <= s <= expected["max"])
+        ]
+        assert (
+            not out_of_range_scores
+        ), f"Test failed. Out of range scores: {out_of_range_scores}"
 
 
 @pytest.mark.randomisation
@@ -443,7 +503,7 @@ def test_model_parameter_randomisation(
                     },
                 },
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("titanic_model_tf"),
@@ -457,7 +517,7 @@ def test_model_parameter_randomisation(
                 },
                 "call": {"softmax": True, "explain_func": explain_func_stub},
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )
@@ -499,5 +559,5 @@ def test_random_logit(
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert all(s > expected["min"] for s in scores), "Test failed."
-        assert all(s < expected["max"] for s in scores), "Test failed."
+        assert all(s >= expected["min"] for s in scores), "Test failed."
+        assert all(s <= expected["max"] for s in scores), "Test failed."
