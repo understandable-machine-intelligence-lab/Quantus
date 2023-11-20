@@ -160,9 +160,6 @@ class ModelParameterRandomisation(Metric):
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.evaluation_scores = {}
 
-        # TODO. ... renaming warning.
-        # default values change.
-
         # Asserts and warnings.
         if self.return_average_correlation and self.return_last_correlation:
             raise ValueError(
