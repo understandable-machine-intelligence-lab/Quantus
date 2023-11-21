@@ -69,8 +69,8 @@ class Metric(Generic[R]):
     data_applicability: ClassVar[Set[DataType]]
     model_applicability: ClassVar[Set[ModelType]]
     score_direction: ClassVar[ScoreDirection]
-    # can one metric fall into multiple categories?
     evaluation_category: ClassVar[EvaluationCategory]
+
     # Instance attributes.
     explain_func: Callable
     explain_func_kwargs: Dict[str, Any]
