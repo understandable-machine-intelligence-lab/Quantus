@@ -216,7 +216,7 @@ class EfficientMPRT(Metric):
         device: Optional[str] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
+    ) -> List[Any]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -348,8 +348,8 @@ class EfficientMPRT(Metric):
                 debug=self.complexity_func_kwargs.get("debug", False),
             )
 
-        self.explanation_scores_by_layer = {}
-        self.model_scores_by_layer = {}
+        self.explanation_scores_by_layer: Dict[str, List[float]] = {}
+        self.model_scores_by_layer: Dict[str, List[float]] = {}
 
         with pbar as pbar:
             for l_ix, (layer_name, random_layer_model) in enumerate(
@@ -611,7 +611,7 @@ class EfficientMPRT(Metric):
 
     def recompute_model_explanation_correlation_per_sample(
         self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+    ) -> List[Union[float, Any]]:
 
         assert isinstance(self.explanation_scores_by_layer, dict), (
             "To compute the correlation between model and explanation per sample for "
@@ -647,7 +647,7 @@ class EfficientMPRT(Metric):
 
     def recompute_average_complexity_per_sample(
         self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+    ) -> List[float]:
 
         assert isinstance(self.explanation_scores_by_layer, dict), (
             "To compute the average correlation coefficient per sample for "
@@ -670,13 +670,13 @@ class EfficientMPRT(Metric):
                 )
             results[sample] = np.mean(results[sample])
 
-        corr_coeffs = list(results.values())
+        corr_coeffs = np.array(list(results.values())).flatten().tolist()
 
         return corr_coeffs
 
     def recompute_last_correlation_per_sample(
         self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+    ) -> List[float]:
 
         assert isinstance(self.explanation_scores_by_layer, dict), (
             "To compute the last correlation coefficient per sample for "

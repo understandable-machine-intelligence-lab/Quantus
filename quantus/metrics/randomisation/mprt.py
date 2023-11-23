@@ -416,7 +416,7 @@ class MPRT(Metric):
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
-        corr_coeffs = list(results.values())
+        corr_coeffs = np.array(list(results.values())).flatten().tolist()
 
         return corr_coeffs
 

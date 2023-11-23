@@ -442,7 +442,7 @@ class SmoothMPRT(Metric):
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
-        corr_coeffs = list(results.values())
+        corr_coeffs = np.array(list(results.values())).flatten().tolist()
 
         return corr_coeffs
 
@@ -499,26 +499,6 @@ class SmoothMPRT(Metric):
         a_flat = a.flatten()
         a_perturbed_flat = a_perturbed.flatten()
 
-        if np.array_equal(a_flat, a_perturbed_flat):
-            warnings.warn(
-                "The arrays 'a_perturbed' and 'a' are identical. "
-                "Returning a similarity measure of 1.",
-                UserWarning,
-            )
-            return 1.0
-
-        # Check if either array is constant
-        if np.all(a_flat == a_flat[0]) or np.all(
-            a_perturbed_flat == a_perturbed_flat[0]
-        ):
-            warnings.warn(
-                "One of the input arrays is constant; "
-                "the correlation coefficient is not defined.",
-                UserWarning,
-            )
-            return 1.0  # or some other default value
-
-        # Compute similarity measure
         try:
             return self.similarity_func(a_perturbed_flat, a_flat)
         except stats._warnings_errors.ConstantInputWarning:

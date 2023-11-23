@@ -217,3 +217,4 @@ class ModelInterface(ABC, Generic[M]):
         else:
             warnings.warn("Cannot identify ML framework of the given model.")
             return "unknown"
+        return ""
