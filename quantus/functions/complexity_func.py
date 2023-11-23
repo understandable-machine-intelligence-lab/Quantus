@@ -17,7 +17,7 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
     Parameters
     ----------
     a: np.ndarray
-        Array to calculate entropy on.
+        Array to calculate entropy on. One sample at a time.
     x: np.ndarray
         Array to compute shape.
     kwargs: optional
@@ -47,7 +47,7 @@ def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     Parameters
     ----------
     a: np.ndarray
-        Array to calculate gini_coeffiient on.
+        Array to calculate gini_coeffiient on. One sample at a time.
     x: np.ndarray
         Array to compute shape.
     kwargs: optional
@@ -80,7 +80,7 @@ def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
     Parameters
     ----------
     a: np.ndarray
-        Array to calculate entropy on.
+        Array to calculate entropy on. One sample at a time.
     x: np.ndarray
         Array to compute shape.
     kwargs: optional
