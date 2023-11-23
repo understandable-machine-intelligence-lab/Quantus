@@ -7,6 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
+import warnings
 from typing import (
     Any,
     Callable,
@@ -43,13 +44,13 @@ else:
 
 
 @final
-class ModelParameterRandomisation(Metric):
+class MPRT(Metric):
     """
-    Implementation of the Model Parameter Randomisation Method by Adebayo et. al., 2018.
+    Implementation of the Model Parameter Randomisation Test (MPRT) by Adebayo et al., 2018.
 
-    The Model Parameter Randomisation measures the distance between the original attribution and a newly computed
-    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
-    at a time.
+    The MPRT measures the distance between the original attribution and a newly computed
+    attribution throughout the process of cascadingly/ independently randomizing the model
+    parameters of one layer at a time.
 
     Assumptions:
         - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
@@ -277,7 +278,7 @@ class ModelParameterRandomisation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
 
         # Run deprecation warnings.
@@ -316,10 +317,6 @@ class ModelParameterRandomisation(Metric):
             # Set property to False, so we display only 1 pbar.
             self._display_progressbar = False
 
-        def generate_y_batches():
-            for batch in gen_batches(len(a_full_dataset), batch_size):
-                yield a_full_dataset[batch.start : batch.stop]
-
         with pbar as pbar:
             for l_ix, (layer_name, random_layer_model) in enumerate(
                 model.get_random_layer_generator(order=self.layer_order, seed=self.seed)
@@ -332,7 +329,7 @@ class ModelParameterRandomisation(Metric):
 
                 if l_ix == 0:
 
-                    # Generate explanations on modified model in batches.
+                    # Generate explanations on original model in batches.
                     a_original_generator = self.generate_explanations(
                         model.get_model(), x_full_dataset, y_full_dataset, batch_size
                     )
@@ -340,7 +337,7 @@ class ModelParameterRandomisation(Metric):
                     # Compute the similarity of explanations of the original model.
                     self.evaluation_scores["original"] = []
                     for a_batch, a_batch_original in zip(
-                        generate_y_batches(), a_original_generator
+                        self.generate_a_batches(a_full_dataset), a_original_generator
                     ):
                         for a_instance, a_instance_original in zip(
                             a_batch, a_batch_original
@@ -359,14 +356,14 @@ class ModelParameterRandomisation(Metric):
 
             self.evaluation_scores[layer_name] = []
 
-            # Generate explanations on modified model in batches.
+            # Generate explanations on perturbed model in batches.
             a_perturbed_generator = self.generate_explanations(
                 random_layer_model, x_full_dataset, y_full_dataset, batch_size
             )
 
             # Compute the similarity of explanations of the perturbed model.
             for a_batch, a_batch_perturbed in zip(
-                generate_y_batches(), a_perturbed_generator
+                self.generate_a_batches(a_full_dataset), a_perturbed_generator
             ):
                 for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
                     score = self.evaluate_instance(
@@ -452,8 +449,6 @@ class ModelParameterRandomisation(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -522,14 +517,46 @@ class ModelParameterRandomisation(Metric):
         y_batch: np.ndarray,
         batch_size: int,
     ) -> Generator[np.ndarray, None, None]:
-        """Iterate over dataset in batches and generate explanations for complete dataset"""
+        """
+        Iterate over dataset in batches and generate explanations for complete dataset.
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        kwargs: optional, dict
+            List of hyperparameters.
+
+        Returns
+        -------
+        a_batch:
+            Batch of explanations ready to be evaluated.
+        """
         for i in gen_batches(len(x_batch), batch_size):
             x = x_batch[i.start : i.stop]
             y = y_batch[i.start : i.stop]
             a = self.explain_batch(model, x, y)
             yield a
 
+    def generate_a_batches(self, a_full_dataset):
+        for batch in gen_batches(len(a_full_dataset), self.batch_size):
+            yield a_full_dataset[batch.start : batch.stop]
+
     def evaluate_batch(self, *args, **kwargs):
         raise RuntimeError(
-            "`evaluate_batch` must never be called for `Model Parameter Randomisation`."
+            "`evaluate_batch` must never be called for `Model Parameter Randomisation Test`."
         )
+
+
+@final
+class ModelParameterRandomisation(MPRT):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "ModelParameterRandomisation has been renamed to MPRT and will be removed in future releases. "
+            "Please use MPRT instead. This change is effective from Quantus version 0.5.0.",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)

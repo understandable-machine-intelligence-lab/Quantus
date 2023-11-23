@@ -257,7 +257,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -307,7 +307,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
         y_pred = float(model.predict(x_input)[:, y])
 
         inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-        inv_pred = inv_pred**2
+        inv_pred = inv_pred ** 2
 
         # Reshape attributions.
         a = a.flatten()

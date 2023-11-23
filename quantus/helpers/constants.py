@@ -62,8 +62,9 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
         "Effective Complexity": EffectiveComplexity,
     },
     "Randomisation": {
-        "Model Parameter Randomisation Test": ModelParameterRandomisation,
-        "Efficient Model Parameter Randomisation Test": EfficientModelParameterRandomisation,
+        "MPRT": MPRT,
+        "Smooth MPRT": SmoothMPRT,
+        "Efficient MPRT": EfficientMPRT,
         "Random Logit": RandomLogit,
     },
     "Axiomatic": {

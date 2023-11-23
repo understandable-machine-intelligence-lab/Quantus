@@ -243,17 +243,23 @@ def infer_channel_first(x: np.array) -> bool:
 
     Returns
     -------
-    For 1d input:
+    For 1D input:
+        True for input shape (nr_batch, nr_features).
+
+    For 2D input:
         True if input shape is (nr_batch, nr_channels, sequence_length).
         False if input shape is (nr_batch, sequence_length, nr_channels).
         An error is raised if the two last dimensions are equal.
 
-    For 2d input:
+    For 3D input:
         True if input shape is (nr_batch, nr_channels, img_width, img_height).
         False if input shape is (nr_batch, img_width, img_height, nr_channels).
         An error is raised if the three last dimensions are equal.
     """
-    err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order. Try setting the `channel_first` argument"
+    err_msg = (
+        "Ambiguous input shape. Cannot infer channel-first/channel-last order. "
+        "Try setting the `channel_first` argument"
+    )
 
     if len(np.shape(x)) == 2:
         return True
@@ -275,11 +281,11 @@ def infer_channel_first(x: np.array) -> bool:
 
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 2D and 3D multi-channel input dimensions supported."
         )
 
 
-def make_channel_first(x: np.array, channel_first=False):
+def make_channel_first(x: np.array, channel_first: bool = False):
     """
     Reshape batch to channel first.
 
@@ -295,18 +301,20 @@ def make_channel_first(x: np.array, channel_first=False):
     """
     if channel_first:
         return x
-
-    if len(np.shape(x)) == 4:
-        return np.moveaxis(x, -1, -3)
+    if len(np.shape(x)) == 2:
+        return x
     elif len(np.shape(x)) == 3:
         return np.moveaxis(x, -1, -2)
+    elif len(np.shape(x)) == 4:
+        return np.moveaxis(x, -1, -3)
+
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 2D and 3D multi-channel input dimensions supported."
         )
 
 
-def make_channel_last(x: np.array, channel_first=True):
+def make_channel_last(x: np.array, channel_first: bool = True):
     """
     Reshape batch to channel last.
 
@@ -322,14 +330,15 @@ def make_channel_last(x: np.array, channel_first=True):
     """
     if not channel_first:
         return x
-
-    if len(np.shape(x)) == 4:
-        return np.moveaxis(x, -3, -1)
+    if len(np.shape(x)) == 2:
+        return x
     elif len(np.shape(x)) == 3:
         return np.moveaxis(x, -2, -1)
+    elif len(np.shape(x)) == 4:
+        return np.moveaxis(x, -3, -1)
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 2D and 3D multi-channel input dimensions supported."
         )
 
 

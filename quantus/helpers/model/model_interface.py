@@ -1,15 +1,21 @@
 """This model implements the basics for the ModelInterface class."""
-
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import warnings
+from importlib import util
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple, List, Union, Generator, TypeVar, Generic
 
 import numpy as np
+
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
+if util.find_spec("torch"):
+    import torch
 
 M = TypeVar("M")
 
@@ -20,7 +26,7 @@ class ModelInterface(ABC, Generic[M]):
     def __init__(
         self,
         model: M,
-        channel_first: Optional[bool] = None,
+        channel_first: Optional[bool] = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
@@ -191,3 +197,23 @@ class ModelInterface(ABC, Generic[M]):
             Number of layers in model, which can be randomised.
         """
         raise NotImplementedError
+
+    @property
+    def get_ml_framework_name(self) -> str:
+        """
+        Identify the framework of the underlying model (PyTorch or TensorFlow).
+
+        Returns
+        -------
+        str
+            A string indicating the framework ('PyTorch', 'TensorFlow', or 'Unknown').
+        """
+        if util.find_spec("torch"):
+            if isinstance(self.model, torch.nn.Module):
+                return "torch"
+        if util.find_spec("tensorflow"):
+            if isinstance(self.model, tf.keras.Model):
+                return "tensorflow"
+        else:
+            warnings.warn("Cannot identify ML framework of the given model.")
+            return "unknown"
