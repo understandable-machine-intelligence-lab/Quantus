@@ -118,6 +118,7 @@ def explain_func_stub(*args, **kwargs):
                     "display_progressbar": False,
                 },
                 "call": {
+                    "batch_size": 2,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "VanillaGradients",
@@ -1057,7 +1058,10 @@ def test_smooth_model_parameter_randomisation(
                     "compute_extra_scores": False,
                     "skip_layers": False,
                 },
-                "call": {"explain_func": explain_func_stub},
+                "call": {
+                    "explain_func": explain_func_stub,
+                    "batch_size": 2,
+                },
             },
             {"min": -1000000000, "max": 1000000000},
         ),
@@ -1190,6 +1194,7 @@ def test_efficient_model_parameter_randomisation(
                 },
                 "call": {
                     "softmax": True,
+                    "batch_size": 2,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
@@ -1312,7 +1317,10 @@ def test_efficient_model_parameter_randomisation(
                     "disable_warnings": True,
                     "similarity_func": correlation_pearson,
                 },
-                "call": {"softmax": True, "explain_func": explain_func_stub},
+                "call": {
+                    "softmax": True,
+                    "explain_func": explain_func_stub,
+                },
             },
             {"min": -1.0, "max": 1.1},
         ),

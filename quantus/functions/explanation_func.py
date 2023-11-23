@@ -275,160 +275,150 @@ def generate_tf_explanation(
 
     explanation: np.ndarray = np.zeros_like(inputs)
 
-    try:
-        if method in constants.DEPRECATED_XAI_METHODS_TF:
-            warnings.warn(
-                f"Explanation method string {method} is deprecated. Use "
-                f"{constants.DEPRECATED_XAI_METHODS_TF[method]} instead.\n",
-                category=UserWarning,
+    if method in constants.DEPRECATED_XAI_METHODS_TF:
+        warnings.warn(
+            f"Explanation method string {method} is deprecated. Use "
+            f"{constants.DEPRECATED_XAI_METHODS_TF[method]} instead.\n",
+            category=UserWarning,
+        )
+        method = constants.DEPRECATED_XAI_METHODS_TF[method]
+
+    if method == "VanillaGradients":
+        explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, **xai_lib_kwargs
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
-            method = constants.DEPRECATED_XAI_METHODS_TF[method]
+            / 255
+        )
 
-        if method == "VanillaGradients":
-            explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None), model, y, **xai_lib_kwargs
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
+    elif method == "IntegratedGradients":
+        n_steps = kwargs.get("n_steps", 10)
+        explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, n_steps=n_steps, **xai_lib_kwargs
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
+        )
 
-        elif method == "IntegratedGradients":
-            n_steps = kwargs.get("n_steps", 10)
-            explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None), model, y, n_steps=n_steps, **xai_lib_kwargs
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
+    elif method == "GradientsInput":
+        explainer = tf_explain.core.gradients_inputs.GradientsInputs()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, **xai_lib_kwargs
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
+        )
 
-        elif method == "GradientsInput":
-            explainer = tf_explain.core.gradients_inputs.GradientsInputs()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None), model, y, **xai_lib_kwargs
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
+    elif method == "OcclusionSensitivity":
+        patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
+        reduce_axes = kwargs.get("reduce_axes", (-1,))
+        keepdims = kwargs.get("keepdims", False)
+        keep_dim = False
+        explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None),
+                            model,
+                            y,
+                            patch_size=patch_size,
+                            **xai_lib_kwargs,
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
+        )
 
-        elif method == "OcclusionSensitivity":
-            patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
-            reduce_axes = kwargs.get("reduce_axes", (-1,))
-            keepdims = kwargs.get("keepdims", False)
-            keep_dim = False
-            explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None),
-                                model,
-                                y,
-                                patch_size=patch_size,
-                                **xai_lib_kwargs,
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
+    elif method == "GradCAM":
+        reduce_axes = kwargs.get("reduce_axes", (-1,))
+        keepdims = kwargs.get("keepdims", False)
+        keep_dim = False
+        if "gc_layer" in kwargs:
+            xai_lib_kwargs["layer_name"] = kwargs["gc_layer"]
+
+        explainer = tf_explain.core.grad_cam.GradCAM()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, **xai_lib_kwargs
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
+        )
 
-        elif method == "GradCAM":
-            reduce_axes = kwargs.get("reduce_axes", (-1,))
-            keepdims = kwargs.get("keepdims", False)
-            keep_dim = False
-            if "gc_layer" in kwargs:
-                xai_lib_kwargs["layer_name"] = kwargs["gc_layer"]
+    elif method == "SmoothGrad":
 
-            explainer = tf_explain.core.grad_cam.GradCAM()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None), model, y, **xai_lib_kwargs
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
+        num_samples = kwargs.get("num_samples", 5)
+        noise = kwargs.get("noise", 0.1)
+        explainer = tf_explain.core.smoothgrad.SmoothGrad()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None),
+                            model,
+                            y,
+                            num_samples=num_samples,
+                            noise=noise,
+                            **xai_lib_kwargs,
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
+        )
 
-        elif method == "SmoothGrad":
-
-            num_samples = kwargs.get("num_samples", 5)
-            noise = kwargs.get("noise", 0.1)
-            explainer = tf_explain.core.smoothgrad.SmoothGrad()
-            explanation = (
-                np.array(
-                    list(
-                        map(
-                            lambda x, y: explainer.explain(
-                                ([x], None),
-                                model,
-                                y,
-                                num_samples=num_samples,
-                                noise=noise,
-                                **xai_lib_kwargs,
-                            ),
-                            inputs,
-                            targets,
-                        )
-                    ),
-                    dtype=float,
-                )
-                / 255
-            )
-
-        else:
-            raise KeyError(
-                f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
-            )
-
-    except ValueError as e:
-        if "must be at least three-dimensional" in str(e):
-            # Handle the specific error here
-            warnings.warn(
-                "Input data must be at least three-dimensional for tf-explain methods. "
-                "Returning explanations with random uniform values of the same shape as inputs.\n",
-                UserWarning,
-            )
-            raise ValueError
+    else:
+        raise KeyError(
+            f"To use the 'quantus.explain' method with tf-explain as a supporting library, "
+            f"specify a XAI method that is supported {constants.AVAILABLE_XAI_METHODS_TF}."
+        )
 
     assert 0 not in reduce_axes, (
         "Reduction over batch_axis is not available, please do not "
