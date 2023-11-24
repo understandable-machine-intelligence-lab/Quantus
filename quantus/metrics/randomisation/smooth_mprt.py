@@ -53,8 +53,8 @@ class SmoothMPRT(Metric):
     """
     Implementation of the Smooth MPRT by Hedström et al., 2023.
 
-    The Smooth Model Parameter Randomisation adds a "denoising" preprocessing step to the original MPRT,
-    where the explanations are averaged over N noisy samples before the similarity between the original-
+    The Smooth Model Parameter Randomisation adds a "denoising" preprocessing step to the original MPRT, 
+    where the explanations are averaged over N noisy samples before the similarity between the original- 
     and fully random model's explanations is measured.
 
     References:
