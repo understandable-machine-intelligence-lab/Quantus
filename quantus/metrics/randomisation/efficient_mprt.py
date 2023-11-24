@@ -508,8 +508,6 @@ class EfficientMPRT(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -578,6 +576,7 @@ class EfficientMPRT(Metric):
     ) -> Generator[np.ndarray, None, None]:
         """
         Iterate over dataset in batches and generate explanations for complete dataset.
+
         Parameters
         ----------
         model: ModelInterface

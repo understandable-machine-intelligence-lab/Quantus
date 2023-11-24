@@ -519,6 +519,7 @@ class MPRT(Metric):
     ) -> Generator[np.ndarray, None, None]:
         """
         Iterate over dataset in batches and generate explanations for complete dataset.
+
         Parameters
         ----------
         model: ModelInterface
