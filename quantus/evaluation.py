@@ -81,7 +81,7 @@ def evaluate(
         return None
 
     if call_kwargs is None:
-        call_kwargs = {'call_kwargs_empty': {}}
+        call_kwargs = {"call_kwargs_empty": {}}
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
@@ -99,6 +99,9 @@ def evaluate(
 
             explain_funcs[method] = value
             explain_func = value
+            assert (
+                explain_func_kwargs is not None
+            ), "Pass explain_func_kwargs as a dictionary."
 
             # Asserts.
             asserts.assert_explain_func(explain_func=explain_func)

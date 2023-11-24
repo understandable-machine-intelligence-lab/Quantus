@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Sensitivity metric."""
+"""This module contains the implementation of the Model Parameter Randomisation Test metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -7,6 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
+import warnings
 from typing import (
     Any,
     Callable,
@@ -15,7 +16,9 @@ from typing import (
     List,
     Optional,
     Union,
+    Tuple,
     Generator,
+    Iterable,
 )
 
 
@@ -41,13 +44,13 @@ else:
 
 
 @final
-class ModelParameterRandomisation(Metric):
+class MPRT(Metric):
     """
-    Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
+    Implementation of the Model Parameter Randomisation Test (MPRT) by Adebayo et al., 2018.
 
-    The Model Parameter Randomization measures the distance between the original attribution and a newly computed
-    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
-    at a time.
+    The MPRT measures the distance between the original attribution and a newly computed
+    attribution throughout the process of cascadingly/ independently randomizing the model
+    parameters of one layer at a time.
 
     Assumptions:
         - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
@@ -64,7 +67,7 @@ class ModelParameterRandomisation(Metric):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Model Parameter Randomisation"
+    name = "Model Parameter Randomisation Test"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -73,9 +76,11 @@ class ModelParameterRandomisation(Metric):
     def __init__(
         self,
         similarity_func: Optional[Callable] = None,
-        layer_order: str = "independent",
+        layer_order: str = "top_down",
         seed: int = 42,
-        return_sample_correlation: bool = False,
+        return_average_correlation: bool = False,
+        return_last_correlation: bool = False,
+        skip_layers: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -98,9 +103,15 @@ class ModelParameterRandomisation(Metric):
             default="independent".
         seed: integer
             Seed used for the random generator, default=42.
-        return_sample_correlation: boolean
-            Indicates whether return one float per sample, representing the average
-            correlation coefficient across the layers for that sample.
+        return_average_correlation: boolean
+            Indicates whether to return one float per sample, computing the average
+            correlation coefficient across the layers for a given sample.
+        return_last_correlation: boolean
+            Indicates whether to return one float per sample, computing the explanation
+            correlation coefficient for the full model randomisation (not layer-wise) of a sample.
+        skip_layers: boolean
+            Indicates if explanation similarity should be computed only once; between the
+            original and fully randomised model, instead of in a layer-by-layer basis.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=True.
         normalise: boolean
@@ -143,12 +154,25 @@ class ModelParameterRandomisation(Metric):
         self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.seed = seed
-        self.return_sample_correlation = return_sample_correlation
+        self.return_average_correlation = return_average_correlation
+        self.return_last_correlation = return_last_correlation
+        self.skip_layers = skip_layers
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.evaluation_scores = {}
 
         # Asserts and warnings.
+        if self.return_average_correlation and self.return_last_correlation:
+            raise ValueError(
+                f"Both 'return_average_correlation' and 'return_last_correlation' cannot be set to 'True'. "
+                f"Set both to 'False' or one of the attributes to 'True'."
+            )
+        if self.return_average_correlation and self.skip_layers:
+            raise ValueError(
+                f"Both 'return_average_correlation' and 'skip_layers' cannot be set to 'True'. "
+                f"You need to calculate the explanation correlation at all layers in order "
+                f"to compute the average correlation coefficient on all layers."
+            )
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
             warn.warn_parameterisation(
@@ -254,7 +278,7 @@ class ModelParameterRandomisation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
 
         # Run deprecation warnings.
@@ -280,6 +304,7 @@ class ModelParameterRandomisation(Metric):
         x_full_dataset = data["x_batch"]
         y_full_dataset = data["y_batch"]
         a_full_dataset = data["a_batch"]
+
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
@@ -292,56 +317,91 @@ class ModelParameterRandomisation(Metric):
             # Set property to False, so we display only 1 pbar.
             self._display_progressbar = False
 
-        def generate_y_batches():
-            for batch in gen_batches(len(a_full_dataset), batch_size):
-                yield a_full_dataset[batch.start : batch.stop]
-
         with pbar as pbar:
-            for layer_name, random_layer_model in model.get_random_layer_generator(
-                order=self.layer_order, seed=self.seed
+            for l_ix, (layer_name, random_layer_model) in enumerate(
+                model.get_random_layer_generator(order=self.layer_order, seed=self.seed)
             ):
                 pbar.desc = layer_name
 
-                similarity_scores = []
-                # Generate explanations on modified model in batches
-                a_perturbed_generator = self.generate_explanations(
-                    random_layer_model, x_full_dataset, y_full_dataset, batch_size
-                )
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
 
-                for a_batch, a_batch_perturbed in zip(
-                    generate_y_batches(), a_perturbed_generator
-                ):
-                    for a_instance, a_instance_perturbed in zip(
-                        a_batch, a_batch_perturbed
+                if l_ix == 0:
+
+                    # Generate explanations on original model in batches.
+                    a_original_generator = self.generate_explanations(
+                        model.get_model(), x_full_dataset, y_full_dataset, batch_size
+                    )
+
+                    # Compute the similarity of explanations of the original model.
+                    self.evaluation_scores["original"] = []
+                    for a_batch, a_batch_original in zip(
+                        self.generate_a_batches(a_full_dataset), a_original_generator
                     ):
-                        result = self.similarity_func(
-                            a_instance_perturbed.flatten(), a_instance.flatten()
-                        )
-                        similarity_scores.append(result)
-                        pbar.update(1)
-                # Save similarity scores in a result dictionary.
-                self.evaluation_scores[layer_name] = similarity_scores
+                        for a_instance, a_instance_original in zip(
+                            a_batch, a_batch_original
+                        ):
+                            score = self.evaluate_instance(
+                                model=model,
+                                x=None,
+                                y=None,
+                                s=None,
+                                a=a_instance,
+                                a_perturbed=a_instance_original,
+                            )
+                            # Save similarity scores in a result dictionary.
+                            self.evaluation_scores["original"].append(score)
+                            pbar.update(1)
 
-        if self.return_sample_correlation:
-            self.evaluation_scores = self.compute_correlation_per_sample()
+            self.evaluation_scores[layer_name] = []
+
+            # Generate explanations on perturbed model in batches.
+            a_perturbed_generator = self.generate_explanations(
+                random_layer_model, x_full_dataset, y_full_dataset, batch_size
+            )
+
+            # Compute the similarity of explanations of the perturbed model.
+            for a_batch, a_batch_perturbed in zip(
+                self.generate_a_batches(a_full_dataset), a_perturbed_generator
+            ):
+                for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
+                    score = self.evaluate_instance(
+                        model=random_layer_model,
+                        x=None,
+                        y=None,
+                        s=None,
+                        a=a_instance,
+                        a_perturbed=a_instance_perturbed,
+                    )
+                    self.evaluation_scores[layer_name].append(score)
+                    pbar.update(1)
+
+        if self.return_average_correlation:
+            self.evaluation_scores = self.recompute_average_correlation_per_sample()
+
+        elif self.return_last_correlation:
+            self.evaluation_scores = self.recompute_last_correlation_per_sample()
 
         if self.return_aggregate:
-            assert self.return_sample_correlation, (
-                "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute te aggregat"
+            assert self.return_average_correlation or self.return_last_correlation, (
+                "Set 'return_average_correlation' or 'return_last_correlation'"
+                " to True in order to compute the aggregate evaluation results."
             )
             self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
+        # Return all_evaluation_scores according to Quantus.
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
 
-    def compute_correlation_per_sample(
+    def recompute_average_correlation_per_sample(
         self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+    ) -> List[float]:
+
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
+            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
             "must be of type dict."
         )
         layer_length = len(
@@ -351,12 +411,64 @@ class ModelParameterRandomisation(Metric):
 
         for sample in results:
             for layer in self.evaluation_scores:
+                if layer == "orig":
+                    continue
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
-        corr_coeffs = list(results.values())
+        corr_coeffs = np.array(list(results.values())).flatten().tolist()
 
         return corr_coeffs
+
+    def recompute_last_correlation_per_sample(
+        self,
+    ) -> List[float]:
+
+        assert isinstance(self.evaluation_scores, dict), (
+            "To compute the last correlation coefficient per sample for "
+            "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
+            "must be of type dict."
+        )
+        # Return the correlation coefficient of the fully randomised model
+        # (excluding the non-randomised correlation).
+        corr_coeffs = list(self.evaluation_scores.values())[-1]
+        corr_coeffs = [float(c) for c in corr_coeffs]
+        return corr_coeffs
+
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        a_perturbed: Optional[np.ndarray] = None,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+        a_perturbed: np.ndarray
+            The perturbed attributions.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        # Compute similarity measure.
+        return self.similarity_func(a_perturbed.flatten(), a.flatten())
 
     def custom_preprocess(
         self,
@@ -388,8 +500,7 @@ class ModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-        if a_batch is not None:
-            # Just to silence mypy warnings
+        if a_batch is not None:  # Just to silence mypy warnings
             return None
 
         a_batch_chunks = []
@@ -406,14 +517,50 @@ class ModelParameterRandomisation(Metric):
         y_batch: np.ndarray,
         batch_size: int,
     ) -> Generator[np.ndarray, None, None]:
-        """Iterate over dataset in batches and generate explanations for complete dataset"""
+        """
+        Iterate over dataset in batches and generate explanations for complete dataset.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        kwargs: optional, dict
+            List of hyperparameters.
+
+        Returns
+        -------
+        a_batch:
+            Batch of explanations ready to be evaluated.
+        """
         for i in gen_batches(len(x_batch), batch_size):
             x = x_batch[i.start : i.stop]
             y = y_batch[i.start : i.stop]
             a = self.explain_batch(model, x, y)
             yield a
 
+    def generate_a_batches(self, a_full_dataset):
+        for batch in gen_batches(len(a_full_dataset), self.batch_size):
+            yield a_full_dataset[batch.start : batch.stop]
+
     def evaluate_batch(self, *args, **kwargs):
         raise RuntimeError(
-            "`evaluate_batch` must never be called for `ModelParameterRandomisation`."
+            "`evaluate_batch` must never be called for `Model Parameter Randomisation Test`."
         )
+
+
+@final
+class ModelParameterRandomisation(MPRT):
+    def __init__(self, *args, **kwargs):
+        warnings.simplefilter("always", DeprecationWarning)
+        warnings.warn(
+            "ModelParameterRandomisation metric has been renamed to MPRT and will "
+            "be removed in future releases. Please call quantus.MPRT() instead. "
+            "This change is effective from Quantus version 0.5.0. Note: MPRT is "
+            "functionally identical to ModelParameterRandomisation and can be used in the same way.",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)

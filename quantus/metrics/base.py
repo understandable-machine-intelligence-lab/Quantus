@@ -256,7 +256,7 @@ class Metric(Generic[R]):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
@@ -885,7 +885,7 @@ class Metric(Generic[R]):
         y_batch: np.ndarray,
     ) -> np.ndarray:
         """
-        Compute explanations, normalize and take absolute (if was configured so during metric initialization.)
+        Compute explanations, normalise and take absolute (if was configured so during metric initialization.)
         This method should primarily be used if you need to generate additional explanation
         in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
         It will do few things:
@@ -893,7 +893,7 @@ class Metric(Generic[R]):
             - unwrap model (if ModelInterface instance was provided)
             - call explain_func
             - expand attribution channel
-            - (optionally) normalize a_batch
+            - (optionally) normalise a_batch
             - (optionally) take np.abs of a_batch
 
 

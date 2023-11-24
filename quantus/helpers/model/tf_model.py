@@ -40,15 +40,10 @@ class TensorFlowModel(ModelInterface[Model]):
     def __init__(
         self,
         model: Model,
-        channel_first: bool = True,
+        channel_first: bool = False,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model.
-        model_predict_kwargs["verbose"] = 0
-
         """
         Initialisation of ModelInterface class.
 
@@ -64,6 +59,11 @@ class TensorFlowModel(ModelInterface[Model]):
         model_predict_kwargs: dict, optional
             Keyword arguments to be passed to the model's predict method.
         """
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
+
         super().__init__(
             model=model,
             channel_first=channel_first,

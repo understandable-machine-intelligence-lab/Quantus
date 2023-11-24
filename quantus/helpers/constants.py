@@ -13,6 +13,7 @@ from quantus.functions.loss_func import *
 from quantus.functions.normalise_func import *
 from quantus.functions.perturb_func import *
 from quantus.functions.similarity_func import *
+from quantus.functions import n_bins_func
 from quantus.metrics import *
 
 if sys.version_info >= (3, 8):
@@ -61,7 +62,9 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
         "Effective Complexity": EffectiveComplexity,
     },
     "Randomisation": {
-        "Model Parameter Randomisation": ModelParameterRandomisation,
+        "MPRT": MPRT,
+        "Smooth MPRT": SmoothMPRT,
+        "Efficient MPRT": EfficientMPRT,
         "Random Logit": RandomLogit,
     },
     "Axiomatic": {
@@ -154,6 +157,15 @@ DEPRECATED_XAI_METHODS_TF = {
     "InputXGradient": "GradientsInput",
     "Occlusion": "OcclusionSensitivity",
     "GradCam": "GradCAM",
+}
+
+
+AVAILABLE_N_BINS_ALGORITHMS = {
+    "Freedman Diaconis": n_bins_func.freedman_diaconis_rule,
+    "Scotts": n_bins_func.scotts_rule,
+    "Square Root": n_bins_func.square_root_choice,
+    "Sturges Formula": n_bins_func.sturges_formula,
+    "Rice": n_bins_func.rice_rule,
 }
 
 
