@@ -555,12 +555,10 @@ class MPRT(Metric):
 @final
 class ModelParameterRandomisation(MPRT):
     def __init__(self, *args, **kwargs):
-        warnings.simplefilter("always", DeprecationWarning)
-        warnings.warn(
+        print(
             "ModelParameterRandomisation metric has been renamed to MPRT and will "
-            "be removed in future releases. Please call quantus.MPRT() instead. "
+            "be removed in future releases. Please call quantus.MPRT() instead.\n "
             "This change is effective from Quantus version 0.5.0. Note: MPRT is "
             "functionally identical to ModelParameterRandomisation and can be used in the same way.",
-            DeprecationWarning,
         )
         super().__init__(*args, **kwargs)
