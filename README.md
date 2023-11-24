@@ -142,7 +142,9 @@ captures to what extent explanations are concise i.e., that few features are use
 tests to what extent explanations deteriorate as inputs to the evaluation problem e.g., model parameters are increasingly randomised
      <br><br>
 <ul>
-    <li><b>Model Parameter Randomisation </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+    <li><b>MPRT (Model Parameter Randomisation Test) </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+    <li><b>Smooth MPRT </b><a href="https://openreview.net/pdf?id=vVpefYmnsG">(Hedström et. al., 2023)</a>: adds a "denoising" preprocessing step to the original MPRT, where the explanations are averaged over N noisy samples before the similarity between the original- and fully random model's explanations is measured
+    <li><b>Efficient MPRT </b><a href="https://openreview.net/pdf?id=vVpefYmnsG">(Hedström et. al., 2023)</a>: reinterprets MPRT by evaluating the rise in explanation complexity (discrete entropy) before and after full model randomisation, asking for increased explanation complexity post-randomisation
     <li><b>Random Logit Test </b><a href="https://arxiv.org/abs/1912.09818">(Sixt et al., 2020)</a>: computes for the distance between the original explanation and the explanation for a random other class
 </ul>
 </details>
