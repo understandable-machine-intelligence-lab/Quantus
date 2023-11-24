@@ -12,7 +12,7 @@ import numpy as np
 
 def entropy(a: np.array, x: np.array, **kwargs) -> float:
     """
-    Calculate entropy.
+    Calculate entropy of a single array.
 
     Parameters
     ----------
@@ -42,12 +42,12 @@ def entropy(a: np.array, x: np.array, **kwargs) -> float:
 
 def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
     """
-    Calculate Gini coefficient.
+    Calculate Gini coefficient of a single array.
 
     Parameters
     ----------
     a: np.ndarray
-        Array to calculate gini_coeffiient on. One sample at a time.
+        Array to calculate gini_coeffiient on.
     x: np.ndarray
         Array to compute shape.
     kwargs: optional
@@ -76,11 +76,13 @@ def gini_coeffiient(a: np.array, x: np.array, **kwargs) -> float:
 
 def discrete_entropy(a: np.array, x: np.array, **kwargs) -> float:
     """
-    Calculate discrete entropy of explanations with n_bins equidistant spaced bins
+    Calculate discrete entropy of explanations with n_bins
+    equidistant spaced bins of a single array.
+
     Parameters
     ----------
     a: np.ndarray
-        Array to calculate entropy on. One sample at a time.
+        Array to calculate entropy on.
     x: np.ndarray
         Array to compute shape.
     kwargs: optional

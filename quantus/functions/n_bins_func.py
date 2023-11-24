@@ -10,8 +10,19 @@ import scipy
 import numpy as np
 
 
-def freedman_diaconis_rule(a_batch: np.array) -> int:
-    """Freedman–Diaconis' rule."""
+def freedman_diaconis_rule(a_batch: np.ndarray) -> int:
+    """
+    Freedman–Diaconis' rule to compute the number of bins.
+
+    Parameters
+    ----------
+    a_batch: np.ndarray
+        The batch of attributions to use in the calculation.
+
+    Returns
+    -------
+        integer
+    """
 
     iqr = np.percentile(a_batch, 75) - np.percentile(a_batch, 25)
     n = a_batch[0].ndim
@@ -27,8 +38,19 @@ def freedman_diaconis_rule(a_batch: np.array) -> int:
     return n_bins
 
 
-def scotts_rule(a_batch: np.array) -> int:
-    """Scott's rule."""
+def scotts_rule(a_batch: np.ndarray) -> int:
+    """
+    Scott's rule to compute the number of bins.
+
+    Parameters
+    ----------
+    a_batch: np.ndarray
+        The batch of attributions to use in the calculation.
+
+    Returns
+    -------
+        integer
+    """
 
     std = np.std(a_batch)
     n = a_batch[0].ndim
@@ -42,8 +64,19 @@ def scotts_rule(a_batch: np.array) -> int:
     return n_bins
 
 
-def square_root_choice(a_batch: np.array) -> int:
-    """Square-root choice rule."""
+def square_root_choice(a_batch: np.ndarray) -> int:
+    """
+    Square-root choice rule to compute the number of bins.
+
+    Parameters
+    ----------
+    a_batch: np.ndarray
+        The batch of attributions to use in the calculation.
+
+    Returns
+    -------
+        integer
+    """
 
     n = a_batch[0].ndim
     n_bins = int(np.sqrt(n))
@@ -51,8 +84,19 @@ def square_root_choice(a_batch: np.array) -> int:
     return n_bins
 
 
-def sturges_formula(a_batch: np.array) -> int:
-    """Sturges' formula."""
+def sturges_formula(a_batch: np.ndarray) -> int:
+    """
+    Sturges' rule to compute the number of bins.
+
+    Parameters
+    ----------
+    a_batch: np.ndarray
+        The batch of attributions to use in the calculation.
+
+    Returns
+    -------
+        integer
+    """
 
     n = a_batch[0].ndim
     n_bins = int(np.log2(n) + 1)
@@ -60,8 +104,19 @@ def sturges_formula(a_batch: np.array) -> int:
     return n_bins
 
 
-def rice_rule(a_batch: np.array) -> int:
-    """Rice Rule."""
+def rice_rule(a_batch: np.ndarray) -> int:
+    """
+    Rice rule to compute the number of bins.
+
+    Parameters
+    ----------
+    a_batch: np.ndarray
+        The batch of attributions to use in the calculation.
+
+    Returns
+    -------
+        integer
+    """
 
     n = a_batch[0].ndim
     n_bins = int(2 * np.power(n, 1 / 3))
