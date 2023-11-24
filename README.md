@@ -23,14 +23,12 @@ _Quantus is currently under active development so carefully note the Quantus rel
         
 ## News and Highlights! :rocket:
 
-- Released a new version [v0.4.3](https://github.com/understandable-machine-intelligence-lab/Quantus/releases)
+- New metrics added: [EfficientMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/efficient_mprt.py) and [SmoothMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/smooth_mprt.py) by [Hedström et al., (2023)](https://openreview.net/forum?id=vVpefYmnsG) 
+- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases)
 - Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/), [tf-explain](https://tf-explain.readthedocs.io/en/latest/) and [zennit](https://github.com/chr5tphr/zennit))
-- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)
-
-See [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) for the latest release(s).
 
 ## Citation
 
@@ -144,7 +142,9 @@ captures to what extent explanations are concise i.e., that few features are use
 tests to what extent explanations deteriorate as inputs to the evaluation problem e.g., model parameters are increasingly randomised
      <br><br>
 <ul>
-    <li><b>Model Parameter Randomisation </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+    <li><b>MPRT (Model Parameter Randomisation Test) </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+    <li><b>Smooth MPRT </b><a href="https://openreview.net/pdf?id=vVpefYmnsG">(Hedström et. al., 2023)</a>: adds a "denoising" preprocessing step to the original MPRT, where the explanations are averaged over N noisy samples before the similarity between the original- and fully random model's explanations is measured
+    <li><b>Efficient MPRT </b><a href="https://openreview.net/pdf?id=vVpefYmnsG">(Hedström et. al., 2023)</a>: reinterprets MPRT by evaluating the rise in explanation complexity (discrete entropy) before and after full model randomisation, asking for increased explanation complexity post-randomisation
     <li><b>Random Logit Test </b><a href="https://arxiv.org/abs/1912.09818">(Sixt et al., 2020)</a>: computes for the distance between the original explanation and the explanation for a random other class
 </ul>
 </details>

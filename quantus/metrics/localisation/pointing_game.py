@@ -6,23 +6,28 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class PointingGame(Metric):
+@final
+class PointingGame(Metric[List[float]]):
     """
     Implementation of the Pointing Game by Zhang et al., 2018.
 
@@ -56,7 +61,7 @@ class PointingGame(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -89,8 +94,6 @@ class PointingGame(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -127,8 +130,8 @@ class PointingGame(Metric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -138,7 +141,6 @@ class PointingGame(Metric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -212,7 +214,7 @@ class PointingGame(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -227,28 +229,20 @@ class PointingGame(Metric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     def evaluate_instance(
         self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-    ) -> bool:
+    ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
@@ -282,30 +276,19 @@ class PointingGame(Metric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: np.ndarray, optional
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns
         -------
@@ -314,3 +297,28 @@ class PointingGame(Metric):
 
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+    def evaluate_batch(
+        self, *args, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch:
+            A np.ndarray which contains segmentation masks that matches the input.
+        args:
+            Unused.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            Evaluation result for batch.
+        """
+        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]

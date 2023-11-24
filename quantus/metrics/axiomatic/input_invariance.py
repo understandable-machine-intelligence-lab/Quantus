@@ -6,24 +6,31 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional, Union
+
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class InputInvariance(BatchedPerturbationMetric):
+@final
+class InputInvariance(Metric[List[float]]):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -55,9 +62,10 @@ class InputInvariance(BatchedPerturbationMetric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         input_shift: Union[int, float] = -1,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -98,22 +106,11 @@ class InputInvariance(BatchedPerturbationMetric):
         if abs:
             warn.warn_absolute_operation(word="not ")
 
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        perturb_func = baseline_replacement_by_shift
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["input_shift"] = input_shift
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -122,11 +119,18 @@ class InputInvariance(BatchedPerturbationMetric):
             **kwargs,
         )
 
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_shift
+
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, input_shift=input_shift
+        )
+
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=("input shift 'input_shift'"),
+                sensitive_params="input shift 'input_shift'",
                 citation=(
                     "Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., "
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
@@ -147,7 +151,6 @@ class InputInvariance(BatchedPerturbationMetric):
         softmax: Optional[bool] = None,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -221,7 +224,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -246,7 +249,7 @@ class InputInvariance(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
+        **kwargs,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -261,14 +264,11 @@ class InputInvariance(BatchedPerturbationMetric):
             The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
             The explanation to be evaluated on a batch-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
-           : np.ndarray
+        scores_batch: np.ndarray
             The evaluation results.
-
         """
         batch_size = x_batch.shape[0]
 
@@ -278,11 +278,10 @@ class InputInvariance(BatchedPerturbationMetric):
             indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
             indexed_axes=np.arange(0, x_batch[0].ndim),
             arr=x_batch,
-            **self.perturb_func_kwargs,
         )
 
         # Get input shift.
-        input_shift = self.perturb_func_kwargs["input_shift"]
+        input_shift = self.perturb_func.keywords["input_shift"]  # type: ignore
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -296,12 +295,7 @@ class InputInvariance(BatchedPerturbationMetric):
         )
 
         # Generate explanation based on shifted input x.
-        a_shifted = self.explain_func(
-            model=shifted_model,
-            inputs=x_shifted,
-            targets=y_batch,
-            **self.explain_func_kwargs,
-        )
+        a_shifted = self.explain_batch(shifted_model, x_shifted, y_batch)
 
         # Compute the invaraince.
         score = np.all(
@@ -311,37 +305,6 @@ class InputInvariance(BatchedPerturbationMetric):
 
         return score
 
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray] = None,
-    ) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        None
-        """
-        # Additional explain_func assert, as the one in prepare() won't be
-        # executed when a_batch != None.
+    def custom_preprocess(self, **kwargs) -> None:
+        """Additional explain_func assert, as the one in prepare() won't be executed when `a_batch != None.`"""
         asserts.assert_explain_func(explain_func=self.explain_func)

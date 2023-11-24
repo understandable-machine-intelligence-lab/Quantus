@@ -6,24 +6,32 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import warn
-from quantus.helpers import asserts
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+from quantus.helpers.utils import identity
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class Completeness(PerturbationMetric):
+@final
+class Completeness(Metric[List[float]]):
     """
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
@@ -63,12 +71,12 @@ class Completeness(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        output_func: Optional[Callable] = lambda x: x,
+        output_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -112,23 +120,11 @@ class Completeness(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -136,11 +132,16 @@ class Completeness(PerturbationMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         if output_func is None:
-            output_func = lambda x: x
+            output_func = identity
         self.output_func = output_func
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -159,8 +160,8 @@ class Completeness(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -170,7 +171,6 @@ class Completeness(PerturbationMetric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -244,7 +244,7 @@ class Completeness(PerturbationMetric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -259,6 +259,7 @@ class Completeness(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -268,7 +269,6 @@ class Completeness(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> bool:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -283,19 +283,14 @@ class Completeness(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
-           : boolean
+        score: boolean
             The evaluation results.
         """
         x_baseline = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
-            **self.perturb_func_kwargs,
+            arr=x, indices=np.arange(0, x.size), indexed_axes=np.arange(0, x.ndim)
         )
 
         # Predict on input.
@@ -310,3 +305,39 @@ class Completeness(PerturbationMetric):
             return True
         else:
             return False
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[bool]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            The evaluation results.
+        """
+
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

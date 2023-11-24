@@ -9,7 +9,7 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -227,14 +227,14 @@ def infer_channel_first(x: np.array) -> bool:
     Infer if the channels are first.
 
     Assumes:
-        For 1d input:
+        For 1D input:
             nr_channels < sequence_length
 
-        For 2d input:
+        For 2D input:
             nr_channels < img_width and nr_channels < img_height
 
-    For higher dimensional input an error is raised. For input in n_features x n_batches format True is returned (no
-    channel).
+    For higher dimensional input an error is raised.
+    For input in n_features x n_batches format True is returned (no channel).
 
     Parameters
     ----------
@@ -243,17 +243,23 @@ def infer_channel_first(x: np.array) -> bool:
 
     Returns
     -------
-    For 1d input:
+    For 1D input:
+        True for input shape (nr_batch, nr_features).
+
+    For 2D input:
         True if input shape is (nr_batch, nr_channels, sequence_length).
         False if input shape is (nr_batch, sequence_length, nr_channels).
         An error is raised if the two last dimensions are equal.
 
-    For 2d input:
+    For 3D input:
         True if input shape is (nr_batch, nr_channels, img_width, img_height).
         False if input shape is (nr_batch, img_width, img_height, nr_channels).
         An error is raised if the three last dimensions are equal.
     """
-    err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order. Try setting the `channel_first` argument"
+    err_msg = (
+        "Ambiguous input shape. Cannot infer channel-first/channel-last order. "
+        "Try setting the `channel_first` argument"
+    )
 
     if len(np.shape(x)) == 2:
         return True
@@ -275,11 +281,11 @@ def infer_channel_first(x: np.array) -> bool:
 
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
         )
 
 
-def make_channel_first(x: np.array, channel_first=False):
+def make_channel_first(x: np.array, channel_first: bool = False):
     """
     Reshape batch to channel first.
 
@@ -295,18 +301,20 @@ def make_channel_first(x: np.array, channel_first=False):
     """
     if channel_first:
         return x
-
-    if len(np.shape(x)) == 4:
-        return np.moveaxis(x, -1, -3)
+    if len(np.shape(x)) == 2:
+        return x
     elif len(np.shape(x)) == 3:
         return np.moveaxis(x, -1, -2)
+    elif len(np.shape(x)) == 4:
+        return np.moveaxis(x, -1, -3)
+
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
         )
 
 
-def make_channel_last(x: np.array, channel_first=True):
+def make_channel_last(x: np.array, channel_first: bool = True):
     """
     Reshape batch to channel last.
 
@@ -322,14 +330,15 @@ def make_channel_last(x: np.array, channel_first=True):
     """
     if not channel_first:
         return x
-
-    if len(np.shape(x)) == 4:
-        return np.moveaxis(x, -3, -1)
+    if len(np.shape(x)) == 2:
+        return x
     elif len(np.shape(x)) == 3:
         return np.moveaxis(x, -2, -1)
+    elif len(np.shape(x)) == 4:
+        return np.moveaxis(x, -3, -1)
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported."
+            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
         )
 
 
@@ -503,7 +512,7 @@ def create_patch_slice(
     if len(patch_size) == 1 and len(coords) != 1:
         patch_size = tuple(patch_size for _ in coords)
     elif patch_size.ndim != 1:
-        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+        raise ValueError("patch_size has to be either a scalar or a 1D-sequence")
     elif len(patch_size) != len(coords):
         raise ValueError(
             "patch_size sequence length does not match coords length"
@@ -548,7 +557,7 @@ def get_nr_patches(
     if len(patch_size) == 1 and len(shape) != 1:
         patch_size = tuple(patch_size for _ in shape)
     elif patch_size.ndim != 1:
-        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+        raise ValueError("patch_size has to be either a scalar or a 1D-sequence")
     elif len(patch_size) != len(shape):
         raise ValueError(
             "patch_size sequence length does not match shape length"
@@ -830,7 +839,7 @@ def expand_indices(
     Expands indices to fit array shape. Returns expanded indices.
         --> if indices are a sequence of ints, they are interpreted as indices to the flattened arr,
             and subsequently expanded
-        --> if indices contains only slices and 1d sequences for arr, everything is interpreted as slices
+        --> if indices contains only slices and 1D sequences for arr, everything is interpreted as slices
         --> if indices contains already expanded indices, they are returned as is
 
     Parameters
@@ -995,3 +1004,10 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+T = TypeVar("T")
+
+
+def identity(x: T) -> T:
+    return x

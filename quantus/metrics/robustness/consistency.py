@@ -6,24 +6,30 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+import sys
+from typing import Any, Callable, Dict, List, Optional, no_type_check
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
 from quantus.functions.discretise_func import top_n_sign
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.metrics.base import Metric
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class Consistency(Metric):
+@final
+class Consistency(Metric[List[float]]):
     """
     Implementation of the Consistency metric which measures the expected local consistency, i.e., the probability
     of the prediction label for a given datapoint coinciding with the prediction labels of other data points that
@@ -60,7 +66,7 @@ class Consistency(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -92,9 +98,6 @@ class Consistency(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -131,8 +134,8 @@ class Consistency(Metric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -142,7 +145,6 @@ class Consistency(Metric):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -216,7 +218,7 @@ class Consistency(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -231,35 +233,24 @@ class Consistency(Metric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
+    @staticmethod
     def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
-        i: int = None,
-        a_label: np.ndarray = None,
-        y_pred_classes: np.ndarray = None,
+        i: int,
+        a_label: np.ndarray,
+        y_pred_classes: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
         i: int
             The index of the current instance.
         a_label: np.ndarray
@@ -282,45 +273,17 @@ class Consistency(Metric):
             return 0
         return np.sum(pred_same_a == pred_a) / len(diff_a)
 
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Dict[str, Any]:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        dictionary[str, np.ndarray]
-            Output dictionary with 'a_label_batch' as key and discretised attributtion labels as value.
-        """
-        # Preprocessing.
-        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
-        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
-
+    def custom_batch_preprocess(
+        self, model: ModelInterface, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
+    ) -> Dict[str, np.ndarray]:
+        """Compute additional arguments required for Consistency on batch-level."""
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
+        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
+
+        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
+
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         return {
@@ -328,3 +291,40 @@ class Consistency(Metric):
             "a_label_batch": a_labels,
             "y_pred_classes": y_pred_classes,
         }
+
+    @no_type_check
+    def evaluate_batch(
+        self,
+        a_batch: np.ndarray,
+        i_batch: np.ndarray,
+        a_label_batch: np.ndarray,
+        y_pred_classes: np.ndarray,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        a_batch:
+            Batch of explanation to be evaluated.
+        i_batch:
+            Batch of segmentations to be evaluated.
+        a_label_batch:
+            Batch of discretised attribution labels.
+        y_pred_classes:
+            The class predictions of the complete input dataset.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            Evaluation results.
+        """
+
+        return [
+            self.evaluate_instance(a, i, a_label, y_pred_classes)
+            for a, i, a_label in zip(a_batch, i_batch, a_label_batch)
+        ]

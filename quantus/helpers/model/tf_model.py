@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple, List, Union
+from typing import Dict, Optional, Tuple, List, Union, Generator
 from keras.layers import Dense
 from keras import activations
 from keras import Model
@@ -23,7 +23,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import utils
 
 
-class TensorFlowModel(ModelInterface):
+class TensorFlowModel(ModelInterface[Model]):
     """Interface for tensorflow models."""
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
@@ -40,15 +40,10 @@ class TensorFlowModel(ModelInterface):
     def __init__(
         self,
         model: Model,
-        channel_first: bool = True,
+        channel_first: bool = False,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model.
-        model_predict_kwargs["verbose"] = 0
-
         """
         Initialisation of ModelInterface class.
 
@@ -64,6 +59,11 @@ class TensorFlowModel(ModelInterface):
         model_predict_kwargs: dict, optional
             Keyword arguments to be passed to the model's predict method.
         """
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
+
         super().__init__(
             model=model,
             channel_first=channel_first,
@@ -235,7 +235,9 @@ class TensorFlowModel(ModelInterface):
         """Set model's learnable parameters."""
         self.model.set_weights(original_parameters)
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, Model], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -361,7 +363,6 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -418,3 +419,7 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len([i for i in self.model.layers if len(i.get_weights()) > 0])

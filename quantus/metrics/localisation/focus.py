@@ -6,24 +6,29 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import plotting
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
-from quantus.metrics.base import Metric
+from quantus.helpers import plotting, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class Focus(Metric):
+@final
+class Focus(Metric[List[float]]):
     """
     Implementation of Focus evaluation strategy by Arias et. al. 2022
 
@@ -60,8 +65,8 @@ class Focus(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
-        default_plot_func: Optional[Callable] = plotting.plot_focus,
+        aggregate_func: Optional[Callable] = None,
+        default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -91,8 +96,8 @@ class Focus(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_focus
 
         # Save metric-specific attributes.
         self.mosaic_shape = mosaic_shape
@@ -129,8 +134,8 @@ class Focus(Metric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -244,7 +249,7 @@ class Focus(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
 
         """
         return super().__call__(
@@ -260,33 +265,22 @@ class Focus(Metric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     def evaluate_instance(
         self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
-        c: np.ndarray = None,
+        c: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
         c: any
             The custom input to be evaluated on an instance-basis.
 
@@ -325,10 +319,9 @@ class Focus(Metric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
+        custom_batch: np.ndarray,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
@@ -341,12 +334,10 @@ class Focus(Metric):
             A np.ndarray which contains the input data that are explained.
         y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
             Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -394,3 +385,26 @@ class Focus(Metric):
             :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_a
+
+    def evaluate_batch(
+        self, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
+    ) -> List[float]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        c_batch:
+            The custom input to be evaluated on an batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        score_batch:
+            Evaluation result for batch.
+        """
+        return [self.evaluate_instance(a=a, c=c) for a, c in zip(a_batch, c_batch)]

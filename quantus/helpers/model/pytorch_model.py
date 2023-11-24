@@ -8,25 +8,26 @@
 import copy
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List, Union
+from typing import Any, Dict, Optional, Tuple, List, Union, Generator
 import warnings
 import logging
 
 import numpy as np
 import torch
+from torch import nn
 from functools import lru_cache
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 
 
-class PyTorchModel(ModelInterface):
+class PyTorchModel(ModelInterface[nn.Module]):
     """Interface for torch models."""
 
     def __init__(
         self,
-        model,
-        channel_first: bool = True,
+        model: nn.Module,
+        channel_first: bool = False,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         device: Optional[str] = None,
@@ -86,8 +87,11 @@ class PyTorchModel(ModelInterface):
             if isinstance(named_module[1], torch.nn.Softmax):
                 setattr(linear_model, named_module[0], torch.nn.Identity())
 
-                logging.info("Argument softmax=False passed, but the passed model contains a module of type "
-                             "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().", named_module[0])
+                logging.info(
+                    "Argument softmax=False passed, but the passed model contains a module of type "
+                    "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().",
+                    named_module[0],
+                )
                 break
 
         return linear_model
@@ -118,8 +122,10 @@ class PyTorchModel(ModelInterface):
             return self.model  # Case 1
 
         if self.softmax and not last_softmax:
-            logging.info("Argument softmax=True passed, but the passed model contains no module of type "
-                         "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer.")
+            logging.info(
+                "Argument softmax=True passed, but the passed model contains no module of type "
+                "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer."
+            )
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 3
 
         if not self.softmax and not last_softmax:
@@ -133,12 +139,14 @@ class PyTorchModel(ModelInterface):
         )  # Warning for cases 2, 4, 5
 
         if self.softmax and last_softmax != -1:
-            logging.info("Argument softmax=True passed. The passed model contains a module of type "
-                         "torch.nn.Softmax, but it is not the last in the list of model's children ("
-                         "self.model.modules()). torch.nn.Softmax module is added as the output layer."
-                         "Make sure that the torch.nn.Softmax layer is the last module in the list "
-                         "of model's children (self.model.modules()) if and only if it is the actual last module "
-                         "applied before output.")
+            logging.info(
+                "Argument softmax=True passed. The passed model contains a module of type "
+                "torch.nn.Softmax, but it is not the last in the list of model's children ("
+                "self.model.modules()). torch.nn.Softmax module is added as the output layer."
+                "Make sure that the torch.nn.Softmax layer is the last module in the list "
+                "of model's children (self.model.modules()) if and only if it is the actual last module "
+                "applied before output."
+            )
 
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 2
 
@@ -232,7 +240,9 @@ class PyTorchModel(ModelInterface):
         """
         return self.model.state_dict()
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, nn.Module], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -337,7 +347,6 @@ class PyTorchModel(ModelInterface):
             The resulting model with a shifted first layer.
         """
         with torch.no_grad():
-
             new_model = deepcopy(self.model)
 
             modules = [l for l in new_model.named_modules()]
@@ -364,7 +373,6 @@ class PyTorchModel(ModelInterface):
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -447,3 +455,13 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len(
+            [
+                i
+                for i in self.model.named_modules()
+                if (hasattr(i[1], "reset_parameters"))
+            ]
+        )

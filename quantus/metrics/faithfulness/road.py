@@ -6,25 +6,31 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import sys
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import noisy_linear_imputation
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class ROAD(PerturbationMetric):
+@final
+class ROAD(Metric[List[float]]):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
 
@@ -63,11 +69,10 @@ class ROAD(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
-        perturb_baseline: str = "black",
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -90,9 +95,6 @@ class ROAD(PerturbationMetric):
         perturb_func: callable
             Input perturbation function. If None, the default value is used,
             default=baseline_replacement_by_indices.
-        perturb_baseline: string
-            Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
@@ -108,23 +110,11 @@ class ROAD(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = noisy_linear_imputation
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["noise"] = noise
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -136,17 +126,21 @@ class ROAD(PerturbationMetric):
         # Save metric-specific attributes.
         if percentages is None:
             percentages = list(range(1, 100, 2))
+
+        if perturb_func is None:
+            perturb_func = noisy_linear_imputation
+
         self.percentages = percentages
         self.a_size = None
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, noise=noise
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline', perturbation function 'perturb_func', "
-                    "percentage of pixels k removed per iteration 'percentage_in_step'"
-                ),
+                sensitive_params="perturbation function 'perturb_func'",
                 data_domain_applicability=(
                     f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
@@ -159,8 +153,8 @@ class ROAD(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -170,7 +164,6 @@ class ROAD(PerturbationMetric):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -244,7 +237,7 @@ class ROAD(PerturbationMetric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -259,6 +252,7 @@ class ROAD(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
@@ -268,7 +262,6 @@ class ROAD(PerturbationMetric):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-        s: np.ndarray,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -283,12 +276,10 @@ class ROAD(PerturbationMetric):
             The output to be evaluated on an instance-basis.
         a: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
-           : list
+        list:
             The evaluation results.
         """
         # Order indices.
@@ -299,10 +290,9 @@ class ROAD(PerturbationMetric):
         for p_ix, p in enumerate(self.percentages):
             top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
 
-            x_perturbed = self.perturb_func(
+            x_perturbed = self.perturb_func(  # type: ignore
                 arr=x,
                 indices=top_k_indices,
-                **self.perturb_func_kwargs,
             )
 
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
@@ -317,47 +307,13 @@ class ROAD(PerturbationMetric):
         # Return list of booleans for each percentage.
         return results_instance
 
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        None
-        """
-        # Infer the size of attributions.
-        self.a_size = a_batch[0, :, :].size
+    def custom_batch_preprocess(self, a_batch: np.ndarray, **kwargs) -> None:
+        """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
+        if self.a_size is None:
+            self.a_size = a_batch[0, :, :].size
 
     def custom_postprocess(
         self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
         **kwargs,
     ) -> None:
         """
@@ -365,16 +321,8 @@ class ROAD(PerturbationMetric):
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
+        kwargs:
+            Unused.
 
         Returns
         -------
@@ -386,3 +334,38 @@ class ROAD(PerturbationMetric):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> List[List[float]]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            The evaluation results.
+        """
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a)
+            for x, y, a in zip(x_batch, y_batch, a_batch)
+        ]

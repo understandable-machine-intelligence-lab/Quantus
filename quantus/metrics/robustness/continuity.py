@@ -5,28 +5,33 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
 import itertools
+import sys
 from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
-from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class Continuity(PerturbationMetric):
+@final
+class Continuity(Metric[List[float]]):
     """
     Implementation of the Continuity test by Montavon et al., 2018.
 
@@ -66,11 +71,11 @@ class Continuity(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -121,23 +126,11 @@ class Continuity(PerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if perturb_func is None:
-            perturb_func = translation_x_direction
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -145,6 +138,9 @@ class Continuity(PerturbationMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = translation_x_direction
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -155,6 +151,9 @@ class Continuity(PerturbationMetric):
         self.nr_patches: Optional[int] = None
         self.dx = None
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -179,8 +178,8 @@ class Continuity(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
@@ -190,7 +189,6 @@ class Continuity(PerturbationMetric):
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -264,7 +262,7 @@ class Continuity(PerturbationMetric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -279,17 +277,13 @@ class Continuity(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
     def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> Dict:
+        self, model: ModelInterface, x: np.ndarray, y: np.ndarray
+    ) -> Dict[int, List[Any]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -301,10 +295,6 @@ class Continuity(PerturbationMetric):
             The input to be evaluated on an instance-basis.
         y: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -314,7 +304,6 @@ class Continuity(PerturbationMetric):
         results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
 
         for step in range(self.nr_steps):
-
             # Generate explanation based on perturbed input x.
             dx_step = (step + 1) * self.dx
             x_perturbed = self.perturb_func(
@@ -322,35 +311,17 @@ class Continuity(PerturbationMetric):
                 indices=np.arange(0, x.size),
                 indexed_axes=np.arange(0, x.ndim),
                 perturb_dx=dx_step,
-                **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
             prediction_changed = (
-                model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
+                self.return_nan_when_prediction_changes
+                and model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
                 != model.predict(x_input).argmax(axis=-1)[0]
-                if self.return_nan_when_prediction_changes
-                else False
-            )
-
-            # Generate explanations on perturbed input.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x_input,
-                targets=y,
-                **self.explain_func_kwargs,
             )
             # Taking the first element, since a_perturbed will be expanded to a batch dimension
             # not expected by the current index management functions.
-            a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
-
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed, **self.normalise_func_kwargs
-                )
-
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = self.explain_batch(model, x_input, np.expand_dims(y, 0))[0]
 
             # Store the prediction score as the last element of the sub_self.evaluation_scores dictionary.
             y_pred = float(model.predict(x_input)[:, y])
@@ -386,9 +357,7 @@ class Continuity(PerturbationMetric):
                 # a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.normalise:
-                    a_perturbed_patch = self.normalise_func(
-                        a_perturbed_patch.flatten(), **self.normalise_func_kwargs
-                    )
+                    a_perturbed_patch = self.normalise_func(a_perturbed_patch.flatten())
 
                 if self.abs:
                     a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
@@ -401,31 +370,18 @@ class Continuity(PerturbationMetric):
 
     def custom_preprocess(
         self,
-        model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
+        kwargs:
+            Unused.
         Returns
         -------
         None.
@@ -458,8 +414,40 @@ class Continuity(PerturbationMetric):
                 self.similarity_func(
                     self.evaluation_scores[sample][self.nr_patches],
                     self.evaluation_scores[sample][ix_patch],
-                )
+                )  # noqa
                 for ix_patch in range(self.nr_patches)
                 for sample in self.evaluation_scores.keys()
             ]
         )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        **kwargs,
+    ) -> List[Dict[str, int]]:
+        """
+        This method performs XAI evaluation on a single batch of explanations.
+        For more information on the specific logic, we refer the metric’s initialisation docstring.
+
+        Parameters
+        ----------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        kwargs:
+            Unused.
+
+        Returns
+        -------
+        scores_batch:
+            Evaluation results.
+        """
+        return [
+            self.evaluate_instance(model=model, x=x, y=y)
+            for x, y in zip(x_batch, y_batch)
+        ]

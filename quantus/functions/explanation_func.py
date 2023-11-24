@@ -277,7 +277,7 @@ def generate_tf_explanation(
 
     if method in constants.DEPRECATED_XAI_METHODS_TF:
         warnings.warn(
-            f"Explanaiton method string {method} is deprecated. Use "
+            f"Explanation method string {method} is deprecated. Use "
             f"{constants.DEPRECATED_XAI_METHODS_TF[method]} instead.\n",
             category=UserWarning,
         )
@@ -416,7 +416,8 @@ def generate_tf_explanation(
 
     else:
         raise KeyError(
-            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
+            f"To use the 'quantus.explain' method with tf-explain as a supporting library, "
+            f"specify a XAI method that is supported {constants.AVAILABLE_XAI_METHODS_TF}."
         )
 
     assert 0 not in reduce_axes, (
@@ -430,7 +431,8 @@ def generate_tf_explanation(
 
     reduce_axes = {"axis": tuple(reduce_axes), "keepdims": keepdims}
 
-    # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
+    # Prevent attribution summation for 2D-data.
+    # Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
     if (len(tuple(reduce_axes)) == 0) | (explanation.ndim < 3):
         return explanation
 

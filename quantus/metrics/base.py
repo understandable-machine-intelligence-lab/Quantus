@@ -5,73 +5,85 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
-import re
+from __future__ import annotations
+
+import functools
+import logging
+import os
+import sys
 from abc import abstractmethod
-from collections.abc import Sequence
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
+    Generator,
+    Generic,
     Sequence,
-    Optional,
-    Tuple,
-    Union,
-    Collection,
-    List,
     Set,
+    TypeVar,
+    Optional,
+    Union,
+    TYPE_CHECKING,
+    no_type_check,
 )
+
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.utils import gen_batches
 from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers import asserts, utils, warn
+from quantus.functions.normalise_func import normalise_by_max
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
+
+if TYPE_CHECKING:
+    import keras
+    from torch import nn
+
+D = TypeVar("D", bound=Dict[str, Any])
+log = logging.getLogger(__name__)
+
+# Return value of __call__
+R = TypeVar("R")
 
 
-class Metric:
+class Metric(Generic[R]):
     """
-    Implementation of the base Metric class.
+    Interface defining Metrics' API.
     """
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
+    # Class attributes.
+    name: ClassVar[str]
+    data_applicability: ClassVar[Set[DataType]]
+    model_applicability: ClassVar[Set[ModelType]]
+    score_direction: ClassVar[ScoreDirection]
+    evaluation_category: ClassVar[EvaluationCategory]
 
-    @property
-    @abstractmethod
-    def evaluation_category(self) -> EvaluationCategory:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def score_direction(self) -> ScoreDirection:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def model_applicability(self) -> Set[ModelType]:
-        return {ModelType.TORCH, ModelType.TF}
-
-    @property
-    @abstractmethod
-    def data_applicability(self) -> Set[DataType]:
-        raise NotImplementedError
+    # Instance attributes.
+    explain_func: Callable
+    explain_func_kwargs: Dict[str, Any]
+    a_axes: Sequence[int]
+    evaluation_scores: Any
+    all_evaluation_scores: Any
+    normalise_func: Optional[Callable[[np.ndarray], np.ndarray]]
 
     def __init__(
         self,
         abs: bool,
         normalise: bool,
-        normalise_func: Callable,
+        normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Callable,
@@ -119,6 +131,16 @@ class Metric:
         kwargs: optional
             Keyword arguments.
         """
+
+        if aggregate_func is None:
+            aggregate_func = np.mean
+
+        if normalise_func is None:
+            normalise_func = normalise_by_max
+
+        if normalise_func_kwargs is not None:
+            normalise_func = functools.partial(normalise_func, **normalise_func_kwargs)
+
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
@@ -129,24 +151,22 @@ class Metric:
         self.aggregate_func = aggregate_func
         self.normalise_func = normalise_func
 
-        if normalise_func_kwargs is None:
-            normalise_func_kwargs = {}
-        self.normalise_func_kwargs = normalise_func_kwargs
-
         self.default_plot_func = default_plot_func
-        self.disable_warnings = disable_warnings
-        self.display_progressbar = display_progressbar
+        # We need underscores here to avoid conflict with @property descriptor.
+        self._disable_warnings = disable_warnings
+        self._display_progressbar = display_progressbar
 
-        self.a_axes: Sequence[int] = None
+        self.a_axes = None
 
-        self.evaluation_scores: Any = []
-        self.all_evaluation_scores: Any = []
+        self.evaluation_scores = []
+        self.all_evaluation_scores = []
 
+    @no_type_check
     def __call__(
         self,
-        model,
+        model: Union[keras.Model, nn.Module, None],
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
@@ -156,12 +176,12 @@ class Metric:
         softmax: Optional[bool],
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
+        custom_batch: Any = None,
         **kwargs,
-    ) -> Union[int, float, list, dict, Collection[Any], None]:
+    ) -> R:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
-        It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
+        It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
@@ -236,37 +256,40 @@ class Metric:
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
 
-        data = self.general_preprocess(
+        data: Dict[str, Any] = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
             model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
-            custom_batch=custom_batch,
         )
 
-        self.evaluation_scores = [None for _ in x_batch]
+        # Create generator for generating batches.
+        batch_generator = self.generate_batches(
+            data=data,
+            batch_size=batch_size,
+        )
 
-        # Evaluate with instance given the metric.
-        iterator = self.get_instance_iterator(data=data)
-        for id_instance, data_instance in iterator:
-            result = self.evaluate_instance(**data_instance)
-            self.evaluation_scores[id_instance] = result
+        self.evaluation_scores = []
+        for data_batch in batch_generator:
+            data_batch = self.batch_preprocess(data_batch)
+            result = self.evaluate_batch(**data_batch)
+            self.evaluation_scores.extend(result)
 
-        # Call custom post-processing.
+        # Call post-processing.
         self.custom_postprocess(**data)
 
         if self.return_aggregate:
@@ -275,9 +298,9 @@ class Metric:
                     self.evaluation_scores = [
                         self.aggregate_func(self.evaluation_scores)
                     ]
-                except:
-                    print(
-                        "The aggregation of evaluation scores failed. Check that "
+                except Exception as ex:
+                    log.error(
+                        f"The aggregation of evaluation scores failed with {ex}. Check that "
                         "'aggregate_func' supplied is appropriate for the data "
                         "in 'evaluation_scores'."
                     )
@@ -286,21 +309,24 @@ class Metric:
                     "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
                 )
 
-        self.all_evaluation_scores.append(self.evaluation_scores)
+        # Append the content of the last results to all results.
+        self.all_evaluation_scores.extend(self.evaluation_scores)
 
-        return self.evaluation_scores
+        return self.evaluation_scores  # type: ignore
 
     @abstractmethod
-    def evaluate_instance(
+    @no_type_check
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: Optional[np.ndarray],
+        **kwargs,
+    ) -> R:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         This method needs to be implemented to use __call__().
 
@@ -308,32 +334,34 @@ class Metric:
         ----------
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        s_batch: np.ndarray
+            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
-        Any
+        np.ndarray
+            The batched evaluation results.
         """
         raise NotImplementedError()
 
+    @final
     def general_preprocess(
         self,
-        model,
+        model: Union[keras.Model, nn.Module, None],
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
         explain_func: Callable,
         explain_func_kwargs: Optional[Dict[str, Any]],
-        model_predict_kwargs: Optional[Dict],
+        model_predict_kwargs: Optional[Dict[str, Any]],
         softmax: bool,
         device: Optional[str],
         custom_batch: Optional[np.ndarray],
@@ -395,9 +423,7 @@ class Metric:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
-        if model:
-
+        if model is not None:
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
                 model=model,
@@ -409,35 +435,28 @@ class Metric:
 
         # Save as attribute, some metrics need it during processing.
         self.explain_func = explain_func
-        if explain_func_kwargs is None:
-            explain_func_kwargs = {}
-        self.explain_func_kwargs = explain_func_kwargs
+        self.explain_func_kwargs = explain_func_kwargs or {}
 
         # Include device in explain_func_kwargs.
         if device is not None and "device" not in self.explain_func_kwargs:
             self.explain_func_kwargs["device"] = device
 
-        if a_batch is None:
+        if a_batch is not None:
+            a_batch = utils.expand_attribution_channel(a_batch, x_batch)
+            asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+            self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-            # Asserts.
+            # Normalise with specified keyword arguments if requested.
+            if self.normalise:
+                a_batch = self.normalise_func(a_batch)
+
+            # Take absolute if requested.
+            if self.abs:
+                a_batch = np.abs(a_batch)
+
+        else:
+            # If no explanations provided, we will compute them on batch-level to avoid OOM.
             asserts.assert_explain_func(explain_func=self.explain_func)
-
-            # Generate explanations.
-            a_batch = self.explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-        # Expand attributions to input dimensionality.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Initialize data dictionary.
         data = {
@@ -451,38 +470,26 @@ class Metric:
 
         # Call custom pre-processing from inheriting class.
         custom_preprocess_dict = self.custom_preprocess(**data)
-
         # Save data coming from custom preprocess to data dict.
-        if custom_preprocess_dict:
-            for key, value in custom_preprocess_dict.items():
-                data[key] = value
+        if custom_preprocess_dict is not None:
+            data.update(custom_preprocess_dict)
 
         # Remove custom_batch if not used.
         if data["custom_batch"] is None:
             del data["custom_batch"]
 
-        # Normalise with specified keyword arguments if requested.
-        if self.normalise:
-            data["a_batch"] = self.normalise_func(
-                a=data["a_batch"],
-                normalise_axes=list(range(np.ndim(data["a_batch"])))[1:],
-                **self.normalise_func_kwargs,
-            )
-
-        # Take absolute if requested.
-        if self.abs:
-            data["a_batch"] = np.abs(data["a_batch"])
-
         return data
 
     def custom_preprocess(
         self,
+        *,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
+        y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        s_batch: Optional[np.ndarray],
+        custom_batch: Any,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data,
@@ -512,6 +519,9 @@ class Metric:
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
             Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
+        kwargs:
+            Optional, metric-specific parameters.
+
 
         Returns
         -------
@@ -618,82 +628,16 @@ class Metric:
         """
         pass
 
-    def get_instance_iterator(self, data: Dict[str, Any]):
-        """
-        Creates iterator to iterate over all instances in data dictionary.
-        Each iterator output element is a keyword argument dictionary with
-        string keys.
-
-        Each item key in the input data dictionary has to be of type string.
-        - If the item value is not a sequence, the respective item key/value pair
-          will be written to each iterator output dictionary.
-        - If the item value is a sequence and the item key ends with '_batch',
-          a check will be made to make sure length matches number of instances.
-          The value of each instance in the sequence will be added to the respective
-          iterator output dictionary with the '_batch' suffix removed.
-        - If the item value is a sequence but doesn't end with '_batch', it will be treated
-          as a simple value and the respective item key/value pair will be
-          written to each iterator output dictionary.
-
-        Parameters
-        ----------
-        data: dict[str, any]
-            The data input dictionary.
-
-        Returns
-        -------
-        iterator
-            Each iterator output element is a keyword argument dictionary (string keys).
-
-        """
-        n_instances = len(data["x_batch"])
-
-        for key, value in data.items():
-            # If data-value is not a Sequence or a string, create list of repeated values with length of n_instances.
-            if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
-                data[key] = [value for _ in range(n_instances)]
-
-            # If data-value is a sequence and ends with '_batch', only check for correct length.
-            elif key.endswith("_batch"):
-                if len(value) != n_instances:
-                    # Sequence has to have correct length.
-                    raise ValueError(
-                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
-                    )
-
-            # If data-value is a sequence and doesn't end with '_batch', create
-            # list of repeated sequences with length of n_instances.
-            else:
-                data[key] = [value for _ in range(n_instances)]
-
-        # We create a list of dictionaries where each dictionary holds all data for a single instance.
-        # We remove the '_batch' suffix if present.
-        data_instances = [
-            {
-                re.sub("_batch", "", key): value[id_instance]
-                for key, value in data.items()
-            }
-            for id_instance in range(n_instances)
-        ]
-
-        iterator = tqdm(
-            enumerate(data_instances),
-            total=n_instances,
-            disable=not self.display_progressbar,  # Create progress bar if desired.
-            desc=f"Evaluating {self.__class__.__name__}",
-        )
-
-        return iterator
-
     def custom_postprocess(
         self,
+        *,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
+        s_batch: Optional[np.ndarray],
         **kwargs,
-    ) -> Optional[Any]:
+    ):
         """
         Implement this method if you need custom postprocessing of results or
         additional attributes.
@@ -715,16 +659,89 @@ class Metric:
 
         Returns
         -------
-        any
+        any:
             Can be implemented, optionally by the child class.
         """
         pass
+
+    @final
+    def generate_batches(
+        self,
+        data: D,
+        batch_size: int,
+    ) -> Generator[D, None, None]:
+        """
+        Creates iterator to iterate over all batched instances in data dictionary.
+        Each iterator output element is a keyword argument dictionary with
+        string keys.
+
+        Each item key in the input data dictionary has to be of type string.
+        - If the item value is not a sequence, the respective item key/value pair
+          will be written to each iterator output dictionary.
+        - If the item value is a sequence and the item key ends with '_batch',
+          a check will be made to make sure length matches number of instances.
+          The values of the batch instances in the sequence will be added to the respective
+          iterator output dictionary with the '_batch' suffix removed.
+        - If the item value is a sequence but doesn't end with '_batch', it will be treated
+          as a simple value and the respective item key/value pair will be
+          written to each iterator output dictionary.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            The data input dictionary.
+        batch_size: int
+            The batch size to be used.
+
+        Returns
+        -------
+        iterator:
+            Each iterator output element is a keyword argument dictionary (string keys).
+
+        """
+        n_instances = len(data["x_batch"])
+
+        single_value_kwargs: Dict[str, Any] = {}
+        batched_value_kwargs: Dict[str, Any] = {}
+
+        for key, value in list(data.items()):
+            # If data-value is not a Sequence or a string, create list of value with length of n_instances.
+            if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
+                single_value_kwargs[key] = value
+
+            # If data-value is a sequence and ends with '_batch', only check for correct length.
+            elif key.endswith("_batch"):
+                if len(value) != n_instances:
+                    # Sequence has to have correct length.
+                    raise ValueError(
+                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
+                    )
+                else:
+                    batched_value_kwargs[key] = value
+
+            # If data-value is a sequence and doesn't end with '_batch', create
+            # list of repeated sequences with length of n_instances.
+            else:
+                single_value_kwargs[key] = [value for _ in range(n_instances)]
+
+        n_batches = np.ceil(n_instances / batch_size)
+
+        with tqdm(total=n_batches, disable=not self.display_progressbar) as pbar:
+            for batch_idx in gen_batches(n_instances, batch_size):
+                batch = {
+                    key: value[batch_idx.start : batch_idx.stop]
+                    for key, value in batched_value_kwargs.items()
+                }
+                # Yield batch dictionary including single value keyword arguments.
+                yield {**batch, **single_value_kwargs}
+                # Update progressbar by number of samples in this batch.
+                pbar.update(batch_idx.stop - batch_idx.start)
 
     def plot(
         self,
         plot_func: Optional[Callable] = None,
         show: bool = True,
-        path_to_save: Union[str, None] = None,
+        path_to_save: Optional[str] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -738,12 +755,13 @@ class Metric:
             A Callable with the actual plotting logic. Default set to None, which implies default_plot_func is set.
         show: boolean
             A boolean to state if the plot shall be shown.
-        path_to_save (str):
+        path_to_save: (str)
             A string that specifies the path to save file.
         args: optional
             An optional with additional arguments.
         kwargs: optional
             An optional dict with additional arguments.
+
 
         Returns
         -------
@@ -765,23 +783,18 @@ class Metric:
         if path_to_save:
             plt.savefig(fname=path_to_save, dpi=400)
 
-        return None
-
-    @property
-    def interpret_scores(self) -> None:
-        """
-        Get an interpretation of the scores.
-        """
+    def interpret_scores(self):
+        """Get an interpretation of the scores."""
         print(self.__init__.__doc__.split(".")[1].split("References")[0])
 
     @property
-    def get_params(self) -> dict:
+    def get_params(self) -> Dict[str, Any]:
         """
         List parameters of metric.
 
         Returns
         -------
-        dict
+        dict:
             A dictionary with attributes if not excluded from pre-determined list.
         """
         attr_exclude = [
@@ -793,16 +806,157 @@ class Metric:
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-    @property
-    def last_results(self):
-        print(
-            "Warning: 'last_results' has been renamed to 'evaluation_scores'. 'last_results' is removed in current version."
+    @final
+    def batch_preprocess(self, data_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        If `data_batch` has no `a_batch`, will compute explanations.
+        This needs to be done on batch level to avoid OOM. Additionally will set `a_axes` property if it is None,
+        this can be done earliest after we have first `a_batch`.
+
+        Parameters
+        ----------
+        data_batch:
+            A single entry yielded from the generator return by `self.generate_batches(...)`
+
+        Returns
+        -------
+        data_batch:
+            Dictionary, which is ready to be passed down to `self.evaluate_batch`.
+        """
+
+        x_batch = data_batch["x_batch"]
+
+        a_batch = data_batch.get("a_batch")
+
+        if a_batch is None:
+            # Generate batch of explanations lazily, so we don't hit OOM
+            model = data_batch["model"]
+            y_batch = data_batch["y_batch"]
+            a_batch = self.explain_batch(model, x_batch, y_batch)
+            data_batch["a_batch"] = a_batch
+
+        if self.a_axes is None:
+            self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+
+        custom_batch = self.custom_batch_preprocess(**data_batch)
+        if custom_batch is not None:
+            data_batch.update(custom_batch)
+        return data_batch
+
+    def custom_batch_preprocess(
+        self,
+        *,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        **kwargs,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Implement this method if you need custom preprocessing of data
+        or simply for creating/initialising additional attributes or assertions
+        before a `data_batch` can be evaluated.
+
+        Parameters
+        ----------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        kwargs:
+            Optional, metric-specific parameters.
+
+        Returns
+        -------
+        dict:
+            Optional dictionary with additional kwargs, which will be passed to `self.evaluate_batch(...)`
+        """
+        pass
+
+    @final
+    def explain_batch(
+        self,
+        model: Union[ModelInterface, keras.Model, nn.Module],
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Compute explanations, normalise and take absolute (if was configured so during metric initialization.)
+        This method should primarily be used if you need to generate additional explanation
+        in metrics body. It encapsulates typical for Quantus pre- and postprocessing approach.
+        It will do few things:
+            - call model.shape_input (if ModelInterface instance was provided)
+            - unwrap model (if ModelInterface instance was provided)
+            - call explain_func
+            - expand attribution channel
+            - (optionally) normalise a_batch
+            - (optionally) take np.abs of a_batch
+
+
+        Parameters
+        -------
+        model:
+            A model that is subject to explanation.
+        x_batch:
+            A np.ndarray which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+
+        Returns
+        -------
+        a_batch:
+            Batch of explanations ready to be evaluated.
+        """
+
+        if isinstance(model, ModelInterface):
+            # Sometimes the model is our wrapper, but sometimes raw Keras/Torch model.
+            x_batch = model.shape_input(
+                x=x_batch,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+            model = model.get_model()
+
+        a_batch = self.explain_func(
+            model=model, inputs=x_batch, targets=y_batch, **self.explain_func_kwargs
         )
-        return self.evaluation_scores
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch)
+        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+
+        # Normalise and take absolute values of the attributions, if configured during metric instantiation.
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch)
+
+        if self.abs:
+            a_batch = np.abs(a_batch)
+
+        return a_batch
 
     @property
-    def all_results(self):
-        print(
-            "Warning: 'all_results' has been renamed to 'all_evaluation_scores'. 'all_results' is removed in current version."
+    def display_progressbar(self) -> bool:
+        """A helper to avoid polluting test outputs with tqdm progress bars."""
+        return (
+            self._display_progressbar
+            and
+            # Don't show progress bar in github actions.
+            "GITHUB_ACTIONS" not in os.environ
+            and
+            # Don't show progress bar when running unit tests.
+            "PYTEST" not in os.environ
         )
-        return self.all_evaluation_scores
+
+    @property
+    def disable_warnings(self) -> bool:
+        """A helper to avoid polluting test outputs with warnings."""
+        return (
+            self._disable_warnings
+            # Don't show progress bar in github actions.
+            or "GITHUB_ACTIONS" not in os.environ
+            # Don't show progress bar when running unit tests.
+            or "PYTEST" in os.environ
+        )

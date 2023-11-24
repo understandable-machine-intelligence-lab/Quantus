@@ -6,30 +6,40 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+
 import numpy as np
-from functools import partial
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
 
+import sys
 
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.warn import warn_parameterisation
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
+from quantus.functions.perturb_func import perturb_batch, uniform_noise
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.perturbation_utils import (
+    make_changed_prediction_indices_func,
+    make_perturb_func,
+)
+from quantus.helpers.warn import warn_parameterisation
+from quantus.metrics.base import Metric
+
+if sys.version_info >= (3, 8):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
-class RelativeInputStability(BatchedPerturbationMetric):
+@final
+class RelativeInputStability(Metric[List[float]]):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data.
 
@@ -61,10 +71,10 @@ class RelativeInputStability(BatchedPerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: Callable = None,
+        perturb_func: Optional[Callable] = None,
         perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
+        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         eps_min: float = 1e-6,
@@ -108,19 +118,11 @@ class RelativeInputStability(BatchedPerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_average_second_moment_estimate
 
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {"upper_bound": 0.2}
-
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -128,9 +130,18 @@ class RelativeInputStability(BatchedPerturbationMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if perturb_func is None:
+            perturb_func = uniform_noise
+
         self._nr_samples = nr_samples
         self._eps_min = eps_min
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.perturb_func = make_perturb_func(
+            perturb_func, perturb_func_kwargs, upper_bound=0.2
+        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
+            return_nan_when_prediction_changes
+        )
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -262,40 +273,12 @@ class RelativeInputStability(BatchedPerturbationMetric):
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator
 
-    def generate_normalised_explanations_batch(
-        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
-    ) -> np.ndarray:
-        """
-        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
-
-        Parameters
-        ----------
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
-        explain_func: callable
-            Function to generate explanations, takes only inputs,targets kwargs.
-
-        Returns
-        -------
-        a_batch: np.ndarray
-            A batch of explanations.
-        """
-        a_batch = explain_func(inputs=x_batch, targets=y_batch)
-        if self.normalise:
-            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
-        if self.abs:
-            a_batch = np.abs(a_batch)
-        return expand_attribution_channel(a_batch, x_batch)
-
     def evaluate_batch(
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        *args,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -309,8 +292,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
         kwargs:
             Unused.
 
@@ -321,9 +302,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
 
         """
         batch_size = x_batch.shape[0]
-        _explain_func = partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
 
         # Prepare output array.
         ris_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
@@ -335,13 +313,10 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **self.perturb_func_kwargs,
             )
 
             # Generate explanations for perturbed input.
-            a_batch_perturbed = self.generate_normalised_explanations_batch(
-                x_perturbed, y_batch, _explain_func
-            )
+            a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
 
             # Compute maximization's objective.
             ris = self.relative_input_stability_objective(
@@ -349,20 +324,13 @@ class RelativeInputStability(BatchedPerturbationMetric):
             )
             ris_batch[index] = ris
 
-            # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self._return_nan_when_prediction_changes:
-                continue
-
             # If perturbed input caused change in prediction, then it's RIS=nan.
-            predicted_y = model.predict(x_batch).argmax(axis=-1)
-            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
-            changed_prediction_indices = np.argwhere(
-                predicted_y != predicted_y_perturbed
-            ).reshape(-1)
+            changed_prediction_indices = self.changed_prediction_indices_func(
+                model, x_batch, x_perturbed
+            )
 
-            if len(changed_prediction_indices) == 0:
-                continue
-            ris_batch[index, changed_prediction_indices] = np.nan
+            if len(changed_prediction_indices) != 0:
+                ris_batch[index, changed_prediction_indices] = np.nan
 
         # Compute RIS.
         result = np.max(ris_batch, axis=0)

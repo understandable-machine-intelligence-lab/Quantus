@@ -1,24 +1,32 @@
 """This model implements the basics for the ModelInterface class."""
-
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import warnings
+from importlib import util
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List, Union
+from typing import Any, Dict, Optional, Tuple, List, Union, Generator, TypeVar, Generic
 
 import numpy as np
 
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
+if util.find_spec("torch"):
+    import torch
 
-class ModelInterface(ABC):
+M = TypeVar("M")
+
+
+class ModelInterface(ABC, Generic[M]):
     """Base ModelInterface for torch and tensorflow models."""
 
     def __init__(
         self,
-        model,
-        channel_first: bool = True,
+        model: M,
+        channel_first: Optional[bool] = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
@@ -107,7 +115,9 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_random_layer_generator(self):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, M], None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -171,3 +181,40 @@ class ModelInterface(ABC):
             2D tensor with shape (batch_size, None)
         """
         raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def random_layer_generator_length(self) -> int:
+        """
+        Count number of randomisable layers for `Model Parameter Randomisation`.
+        This property is needed to avoid `len(model.get_random_layer_generator())`,
+        because meterializing bigger models `num_layers` times in memory at ones
+        has shown to cause OOM errors.
+
+        Returns
+        -------
+        n:
+            Number of layers in model, which can be randomised.
+        """
+        raise NotImplementedError
+
+    @property
+    def get_ml_framework_name(self) -> str:
+        """
+        Identify the framework of the underlying model (PyTorch or TensorFlow).
+
+        Returns
+        -------
+        str
+            A string indicating the framework ('PyTorch', 'TensorFlow', or 'Unknown').
+        """
+        if util.find_spec("torch"):
+            if isinstance(self.model, torch.nn.Module):
+                return "torch"
+        if util.find_spec("tensorflow"):
+            if isinstance(self.model, tf.keras.Model):
+                return "tensorflow"
+        else:
+            warnings.warn("Cannot identify ML framework of the given model.")
+            return "unknown"
+        return ""
