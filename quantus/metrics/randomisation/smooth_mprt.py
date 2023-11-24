@@ -499,9 +499,9 @@ class SmoothMPRT(Metric):
         try:
             return self.similarity_func(a_perturbed_flat, a_flat)
         except Exception as e:
-            print(f"Exception: {e}")
+            print(f"Encountered exception: {e} in similarity measure calculation")
             warnings.warn(
-                "Encountered constant input in similarity measure calculation.",
+                "Setting similarity output to 1.",
                 UserWarning,
             )
             return 1.0
