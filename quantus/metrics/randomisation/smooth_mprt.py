@@ -52,9 +52,9 @@ class SmoothMPRT(Metric):
     """
     Implementation of the Smooth MPRT by Hedström et al., 2023.
 
-    The Sampling Model Parameter Randomisation measures the distance between the original attribution and a newly computed
-    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
-    at a time.
+    The Smooth Model Parameter Randomisation adds a "denoising" preprocessing step to the original MPRT, 
+    where the explanations are averaged over N noisy samples before the similarity between the original- 
+    and fully random model's explanations is measured.
 
     References:
         1) Hedström, Anna, et al. "Sanity Checks Revisited: An Exploration to Repair the Model Parameter
