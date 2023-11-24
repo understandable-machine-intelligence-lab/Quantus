@@ -6,7 +6,6 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import sys
 import warnings
 from typing import (
     Any,
@@ -499,14 +498,15 @@ class SmoothMPRT(Metric):
 
         try:
             return self.similarity_func(a_perturbed_flat, a_flat)
-        except stats._warnings_errors.ConstantInputWarning:
+        except Exception as e:
+            print(f"Exception: {e}")
             warnings.warn(
                 "Encountered constant input in similarity measure calculation.",
                 UserWarning,
             )
             return 1.0
 
-            # Compute similarity measure.
+        # Compute similarity measure.
         return self.similarity_func(a_perturbed_flat, a_flat)
 
     def custom_preprocess(
