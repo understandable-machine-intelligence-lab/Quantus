@@ -557,7 +557,7 @@ class ModelParameterRandomisation(MPRT):
     def __init__(self, *args, **kwargs):
         print(
             "ModelParameterRandomisation metric has been renamed to MPRT and will "
-            "be removed in future releases. Please call quantus.MPRT() instead.\n "
+            "be removed in future releases. Please call quantus.MPRT() instead.\n"
             "This change is effective from Quantus version 0.5.0. Note: MPRT is "
             "functionally identical to ModelParameterRandomisation and can be used in the same way.",
         )
