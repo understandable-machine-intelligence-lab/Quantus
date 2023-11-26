@@ -289,11 +289,11 @@ class Metric(Generic[R]):
 
         self.evaluation_scores = []
         for d_ix, data_batch in enumerate(batch_generator):
-            if self.verbose:
-                print(f"\tPreprocessing batch {d_ix}...")
+            # if self.verbose:
+            #    print(f"\tPreprocessing batch {d_ix}...")
             data_batch = self.batch_preprocess(data_batch)
-            if self.verbose:
-                print(f"\tEvaluating batch {d_ix}...")
+            # if self.verbose:
+            #    print(f"\tEvaluating batch {d_ix}...")
             result = self.evaluate_batch(**data_batch)
             self.evaluation_scores.extend(result)
 

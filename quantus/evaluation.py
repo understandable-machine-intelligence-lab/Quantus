@@ -5,10 +5,12 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
 import warnings
-from typing import Union, Callable, Dict, Optional, List
+from typing import Union, Callable, Dict, Optional
 
 import numpy as np
+import pandas as pd
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
@@ -25,9 +27,10 @@ def evaluate(
     y_batch: np.ndarray,
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
-    verbose: bool = False,
     explain_func_kwargs: Optional[dict] = None,
     call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    return_as_df: bool = False,
+    verbose: bool = False,
     **kwargs,
 ) -> Optional[dict]:
     """
@@ -117,14 +120,17 @@ def evaluate(
     agg_func: Callable
         Indicates how to aggregate scores, e.g., pass np.mean.
 
-    verbose: bool
-        Indicates whether to print evaluation progress.
-
     explain_func_kwargs: dict, optional
         Keyword arguments to be passed to explain_func on call. Pass None if using Dict[str, Dict] type for xai_methods.
 
     call_kwargs: Dict[str, Dict]
         Keyword arguments for the call of the metrics. Keys are names for argument sets, and values are argument dictionaries.
+
+    verbose: bool
+        Indicates whether to print evaluation progress.
+
+    return_as_df: bool
+        Indicates whether to return the results as a pd.DataFrame. Only works if call_kwargs is not passed.
 
     kwargs: optional
         Deprecated keyword arguments for the call of the metrics.
@@ -249,7 +255,7 @@ def evaluate(
                         **kwargs,
                     )
 
-                    if call_kwarg_str == "call_kwargs_empty":
+                    if len(call_kwargs) == 1:
                         results[method][metric] = agg_func(scores)
                     else:
                         results[method][metric][call_kwarg_str] = agg_func(scores)
@@ -262,4 +268,13 @@ def evaluate(
                         f" the input. This requirement is common in metrics related to robustness and randomisation. "
                         f"Please review the documentation for the specific metric to verify this requirement."
                     )
+    if return_as_df:
+        if len(call_kwargs) > 1:
+            print(
+                "Returning the results as a pd.DataFrame is only possible if no dict is passed to 'call_kwargs' argument."
+            )
+            return results
+        else:
+            return pd.DataFrame.from_dict(results)
+
     return results
