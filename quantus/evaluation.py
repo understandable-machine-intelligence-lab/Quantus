@@ -253,10 +253,7 @@ def evaluate(
                         **kwargs,
                     )
 
-                    if len(call_kwargs) == 1:
-                        results[method][metric] = agg_func(scores)
-                    else:
-                        results[method][metric][call_kwarg_str] = agg_func(scores)
+                    results[method][metric][call_kwarg_str] = agg_func(scores)
 
                 except Exception as e:
                     print(
@@ -266,13 +263,26 @@ def evaluate(
                         f" the input. This requirement is common in metrics related to robustness and randomisation. "
                         f"Please review the documentation for the specific metric to verify this requirement."
                     )
+
+    results_ordered = {}
+    if len(call_kwargs) == 1:
+
+        # Clean up the results if there is only one call_kwarg.
+        for method, value in xai_methods.items():
+            results_ordered[method] = {}
+            for (metric, metric_func) in metrics.items():
+                for (call_kwarg_str, call_kwarg) in call_kwargs.items():
+                    results_ordered[method][metric] = results[method][metric][
+                        call_kwarg_str
+                    ]
+
     if return_as_df:
         if len(call_kwargs) > 1:
             print(
                 "Returning the results as a pd.DataFrame is only possible if no dict is passed to 'call_kwargs' argument."
             )
-            return results
+            return results_ordered
         else:
-            return pd.DataFrame.from_dict(results)
+            return pd.DataFrame.from_dict(results_ordered)
 
-    return results
+    return results_ordered

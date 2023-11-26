@@ -24,7 +24,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -38,7 +37,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -52,7 +50,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -66,7 +63,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -80,7 +76,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func']}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -94,7 +89,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "None",
                 "eval_xai_methods": "None",
-                "call_kwargs": "{'0': {}}",
             },
             {"None": None},
         ),
@@ -108,7 +102,6 @@ from quantus.metrics.robustness import MaxSensitivity
                 "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func_kwargs']}",
-                "call_kwargs": "{'0': {}}",
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -122,7 +115,7 @@ def test_evaluate_func(
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
-    call_kwargs = params.get("call_kwargs", {})
+    call_kwargs = params.get("call_kwargs", None)
     a_batch = explain(
         model=model,
         inputs=x_batch,
@@ -139,31 +132,25 @@ def test_evaluate_func(
             y_batch=y_batch,
             agg_func=np.mean,
             explain_func_kwargs=params["explain_func_kwargs"],
-            call_kwargs=eval(params["call_kwargs"]),
+            call_kwargs=call_kwargs,
         )
         assert results == None, "Test failed."
 
-    results = evaluate(
-        metrics=eval(params["eval_metrics"]),
-        xai_methods=eval(params["eval_xai_methods"]),
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        agg_func=np.mean,
-        explain_func_kwargs=params["explain_func_kwargs"],
-        call_kwargs=eval(params["call_kwargs"]),
-    )
+    else:
+        results = evaluate(
+            metrics=eval(params["eval_metrics"]),
+            xai_methods=eval(params["eval_xai_methods"]),
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            agg_func=np.mean,
+            explain_func_kwargs=params["explain_func_kwargs"],
+            call_kwargs=call_kwargs,
+        )
 
-    if "min" in expected and "max" in expected:
-        assert (
-            results[params["explain_func_kwargs"]["method"]][
-                list(eval(params["eval_metrics"]).keys())[0]
-            ][list(eval(params["call_kwargs"]).keys())[0]]
-            >= expected["min"]
-        ), "Test failed."
-        assert (
-            results[params["explain_func_kwargs"]["method"]][
-                list(eval(params["eval_metrics"]).keys())[0]
-            ][list(eval(params["call_kwargs"]).keys())[0]]
-            <= expected["max"]
-        ), "Test failed."
+        xai_method = params["explain_func_kwargs"]["method"]
+        metric = list(eval(params["eval_metrics"]).keys())[0]
+
+        if "min" in expected and "max" in expected:
+            assert results[xai_method][metric] >= expected["min"], "Test failed."
+            assert results[xai_method][metric] <= expected["max"], "Test failed."
