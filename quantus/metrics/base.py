@@ -90,7 +90,6 @@ class Metric(Generic[R]):
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
-        verbose: bool,
         **kwargs,
     ):
         """
@@ -129,8 +128,6 @@ class Metric(Generic[R]):
             Indicates whether the warnings are printed.
         display_progressbar: boolean
             Indicates whether a tqdm-progress-bar is printed.
-        verbose: bool
-            Indicates whether to print evaluation progress.
         kwargs: optional
             Keyword arguments.
         """
@@ -155,7 +152,7 @@ class Metric(Generic[R]):
         self.normalise_func = normalise_func
 
         self.default_plot_func = default_plot_func
-        self.verbose = verbose
+
         # We need underscores here to avoid conflict with @property descriptor.
         self._disable_warnings = disable_warnings
         self._display_progressbar = display_progressbar
@@ -289,11 +286,7 @@ class Metric(Generic[R]):
 
         self.evaluation_scores = []
         for d_ix, data_batch in enumerate(batch_generator):
-            # if self.verbose:
-            #    print(f"\tPreprocessing batch {d_ix}...")
             data_batch = self.batch_preprocess(data_batch)
-            # if self.verbose:
-            #    print(f"\tEvaluating batch {d_ix}...")
             result = self.evaluate_batch(**data_batch)
             self.evaluation_scores.extend(result)
 

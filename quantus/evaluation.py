@@ -237,8 +237,6 @@ def evaluate(
                         f"call parameters: {call_kwarg}..."
                     )
 
-                metric_func.verbose = verbose
-
                 try:
                     scores = metric_func(
                         model=model,
