@@ -281,7 +281,7 @@ def evaluate(
             print(
                 "Returning the results as a pd.DataFrame is only possible if no dict is passed to 'call_kwargs' argument."
             )
-            return results_ordered
+            return results
         else:
             return pd.DataFrame.from_dict(results_ordered)
 
