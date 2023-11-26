@@ -18,6 +18,7 @@ class BatchedMetric(Metric, abc.ABC):
 
     def __new__(cls, *args, **kwargs):
         logging.warning(
-            "BatchedMetric was deprecated, since it is just an alias to Metric. Please subclass Metric directly."
+            "BatchedMetric was deprecated, since it is just an alias to Metric."
+            " Please subclass Metric directly."
         )
         super().__new__(*args, **kwargs)

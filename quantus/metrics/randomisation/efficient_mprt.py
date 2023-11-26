@@ -357,10 +357,6 @@ class EfficientMPRT(Metric):
             ):
                 pbar.desc = layer_name
 
-                # Skip layers if computing delta.
-                if self.skip_layers and (l_ix + 1) < n_layers:
-                    continue
-
                 if l_ix == 0:
                     # Generate explanations on original model in batches.
                     a_original_generator = self.generate_explanations(
@@ -391,6 +387,10 @@ class EfficientMPRT(Metric):
                     for y_ix, y_pred in enumerate(y_preds):
                         score = entropy(a=y_pred, x=y_pred)
                         self.model_scores_by_layer["orig"].append(score)
+
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
 
             # Generate explanations on perturbed model in batches.
             a_perturbed_generator = self.generate_explanations(
@@ -447,7 +447,7 @@ class EfficientMPRT(Metric):
             self.scores_extra = {}
 
             # Compute absolute deltas for explanation scores.
-            self.scores_extra["delta_explanation_scores"] = [
+            self.scores_extra["scores_delta_explanation"] = [
                 b - a for a, b in zip(explanation_scores[0], explanation_scores[-1])
             ]
 
@@ -470,7 +470,7 @@ class EfficientMPRT(Metric):
             ]
 
             # Compute delta skill score per sample (model versus explanation).
-            self.scores_extra["delta_explanation_vs_models"] = [
+            self.scores_extra["scores_delta_explanation_vs_models"] = [
                 b / a if a != 0 else np.nan
                 for a, b in zip(
                     self.scores_extra["scores_fraction_model"],

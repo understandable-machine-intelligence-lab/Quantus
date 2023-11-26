@@ -11,6 +11,7 @@ from importlib import util
 from typing import Optional, Union
 
 import numpy as np
+import quantus
 import scipy
 
 from quantus.helpers import constants
@@ -694,7 +695,9 @@ def generate_captum_explanation(
 
     else:
         raise KeyError(
-            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_CAPTUM}."
+            f"The selected {method} XAI method is not in the list of supported built-in Quantus XAI methods. "
+            f"Please choose an XAI method that has already been implemented, such as {constants.AVAILABLE_XAI_METHODS_CAPTUM} "
+            f"or {constants.AVAILABLE_XAI_METHODS_TF}, or consider checking https://github.com/chr5tphr/zennit for Zennit methods."
         )
 
     if isinstance(explanation, torch.Tensor):
