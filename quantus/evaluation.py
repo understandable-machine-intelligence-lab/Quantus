@@ -297,7 +297,7 @@ def evaluate(
         if len(call_kwargs) > 1:
             print(
                 "Returning the results as a pd.DataFrame is only possible if the 'call_kwargs' "
-                "is None or is a dictionary with length of 1, i.e., triggers one run."
+                "is None or is a dictionary of length of 1 (i.e., triggers one evaluation run)."
             )
             return results
         else:
