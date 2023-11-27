@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import warnings
-from typing import Union, Callable, Dict, Optional
+from typing import Union, Callable, Dict, Optional, Any
 
 import numpy as np
 import pandas as pd
@@ -264,7 +264,7 @@ def evaluate(
                         f"Please review the documentation for the specific metric to verify this requirement."
                     )
 
-    results_ordered = {}
+    results_ordered: Dict[str, Any] = {}
     if len(call_kwargs) == 1:
 
         # Clean up the results if there is only one call_kwarg.
