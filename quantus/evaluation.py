@@ -264,7 +264,7 @@ def evaluate(
                         f"Please review the documentation for the specific metric to verify this requirement."
                     )
 
-    results_ordered: Dict[type, type] = {}
+    results_ordered: Dict[str, Any] = {}  # type: ignore
     if len(call_kwargs) == 1:
 
         # Clean up the results if there is only one call_kwarg.
