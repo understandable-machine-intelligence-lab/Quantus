@@ -272,6 +272,7 @@ def generate_tf_explanation(
         if "channel_first" in kwargs
         else infer_channel_first(inputs)
     )
+
     inputs = make_channel_last(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)
@@ -695,9 +696,8 @@ def generate_captum_explanation(
 
     else:
         raise KeyError(
-            f"The selected {method} XAI method is not in the list of supported built-in Quantus XAI methods. "
-            f"Please choose an XAI method that has already been implemented, such as {constants.AVAILABLE_XAI_METHODS_CAPTUM} "
-            f"or {constants.AVAILABLE_XAI_METHODS_TF}, or consider checking https://github.com/chr5tphr/zennit for Zennit methods."
+            f"The selected {method} XAI method is not in the list of supported built-in Quantus XAI methods for Captum. "
+            f"Please choose an XAI method that has already been implemented {constants.AVAILABLE_XAI_METHODS_CAPTUM}."
         )
 
     if isinstance(explanation, torch.Tensor):

@@ -27,7 +27,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
     def __init__(
         self,
         model: nn.Module,
-        channel_first: bool = False,
+        channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         device: Optional[str] = None,
@@ -49,6 +49,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
         """
+        # self.channel_first = channel_first
         super().__init__(
             model=model,
             channel_first=channel_first,

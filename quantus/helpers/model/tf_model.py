@@ -61,9 +61,10 @@ class TensorFlowModel(ModelInterface[Model]):
         """
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
+
         # Disable progress bar while running inference on tf.keras.Model.
         model_predict_kwargs["verbose"] = 0
-
+        # self.channel_first = channel_first
         super().__init__(
             model=model,
             channel_first=channel_first,
