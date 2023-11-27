@@ -31,6 +31,8 @@ def evaluate(
     call_kwargs: Union[Dict, Dict[str, Dict]] = None,
     return_as_df: bool = False,
     verbose: bool = False,
+    progress: Optional[bool] = None,
+    *args,
     **kwargs,
 ) -> Optional[dict]:
     """
@@ -129,8 +131,14 @@ def evaluate(
     verbose: bool
         Indicates whether to print evaluation progress.
 
+    progress: optional, bool
+        Deprecated. Indicates whether to print evaluation progress. Use verbose instead.
+
     return_as_df: bool
         Indicates whether to return the results as a pd.DataFrame. Only works if call_kwargs is not passed.
+
+    args: optional
+        Deprecated arguments for the call.
 
     kwargs: optional
         Deprecated keyword arguments for the call of the metrics.
@@ -157,6 +165,14 @@ def evaluate(
 
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
+
+    if progress is not None:
+        warnings.warn(
+            "'progress' parameter is deprecated and will be removed in future versions. "
+            "Please use 'verbose' instead. ",
+            DeprecationWarning,
+        )
+        verbose = progress  # Use the value of 'progress' for 'verbose'
 
     results: Dict[str, dict] = {}
     explain_funcs: Dict[str, Callable] = {}
