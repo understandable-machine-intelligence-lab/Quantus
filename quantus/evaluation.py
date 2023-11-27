@@ -29,8 +29,8 @@ def evaluate(
     agg_func: Callable = lambda x: x,
     explain_func_kwargs: Optional[dict] = None,
     call_kwargs: Union[Dict, Dict[str, Dict]] = None,
-    return_as_df: bool = False,
-    verbose: bool = False,
+    return_as_df: Optional[bool] = None,
+    verbose: Optional[bool] = None,
     progress: Optional[bool] = None,
     *args,
     **kwargs,
@@ -128,13 +128,13 @@ def evaluate(
     call_kwargs: Dict[str, Dict]
         Keyword arguments for the call of the metrics. Keys are names for argument sets, and values are argument dictionaries.
 
-    verbose: bool
+    verbose: optional, bool
         Indicates whether to print evaluation progress.
 
     progress: optional, bool
         Deprecated. Indicates whether to print evaluation progress. Use verbose instead.
 
-    return_as_df: bool
+    return_as_df: optional, bool
         Indicates whether to return the results as a pd.DataFrame. Only works if call_kwargs is not passed.
 
     args: optional
@@ -164,7 +164,7 @@ def evaluate(
         call_kwargs = {"call_kwargs_empty": {}}
 
     elif not isinstance(call_kwargs, Dict):
-        raise TypeError("xai_methods type is not Dict[str, Dict].")
+        raise TypeError("call_kwargs type should be of Dict[str, Dict] (if not None).")
 
     if progress is not None:
         warnings.warn(
@@ -281,6 +281,7 @@ def evaluate(
                     )
 
     results_ordered: Dict[str, Any] = {}  # type: ignore
+
     if len(call_kwargs) == 1:
 
         # Clean up the results if there is only one call_kwarg.
@@ -295,10 +296,14 @@ def evaluate(
     if return_as_df:
         if len(call_kwargs) > 1:
             print(
-                "Returning the results as a pd.DataFrame is only possible if no dict is passed to 'call_kwargs' argument."
+                "Returning the results as a pd.DataFrame is only possible if "
+                "no dict is passed to 'call_kwargs' argument."
             )
             return results
         else:
             return pd.DataFrame.from_dict(results_ordered)
+
+    if len(call_kwargs) > 1:
+        return results
 
     return results_ordered
