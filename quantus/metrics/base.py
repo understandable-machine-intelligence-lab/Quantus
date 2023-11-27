@@ -152,6 +152,7 @@ class Metric(Generic[R]):
         self.normalise_func = normalise_func
 
         self.default_plot_func = default_plot_func
+
         # We need underscores here to avoid conflict with @property descriptor.
         self._disable_warnings = disable_warnings
         self._display_progressbar = display_progressbar
@@ -284,7 +285,7 @@ class Metric(Generic[R]):
         )
 
         self.evaluation_scores = []
-        for data_batch in batch_generator:
+        for d_ix, data_batch in enumerate(batch_generator):
             data_batch = self.batch_preprocess(data_batch)
             result = self.evaluate_batch(**data_batch)
             self.evaluation_scores.extend(result)

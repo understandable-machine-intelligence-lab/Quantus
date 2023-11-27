@@ -11,6 +11,7 @@ from importlib import util
 from typing import Optional, Union
 
 import numpy as np
+import quantus
 import scipy
 
 from quantus.helpers import constants
@@ -271,6 +272,7 @@ def generate_tf_explanation(
         if "channel_first" in kwargs
         else infer_channel_first(inputs)
     )
+
     inputs = make_channel_last(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)
@@ -694,7 +696,8 @@ def generate_captum_explanation(
 
     else:
         raise KeyError(
-            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_CAPTUM}."
+            f"The selected {method} XAI method is not in the list of supported built-in Quantus XAI methods for Captum. "
+            f"Please choose an XAI method that has already been implemented {constants.AVAILABLE_XAI_METHODS_CAPTUM}."
         )
 
     if isinstance(explanation, torch.Tensor):
