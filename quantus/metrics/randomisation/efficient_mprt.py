@@ -400,42 +400,42 @@ class EfficientMPRT(Metric):
                 if self.skip_layers and (l_ix + 1) < n_layers:
                     continue
 
-            # Generate explanations on perturbed model in batches.
-            a_perturbed_generator = self.generate_explanations(
-                random_layer_model, x_full_dataset, y_full_dataset, batch_size
-            )
+                # Generate explanations on perturbed model in batches.
+                a_perturbed_generator = self.generate_explanations(
+                    random_layer_model, x_full_dataset, y_full_dataset, batch_size
+                )
 
-            # Compute the complexity of explanations of the perturbed model.
-            self.explanation_scores_by_layer[layer_name] = []
-            for a_batch, a_batch_perturbed in zip(
-                self.generate_a_batches(a_full_dataset), a_perturbed_generator
-            ):
-                for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
-                    score = self.evaluate_instance(
-                        model=random_layer_model,
-                        x=None,
-                        y=None,
-                        s=None,
-                        a=a_instance_perturbed,
-                    )
-                    self.explanation_scores_by_layer[layer_name].append(score)
-                    pbar.update(1)
+                # Compute the complexity of explanations of the perturbed model.
+                self.explanation_scores_by_layer[layer_name] = []
+                for a_batch, a_batch_perturbed in zip(
+                    self.generate_a_batches(a_full_dataset), a_perturbed_generator
+                ):
+                    for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
+                        score = self.evaluate_instance(
+                            model=random_layer_model,
+                            x=None,
+                            y=None,
+                            s=None,
+                            a=a_instance_perturbed,
+                        )
+                        self.explanation_scores_by_layer[layer_name].append(score)
+                        pbar.update(1)
 
-            # Wrap the model.
-            random_layer_model_wrapped = utils.get_wrapped_model(
-                model=random_layer_model,
-                channel_first=channel_first,
-                softmax=softmax,
-                device=device,
-                model_predict_kwargs=model_predict_kwargs,
-            )
+                # Wrap the model.
+                random_layer_model_wrapped = utils.get_wrapped_model(
+                    model=random_layer_model,
+                    channel_first=channel_first,
+                    softmax=softmax,
+                    device=device,
+                    model_predict_kwargs=model_predict_kwargs,
+                )
 
-            # Predict and save complexity scores of the perturbed model outputs.
-            self.model_scores_by_layer[layer_name] = []
-            y_preds = random_layer_model_wrapped.predict(x_full_dataset)
-            for y_ix, y_pred in enumerate(y_preds):
-                score = entropy(a=y_pred, x=y_pred)
-                self.model_scores_by_layer[layer_name].append(score)
+                # Predict and save complexity scores of the perturbed model outputs.
+                self.model_scores_by_layer[layer_name] = []
+                y_preds = random_layer_model_wrapped.predict(x_full_dataset)
+                for y_ix, y_pred in enumerate(y_preds):
+                    score = entropy(a=y_pred, x=y_pred)
+                    self.model_scores_by_layer[layer_name].append(score)
 
         # Save evaluation scores as the relative rise in complexity.
         explanation_scores = list(self.explanation_scores_by_layer.values())
