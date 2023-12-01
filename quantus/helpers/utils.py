@@ -261,20 +261,26 @@ def infer_channel_first(x: np.array) -> bool:
         "Try setting the `channel_first` argument"
     )
 
+    # Check for 2D input (n_features x n_batches), return True (no channel dimension).
     if len(np.shape(x)) == 2:
         return True
 
+    # Check for 1D input with a channel dimension
     if len(np.shape(x)) == 3:
+        # If second last dimension is smaller, channels are first.
         if np.shape(x)[-2] < np.shape(x)[-1]:
             return True
+        # If second last dimension is larger, channels are last.
         elif np.shape(x)[-2] > np.shape(x)[-1]:
             return False
         else:
             raise ValueError(err_msg)
 
     elif len(np.shape(x)) == 4:
+        # If last dimension is smallest, channels are last.
         if np.shape(x)[-1] < np.shape(x)[-2] and np.shape(x)[-1] < np.shape(x)[-3]:
             return False
+        # If third last dimension is smallest, channels are first.
         if np.shape(x)[-3] < np.shape(x)[-1] and np.shape(x)[-3] < np.shape(x)[-2]:
             return True
         raise ValueError(err_msg)
@@ -293,6 +299,9 @@ def make_channel_first(x: np.array, channel_first: bool = False):
     ----------
     x: np.ndarray
          The input image.
+    channel_first: boolean, optional
+        Indicates of the image dimensions are channel first, or channel last.
+        Inferred from the input shape if None.
 
     Returns
     -------
@@ -322,6 +331,9 @@ def make_channel_last(x: np.array, channel_first: bool = True):
     ----------
     x: np.ndarray
          The input image.
+    channel_first: boolean, optional
+        Indicates of the image dimensions are channel first, or channel last.
+        Inferred from the input shape if None.
 
     Returns
     -------

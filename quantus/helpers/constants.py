@@ -27,7 +27,7 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
         "Faithfulness Correlation": FaithfulnessCorrelation,
         "Faithfulness Estimate": FaithfulnessEstimate,
         "Pixel-Flipping": PixelFlipping,
-        "Region Segmentation": RegionPerturbation,
+        "Region Perturbation": RegionPerturbation,
         "Monotonicity-Arya": Monotonicity,
         "Monotonicity-Nguyen": MonotonicityCorrelation,
         "Selectivity": Selectivity,
@@ -74,6 +74,11 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
     },
 }
 
+# Perturbation steps with 'masking', based on attribution order/ ranking.
+AVAILABLE_INVERSE_ESTIMATION_METRICS = {
+    "Pixel-Flipping": PixelFlipping,
+    "Region Perturbation": RegionPerturbation,
+}
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
     "baseline_replacement_by_indices": baseline_replacement_by_indices,

@@ -266,32 +266,32 @@ class EfficientMPRT(Metric):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
 
         # Run deprecation warnings.
@@ -320,6 +320,14 @@ class EfficientMPRT(Metric):
         y_full_dataset = data["y_batch"]
         a_full_dataset = data["a_batch"]
 
+        # Reshape input according to model (PyTorch or Keras/Torch).
+        x_full_dataset = model.shape_input(
+            x=x_full_dataset,
+            shape=x_full_dataset.shape,
+            channel_first=channel_first,
+            batched=True,
+        )
+
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
@@ -336,7 +344,7 @@ class EfficientMPRT(Metric):
         if "n_bins" not in self.complexity_func_kwargs:
             if a_batch is None:
                 a_batch = self.explain_batch(
-                    model=model,
+                    model=model.get_model(),
                     x_batch=x_full_dataset,
                     y_batch=y_full_dataset,
                 )
@@ -356,10 +364,6 @@ class EfficientMPRT(Metric):
                 model.get_random_layer_generator(order=self.layer_order, seed=self.seed)
             ):
                 pbar.desc = layer_name
-
-                # Skip layers if computing delta.
-                if self.skip_layers and (l_ix + 1) < n_layers:
-                    continue
 
                 if l_ix == 0:
                     # Generate explanations on original model in batches.
@@ -392,6 +396,10 @@ class EfficientMPRT(Metric):
                         score = entropy(a=y_pred, x=y_pred)
                         self.model_scores_by_layer["orig"].append(score)
 
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
+
             # Generate explanations on perturbed model in batches.
             a_perturbed_generator = self.generate_explanations(
                 random_layer_model, x_full_dataset, y_full_dataset, batch_size
@@ -421,13 +429,6 @@ class EfficientMPRT(Metric):
                 device=device,
                 model_predict_kwargs=model_predict_kwargs,
             )
-            # Reshape input according to model (PyTorch or Keras/Torch).
-            x_full_dataset = model.shape_input(
-                x=x_full_dataset,
-                shape=x_full_dataset.shape,
-                channel_first=channel_first,
-                batched=True,
-            )
 
             # Predict and save complexity scores of the perturbed model outputs.
             self.model_scores_by_layer[layer_name] = []
@@ -447,7 +448,7 @@ class EfficientMPRT(Metric):
             self.scores_extra = {}
 
             # Compute absolute deltas for explanation scores.
-            self.scores_extra["delta_explanation_scores"] = [
+            self.scores_extra["scores_delta_explanation"] = [
                 b - a for a, b in zip(explanation_scores[0], explanation_scores[-1])
             ]
 
@@ -470,7 +471,7 @@ class EfficientMPRT(Metric):
             ]
 
             # Compute delta skill score per sample (model versus explanation).
-            self.scores_extra["delta_explanation_vs_models"] = [
+            self.scores_extra["scores_delta_explanation_vs_models"] = [
                 b / a if a != 0 else np.nan
                 for a, b in zip(
                     self.scores_extra["scores_fraction_model"],

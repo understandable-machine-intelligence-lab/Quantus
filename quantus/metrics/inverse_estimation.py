@@ -17,7 +17,7 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base_perturbed import Metric
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -52,19 +52,22 @@ class InverseEstimation(Metric):
     def __init__(
         self,
         metric_init: Metric,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,
-        perturb_baseline: str = "black",
-        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        return_aggregate: Optional[bool] = None,
+        aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
+        disable_warnings: Optional[bool] = None,
+        display_progressbar: Optional[bool] = None,
         **kwargs,
     ):
         """
         Parameters
         ----------
-        features_in_step: integer
-            The size of the step, default=1.
+        metric_init: Metric
+            The metric to be used for the inverse estimation.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -97,19 +100,8 @@ class InverseEstimation(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if metric_init.normalise_func is None:
-            normalise_func = normalise_by_max
-
-        if metric_init.perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        perturb_func = perturb_func
-
-        if metric_init.perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
-
         if metric_init.default_plot_func is None:
-            # TODO. Create plot.
+            # TODO. Create specific plot.
             default_plot_func = plotting.plot_pixel_flipping_experiment
 
         abs = metric_init.abs
@@ -124,8 +116,6 @@ class InverseEstimation(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -135,20 +125,16 @@ class InverseEstimation(Metric):
         )
 
         # Asserts and warnings.
-        assert hasattr(
-            metric_init, "inverse_estimation"
-        ), "The metric must have 'inverse_estimation' (bool) attribute"
+        # assert hasattr(
+        #    metric_init, "inverse_estimation"
+        # ), "The metric must have 'inverse_estimation' (bool) attribute"
 
         # TODO. Update warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
-                citation=(
-                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                    "e0130140"
-                ),
+                citation=("Update here."),
             )
 
         self.metric_init = metric_init
@@ -218,46 +204,51 @@ class InverseEstimation(Metric):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        self.metric_init.return_aggregate = True  # Change this.
+        if self.metric_init.return_aggregate != False:
+            print(
+                "The metric is not designed to return an aggregate score, setting return_aggregate=False."
+            )
+            self.metric_init.return_aggregate = False
 
-        # Run faithfulness experiment.
-        self.metric_init.inverse_estimation = False
-        # Sort here to make it more general.
-        a_batch_inv = -np.array(a_batch)
-        self.metric_init(
+        # TODO. Check compatibility with different normalisation functions.
+        # TODO. Check compatibility with different batch sizes (think ok).
+        # TODO. Check that we use 2most important feature first" type.
+
+        # TODO. Implement ranking assumption. see: https://github.com/annahedstroem/eval-project/blob/febe271a78c6efc16a51372ab58fcba676e0eb88/src/xai_faithfulness_experiments_lib_edits.py#L403
+        self.scores = self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=None,
+            # custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -266,22 +257,26 @@ class InverseEstimation(Metric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
-        assert len(self.metric_init.evaluation_scores) == len(
-            x_batch
-        ), "To run the inverse estimation, the number of evaluation scores must match the number of instances in the batch."
+        assert len(self.scores) == len(x_batch), (
+            "To run the inverse estimation, the number of evaluation scores "
+            "must match the number of instances in the batch."
+        )
         self.all_evaluation_scores_meta.extend(self.metric_init.evaluation_scores)
         # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
-        # Run inverse faithfulness experiment.
-        self.metric_init.inverse_estimation = True  # make sure that the this is updated
-        self.metric_init(
+        # Run inverse experiment.
+        # TODO. Check if the metric only relies on ordering.
+        a_batch_inv = -np.array(a_batch) / np.min(
+            -np.array(a_batch)
+        )  # [1, 2, 3], [-1, -2, -3]
+        self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
-            a_batch=a_batch,
+            a_batch=a_batch_inv,
             s_batch=s_batch,
-            custom_batch=None,
+            # custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -295,16 +290,15 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        inv_scores = np.array(self.all_evaluation_scores_meta) - np.array(
-            self.all_evaluation_scores_meta_inverse
-        )
+        inv_scores = np.array(self.scores) - np.array(self.scores_inv)
         self.metric_init.evaluation_scores = []
         self.evaluation_scores.extend(inv_scores)
 
-        # TODO. If all_evaluation_scores is empty, overwrite with inverse scores for the those last samples (keep iterator).
-        # Or skip and throw a warning.
-        self.metric_init.all_evaluation_scores = []
-        self.all_evaluation_scores.extend(inv_scores)
+        # TODO. If all_evaluation_scores is empty, overwrite with inverse scores
+        #  for the those last samples (keep iterator). Or skip and throw a warning.
+        # if self.all_evaluation_scores:
+        #    self.all_evaluation_scores[-1] = []
+        self.all_evaluation_scores.append(inv_scores)
 
         return inv_scores
 
@@ -337,5 +331,8 @@ class InverseEstimation(Metric):
         -------
         None
         """
-        # TODO. Implement aggregation method.
+        # TODO. Is this needed?
+        pass
+
+    def convert_attributions_to_rankings(self):
         pass

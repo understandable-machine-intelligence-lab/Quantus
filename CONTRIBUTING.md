@@ -89,7 +89,11 @@ It is possible to limit the scope of testing to specific sections of the codebas
 Faithfulness metrics using python3.9 (make sure the python versions match in your environment):
 
 ```bash
+<<<<<<< HEAD
 python3 -m tox run -e py39 -- -m faithfulness -s
+=======
+python3 -m tox run -e py39 -- -m evaluate_func -s
+>>>>>>> c33f4039e2f53332a8eff2207cdbe6686600e67c
 ```
 
 For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
