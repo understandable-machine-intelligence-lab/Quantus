@@ -546,7 +546,9 @@ class SmoothMPRT(Metric):
             return None
 
         a_batch_chunks = []
-        for a_chunk in self.generate_explanations(model, x_batch, y_batch):
+        for a_chunk in self.generate_explanations(
+            model, x_batch, y_batch, **{**kwargs, **self.explain_func_kwargs}
+        ):
             a_batch_chunks.extend(a_chunk)
         return dict(a_batch=np.asarray(a_batch_chunks))
 
