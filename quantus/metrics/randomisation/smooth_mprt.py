@@ -53,8 +53,8 @@ class SmoothMPRT(Metric):
     """
     Implementation of the Smooth MPRT by Hedström et al., 2023.
 
-    The Smooth Model Parameter Randomisation adds a "denoising" preprocessing step to the original MPRT, 
-    where the explanations are averaged over N noisy samples before the similarity between the original- 
+    The Smooth Model Parameter Randomisation adds a "denoising" preprocessing step to the original MPRT,
+    where the explanations are averaged over N noisy samples before the similarity between the original-
     and fully random model's explanations is measured.
 
     References:
@@ -350,7 +350,7 @@ class SmoothMPRT(Metric):
                         model.get_model(),
                         x_full_dataset,
                         y_full_dataset,
-                        **kwargs,
+                        **self.explain_func_kwargs,
                     )
 
                     # Compute the similarity of explanations of the original model.
@@ -384,14 +384,16 @@ class SmoothMPRT(Metric):
                     random_layer_model,
                     x_full_dataset,
                     y_full_dataset,
-                    **kwargs,
+                    **self.explain_func_kwargs,
                 )
 
                 # Compute the similarity of explanations of the perturbed model.
                 for a_batch, a_batch_perturbed in zip(
                     self.generate_a_batches(a_full_dataset), a_perturbed_generator
                 ):
-                    for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
+                    for a_instance, a_instance_perturbed in zip(
+                        a_batch, a_batch_perturbed
+                    ):
                         score = self.evaluate_instance(
                             model=random_layer_model,
                             x=None,
