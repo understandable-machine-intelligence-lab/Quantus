@@ -773,6 +773,30 @@ def test_model_parameter_randomisation(
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": False,
+                    "return_last_correlation": True,
+                    "skip_layers": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "attributor": zattr.IntegratedGradients,
+                        "xai_lib": "zennit",
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
     ],
 )
 def test_smooth_model_parameter_randomisation(
