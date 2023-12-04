@@ -3,6 +3,7 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
+from zennit import attribution as zattr
 
 from quantus.functions.explanation_func import explain
 from quantus.functions import complexity_func, n_bins_func
@@ -744,6 +745,57 @@ def test_model_parameter_randomisation(
                 "call": {"explain_func": explain_func_stub},
             },
             {"exception": ValueError},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": False,
+                    "return_last_correlation": True,
+                    "skip_layers": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "shape": (8, 1, 28, 28),
+                        "canonizer": None,
+                        "composite": None,
+                        "attributor": zattr.Gradient,
+                        "xai_lib": "zennit",
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "return_average_correlation": False,
+                    "return_last_correlation": True,
+                    "skip_layers": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "attributor": zattr.IntegratedGradients,
+                        "xai_lib": "zennit",
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )
