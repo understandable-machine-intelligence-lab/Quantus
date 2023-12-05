@@ -78,6 +78,7 @@ class MPRT(Metric):
         similarity_func: Optional[Callable] = None,
         layer_order: str = "top_down",
         seed: int = 42,
+        return_sample_correlation: Optional[bool] = None,
         return_average_correlation: bool = False,
         return_last_correlation: bool = False,
         skip_layers: bool = False,
@@ -147,6 +148,16 @@ class MPRT(Metric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if return_sample_correlation is not None:
+            warnings.warn(
+                "'return_sample_correlation' parameter is deprecated and will be removed in future versions. "
+                f"Please use 'return_average_correlation' instead. "
+                f"Setting 'return_average_correlation' to {return_sample_correlation}",
+                DeprecationWarning,
+            )
+            # Use the value of 'return_average_correlation' for 'return_sample_correlation'
+            return_average_correlation = return_sample_correlation
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -365,7 +376,9 @@ class MPRT(Metric):
                 for a_batch, a_batch_perturbed in zip(
                     self.generate_a_batches(a_full_dataset), a_perturbed_generator
                 ):
-                    for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
+                    for a_instance, a_instance_perturbed in zip(
+                        a_batch, a_batch_perturbed
+                    ):
                         score = self.evaluate_instance(
                             model=random_layer_model,
                             x=None,
