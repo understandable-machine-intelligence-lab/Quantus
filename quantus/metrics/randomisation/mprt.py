@@ -150,11 +150,10 @@ class MPRT(Metric):
         )
 
         if return_sample_correlation is not None:
-            warnings.warn(
+            print(
                 "'return_sample_correlation' parameter is deprecated and will be removed in future versions. "
                 f"Please use 'return_average_correlation' instead. "
-                f"Setting 'return_average_correlation' to {return_sample_correlation}",
-                DeprecationWarning,
+                f"Setting 'return_average_correlation' to {return_sample_correlation}.",
             )
             # Use the value of 'return_average_correlation' for 'return_sample_correlation'
             return_average_correlation = return_sample_correlation
