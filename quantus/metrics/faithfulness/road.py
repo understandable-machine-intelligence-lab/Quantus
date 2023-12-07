@@ -65,6 +65,7 @@ class ROAD(Metric[List[float]]):
         self,
         percentages: Optional[List[float]] = None,
         noise: float = 0.01,
+        return_only_values: Optional[bool] = None,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -81,8 +82,12 @@ class ROAD(Metric[List[float]]):
         """
         Parameters
         ----------
-        percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
-            noise (noise): Noise added, default=0.01.
+        percentages: list of ints
+            The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+        noise: float
+            Noise added, default=0.01.
+        return_only_values: bool
+            Indicates whether only evaluation scores (list of floats) should be returned and not the dictionary that also includes the percentages, default=None.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -131,9 +136,11 @@ class ROAD(Metric[List[float]]):
             perturb_func = noisy_linear_imputation
 
         self.percentages = percentages
+        self.noise = noise
+        self.return_values = return_only_values
         self.a_size = None
         self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, noise=noise
+            perturb_func, perturb_func_kwargs, noise=self.noise
         )
 
         # Asserts and warnings.
@@ -334,6 +341,10 @@ class ROAD(Metric[List[float]]):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
+
+        # Return only the evaluation scores (and not percentages).
+        if self.return_values:
+            self.evaluation_scores = list(self.evaluation_scores.values())
 
     def evaluate_batch(
         self,

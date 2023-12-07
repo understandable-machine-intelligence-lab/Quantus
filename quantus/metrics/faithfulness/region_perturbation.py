@@ -76,7 +76,6 @@ class RegionPerturbation(Metric[List[float]]):
         perturb_func: Optional[Callable] = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        inverse_estimation: Optional[bool] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
@@ -147,7 +146,6 @@ class RegionPerturbation(Metric[List[float]]):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
-        self.inverse_estimation = inverse_estimation
         self.perturb_func = make_perturb_func(
             perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
         )
@@ -342,11 +340,6 @@ class RegionPerturbation(Metric[List[float]]):
                 a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
             )
             patches.append(patch_slice)
-
-        if self.inverse_estimation == True:
-            self.order = "lerf"
-        elif self.inverse_estimation == False:
-            self.order = "morf"
 
         if self.order == "random":
             # Order attributions randomly.

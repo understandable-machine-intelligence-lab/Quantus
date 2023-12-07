@@ -74,11 +74,15 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
     },
 }
 
-# Perturbation steps with 'masking', based on attribution order/ ranking.
+# Quantus metrics that include a step-wise 'masking'/ perturbation that is
+# based on attribution order/ ranking (and not magnitude).
 AVAILABLE_INVERSE_ESTIMATION_METRICS = {
     "Pixel-Flipping": PixelFlipping,
-    "Region Perturbation": RegionPerturbation,
+    "Region Perturbation": RegionPerturbation,  # order = 'morf'
+    "ROAD": ROAD,  # return_only_values = True
+    "Selectivity": Selectivity,
 }
+#
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
     "baseline_replacement_by_indices": baseline_replacement_by_indices,

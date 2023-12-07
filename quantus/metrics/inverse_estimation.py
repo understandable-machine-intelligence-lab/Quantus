@@ -104,12 +104,7 @@ class InverseEstimation(Metric):
             # TODO. Create specific plot.
             default_plot_func = plotting.plot_pixel_flipping_experiment
 
-        abs = metric_init.abs
-        normalise = metric_init.normalise
-        return_aggregate = metric_init.return_aggregate
-        aggregate_func = metric_init.aggregate_func
-        display_progressbar = metric_init.display_progressbar
-        disable_warnings = metric_init.disable_warnings
+        self.return_aggregate = return_aggregate
 
         super().__init__(
             abs=abs,
@@ -125,9 +120,10 @@ class InverseEstimation(Metric):
         )
 
         # Asserts and warnings.
-        # assert hasattr(
-        #    metric_init, "inverse_estimation"
-        # ), "The metric must have 'inverse_estimation' (bool) attribute"
+        if metric_init.name == "ROAD":
+            metric_init.return_only_values = True
+        if metric_init.name == "Region-Perturbation":
+            metric_init.order = "morf"
 
         # TODO. Update warnings.
         if not self.disable_warnings:
@@ -138,8 +134,6 @@ class InverseEstimation(Metric):
             )
 
         self.metric_init = metric_init
-        self.all_evaluation_scores_meta = []
-        self.all_evaluation_scores_meta_inverse = []
 
     def __call__(
         self,
@@ -231,17 +225,18 @@ class InverseEstimation(Metric):
             >>> metric = Metric(abs=True, normalise=False)
             >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        if self.metric_init.return_aggregate != False:
+        if self.metric_init.return_aggregate:
             print(
                 "The metric is not designed to return an aggregate score, setting return_aggregate=False."
             )
             self.metric_init.return_aggregate = False
 
-        # TODO. Check compatibility with different normalisation functions.
-        # TODO. Check compatibility with different batch sizes (think ok).
-        # TODO. Check that we use 2most important feature first" type.
+        assert (
+            a_batch is not None
+        ), "'a_batch' must be provided to run the inverse estimation."
 
-        # TODO. Implement ranking assumption. see: https://github.com/annahedstroem/eval-project/blob/febe271a78c6efc16a51372ab58fcba676e0eb88/src/xai_faithfulness_experiments_lib_edits.py#L403
+        # TODO. Do we want to turn the attributions to rankings?
+        #  See: https://github.com/annahedstroem/eval-project/blob/febe271a78c6efc16a51372ab58fcba676e0eb88/src/xai_faithfulness_experiments_lib_edits.py#L403
         self.scores = self.metric_init(
             model=model,
             x_batch=x_batch,
@@ -261,15 +256,12 @@ class InverseEstimation(Metric):
             "To run the inverse estimation, the number of evaluation scores "
             "must match the number of instances in the batch."
         )
-        self.all_evaluation_scores_meta.extend(self.metric_init.evaluation_scores)
+
         # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
         # Run inverse experiment.
-        # TODO. Check if the metric only relies on ordering.
-        a_batch_inv = -np.array(a_batch) / np.min(
-            -np.array(a_batch)
-        )  # [1, 2, 3], [-1, -2, -3]
+        a_batch_inv = -np.array(a_batch)  # / np.min(-np.array(a_batch))
         self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
@@ -285,54 +277,29 @@ class InverseEstimation(Metric):
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
-        self.all_evaluation_scores_meta_inverse.extend(
-            self.metric_init.evaluation_scores
-        )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        inv_scores = np.array(self.scores) - np.array(self.scores_inv)
-        self.metric_init.evaluation_scores = []
-        self.evaluation_scores.extend(inv_scores)
+        inv_scores = (np.array(self.scores) - np.array(self.scores_inv)).tolist()
+        self.evaluation_scores = inv_scores
 
-        # TODO. If all_evaluation_scores is empty, overwrite with inverse scores
-        #  for the those last samples (keep iterator). Or skip and throw a warning.
-        # if self.all_evaluation_scores:
-        #    self.all_evaluation_scores[-1] = []
-        self.all_evaluation_scores.append(inv_scores)
+        if self.return_aggregate:
+            self.evaluation_scores = self.get_mean_score
+
+        self.all_evaluation_scores.extend(self.metric_init.evaluation_scores)
 
         return inv_scores
 
-    def custom_postprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        **kwargs,
-    ) -> None:
-        """
-        Post-process the evaluation results.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-
-        Returns
-        -------
-        None
-        """
-        # TODO. Is this needed?
-        pass
-
     def convert_attributions_to_rankings(self):
         pass
+
+    @property
+    def get_mean_score(self):
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return np.mean(np.array(self.evaluation_scores), axis=1)
+
+    @property
+    def get_auc_score(self):
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return np.mean(
+            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
+        )

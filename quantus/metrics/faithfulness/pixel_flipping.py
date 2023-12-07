@@ -287,11 +287,8 @@ class PixelFlipping(Metric[Union[float, List[float]]]):
         # Reshape attributions.
         a = a.flatten()
 
-        # Get indices of sorted attributions.
-        if self.inverse_estimation is None or self.inverse_estimation is False:
-            a_indices = np.argsort(-a)  # Order is descending.
-        elif self.inverse_estimation is True:
-            a_indices = np.argsort(a)  # Order is ascending.
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
 
         # Prepare lists.
         n_perturbations = len(range(0, len(a_indices), self.features_in_step))
