@@ -78,6 +78,7 @@ class MPRT(Metric):
         similarity_func: Optional[Callable] = None,
         layer_order: str = "top_down",
         seed: int = 42,
+        return_sample_correlation: Optional[bool] = None,
         return_average_correlation: bool = False,
         return_last_correlation: bool = False,
         skip_layers: bool = False,
@@ -147,6 +148,15 @@ class MPRT(Metric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        if return_sample_correlation is not None:
+            print(
+                "'return_sample_correlation' parameter is deprecated and will be removed in future versions. "
+                f"Please use 'return_average_correlation' instead. "
+                f"Setting 'return_average_correlation' to {return_sample_correlation}.",
+            )
+            # Use the value of 'return_average_correlation' for 'return_sample_correlation'
+            return_average_correlation = return_sample_correlation
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -323,10 +333,6 @@ class MPRT(Metric):
             ):
                 pbar.desc = layer_name
 
-                # Skip layers if computing delta.
-                if self.skip_layers and (l_ix + 1) < n_layers:
-                    continue
-
                 if l_ix == 0:
 
                     # Generate explanations on original model in batches.
@@ -354,28 +360,34 @@ class MPRT(Metric):
                             self.evaluation_scores["original"].append(score)
                             pbar.update(1)
 
-            self.evaluation_scores[layer_name] = []
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
 
-            # Generate explanations on perturbed model in batches.
-            a_perturbed_generator = self.generate_explanations(
-                random_layer_model, x_full_dataset, y_full_dataset, batch_size
-            )
+                self.evaluation_scores[layer_name] = []
 
-            # Compute the similarity of explanations of the perturbed model.
-            for a_batch, a_batch_perturbed in zip(
-                self.generate_a_batches(a_full_dataset), a_perturbed_generator
-            ):
-                for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
-                    score = self.evaluate_instance(
-                        model=random_layer_model,
-                        x=None,
-                        y=None,
-                        s=None,
-                        a=a_instance,
-                        a_perturbed=a_instance_perturbed,
-                    )
-                    self.evaluation_scores[layer_name].append(score)
-                    pbar.update(1)
+                # Generate explanations on perturbed model in batches.
+                a_perturbed_generator = self.generate_explanations(
+                    random_layer_model, x_full_dataset, y_full_dataset, batch_size
+                )
+
+                # Compute the similarity of explanations of the perturbed model.
+                for a_batch, a_batch_perturbed in zip(
+                    self.generate_a_batches(a_full_dataset), a_perturbed_generator
+                ):
+                    for a_instance, a_instance_perturbed in zip(
+                        a_batch, a_batch_perturbed
+                    ):
+                        score = self.evaluate_instance(
+                            model=random_layer_model,
+                            x=None,
+                            y=None,
+                            s=None,
+                            a=a_instance,
+                            a_perturbed=a_instance_perturbed,
+                        )
+                        self.evaluation_scores[layer_name].append(score)
+                        pbar.update(1)
 
         if self.return_average_correlation:
             self.evaluation_scores = self.recompute_average_correlation_per_sample()

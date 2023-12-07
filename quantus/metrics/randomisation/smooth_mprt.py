@@ -343,10 +343,6 @@ class SmoothMPRT(Metric):
             ):
                 pbar.desc = layer_name
 
-                # Skip layers if computing delta.
-                if self.skip_layers and (l_ix + 1) < n_layers:
-                    continue
-
                 if l_ix == 0:
 
                     # Generate explanations on original model in batches.
@@ -354,7 +350,7 @@ class SmoothMPRT(Metric):
                         model.get_model(),
                         x_full_dataset,
                         y_full_dataset,
-                        **kwargs,
+                        **self.explain_func_kwargs,
                     )
 
                     # Compute the similarity of explanations of the original model.
@@ -377,31 +373,37 @@ class SmoothMPRT(Metric):
                             self.evaluation_scores["original"].append(score)
                             pbar.update(1)
 
-            self.evaluation_scores[layer_name] = []
+                # Skip layers if computing delta.
+                if self.skip_layers and (l_ix + 1) < n_layers:
+                    continue
 
-            # Generate explanations on perturbed model in batches.
-            a_perturbed_generator = self.generate_explanations(
-                random_layer_model,
-                x_full_dataset,
-                y_full_dataset,
-                **kwargs,
-            )
+                self.evaluation_scores[layer_name] = []
 
-            # Compute the similarity of explanations of the perturbed model.
-            for a_batch, a_batch_perturbed in zip(
-                self.generate_a_batches(a_full_dataset), a_perturbed_generator
-            ):
-                for a_instance, a_instance_perturbed in zip(a_batch, a_batch_perturbed):
-                    score = self.evaluate_instance(
-                        model=random_layer_model,
-                        x=None,
-                        y=None,
-                        s=None,
-                        a=a_instance,
-                        a_perturbed=a_instance_perturbed,
-                    )
-                    self.evaluation_scores[layer_name].append(score)
-                    pbar.update(1)
+                # Generate explanations on perturbed model in batches.
+                a_perturbed_generator = self.generate_explanations(
+                    random_layer_model,
+                    x_full_dataset,
+                    y_full_dataset,
+                    **self.explain_func_kwargs,
+                )
+
+                # Compute the similarity of explanations of the perturbed model.
+                for a_batch, a_batch_perturbed in zip(
+                    self.generate_a_batches(a_full_dataset), a_perturbed_generator
+                ):
+                    for a_instance, a_instance_perturbed in zip(
+                        a_batch, a_batch_perturbed
+                    ):
+                        score = self.evaluate_instance(
+                            model=random_layer_model,
+                            x=None,
+                            y=None,
+                            s=None,
+                            a=a_instance,
+                            a_perturbed=a_instance_perturbed,
+                        )
+                        self.evaluation_scores[layer_name].append(score)
+                        pbar.update(1)
 
         if self.return_average_correlation:
             self.evaluation_scores = self.recompute_average_correlation_per_sample()
@@ -544,7 +546,9 @@ class SmoothMPRT(Metric):
             return None
 
         a_batch_chunks = []
-        for a_chunk in self.generate_explanations(model, x_batch, y_batch):
+        for a_chunk in self.generate_explanations(
+            model, x_batch, y_batch, **{**kwargs, **self.explain_func_kwargs}
+        ):
             a_batch_chunks.extend(a_chunk)
         return dict(a_batch=np.asarray(a_batch_chunks))
 
