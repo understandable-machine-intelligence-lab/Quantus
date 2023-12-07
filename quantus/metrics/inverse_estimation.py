@@ -56,7 +56,7 @@ class InverseEstimation(Metric):
         normalise: bool = False,
         normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = None,
+        return_aggregate: Optional[bool] = True,
         aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: Optional[bool] = None,
@@ -235,15 +235,12 @@ class InverseEstimation(Metric):
             a_batch is not None
         ), "'a_batch' must be provided to run the inverse estimation."
 
-        # TODO. Do we want to turn the attributions to rankings?
-        #  See: https://github.com/annahedstroem/eval-project/blob/febe271a78c6efc16a51372ab58fcba676e0eb88/src/xai_faithfulness_experiments_lib_edits.py#L403
         self.scores = self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            # custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -261,14 +258,13 @@ class InverseEstimation(Metric):
         self.metric_init.evaluation_scores = []
 
         # Run inverse experiment.
-        a_batch_inv = -np.array(a_batch)  # / np.min(-np.array(a_batch))
+        a_batch_inv = -np.array(a_batch)
         self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch_inv,
             s_batch=s_batch,
-            # custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,

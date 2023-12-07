@@ -247,6 +247,7 @@ def test_inverse_estimation_with_pixel_flipping(
                     for s in s_list
                 ]
             ), "Test failed."
+
     except expected["exception"] as e:
         print(f'Raised exception type {expected["exception"]}', e)
         return
