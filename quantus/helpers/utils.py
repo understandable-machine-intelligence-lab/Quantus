@@ -16,13 +16,35 @@ from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.nlp_utils import is_transformers_available
+from quantus.helpers.tf_utils import is_tensorflow_available
+from quantus.helpers.torch_utils import is_torch_available
 
-if util.find_spec("torch"):
+if is_torch_available():
     import torch
     from quantus.helpers.model.pytorch_model import PyTorchModel
-if util.find_spec("tensorflow"):
+
+
+if is_tensorflow_available():
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
+
+
+if is_transformers_available():
+    from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+    from transformers import (
+        TFPreTrainedModel,
+        PreTrainedModel,
+        PreTrainedTokenizerBase,
+        AutoTokenizer,
+    )
+
+    if is_tensorflow_available():
+        from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+
+    if is_torch_available():
+        from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -382,6 +404,9 @@ def get_wrapped_model(
     model: ModelInterface
         A wrapped ModelInterface model.
     """
+    if isinstance(model, ModelInterface):
+        return model
+
     if util.find_spec("tensorflow"):
         if isinstance(model, tf.keras.Model):
             return TensorFlowModel(
@@ -400,6 +425,45 @@ def get_wrapped_model(
                 model_predict_kwargs=model_predict_kwargs,
             )
     raise ValueError("Model needs to be tf.keras.Model or torch.nn.Module.")
+
+
+def get_wrapped_text_classifier(
+    model,
+    softmax: bool | None = None,
+    device: str | torch.device | None = None,
+    model_predict_kwargs: dict[str, ...] | None = None,
+    tokenizer: Tokenizable | None = None,
+) -> TextClassifier:
+    if isinstance(model, TextClassifier):
+        return model
+
+    if not is_transformers_available():
+        raise ValueError(
+            """
+            Quantus supports text-classification models only from HuggingFace Hub,
+            but not `transformers installation was found`"
+            """
+        )
+
+    if tokenizer is None:
+        warnings.warn("No `tokenizer` provided, will try to create default one.")
+        handle = model.config._name_or_path  # noqa
+        tokenizer = HuggingFaceTokenizer(AutoTokenizer.from_pretrained(handle))
+    elif not isinstance(tokenizer, Tokenizable):
+        if not isinstance(tokenizer, PreTrainedTokenizerBase):
+            raise ValueError()
+        else:
+            tokenizer = HuggingFaceTokenizer(tokenizer)
+
+    if is_tensorflow_available():
+        if isinstance(model, TFPreTrainedModel):
+            return TFHuggingFaceTextClassifier(model, tokenizer)
+
+    if is_torch_available():
+        if isinstance(model, PreTrainedModel):
+            return TorchHuggingFaceTextClassifier(model, tokenizer, device)
+
+    raise ValueError()
 
 
 def blur_at_indices(

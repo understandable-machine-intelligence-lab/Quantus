@@ -21,6 +21,13 @@ import operator
 
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import utils
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.collection_utils import filter_dict, add_default_items
+from quantus.helpers.tf_utils import (
+    random_layer_generator,
+    list_parameterizable_layers,
+    supported_keras_engine_predict_kwargs,
+)
 
 
 class TensorFlowModel(ModelInterface[Model]):
@@ -256,25 +263,7 @@ class TensorFlowModel(ModelInterface[Model]):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = clone_model(self.model)
-
-        layers = [
-            _layer
-            for _layer in random_layer_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                random_layer_model.set_weights(original_parameters)
-            weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
-            layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, random_layer_model
+        return random_layer_generator(self, order, seed, flatten_layers=False)
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
@@ -423,4 +412,4 @@ class TensorFlowModel(ModelInterface[Model]):
 
     @property
     def random_layer_generator_length(self) -> int:
-        return len([i for i in self.model.layers if len(i.get_weights()) > 0])
+        return len(list_parameterizable_layers(self.get_model(), flatten_layers=False))

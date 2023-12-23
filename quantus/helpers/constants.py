@@ -159,13 +159,50 @@ DEPRECATED_XAI_METHODS_TF = {
     "GradCam": "GradCAM",
 }
 
-
 AVAILABLE_N_BINS_ALGORITHMS = {
     "Freedman Diaconis": n_bins_func.freedman_diaconis_rule,
     "Scotts": n_bins_func.scotts_rule,
     "Square Root": n_bins_func.square_root_choice,
     "Sturges Formula": n_bins_func.sturges_formula,
     "Rice": n_bins_func.rice_rule,
+}
+
+# ---------------------- NLP --------------------------
+
+
+AVAILABLE_TF_XAI_METHODS_NLP = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
+    "LIME",
+    "SHAP",
+]
+
+AVAILABLE_TORCH_XAI_METHODS_NLP = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
+    "SHAP",
+    "LIME",
+]
+
+XAI_METHODS_NLP_SUPPORT_EMBEDDINGS = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
+]
+
+
+AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS = {
+    "spelling_replacement": spelling_replacement,
+    "typo_replacement": typo_replacement,
+    "synonym_replacement": synonym_replacement,
 }
 
 
@@ -251,3 +288,34 @@ def available_normalisation_functions() -> List[str]:
         With the available normalisation functions in Quantus.
     """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]
+
+
+# ---------------------- NLP --------------------------
+def available_nlp_metrics() -> Dict[str, List[Type]]:
+    result = defaultdict(lambda: [])
+
+    for k, v in AVAILABLE_METRICS.items():
+        for kk, vv in v.items():
+            if "NLP" in vv.data_domain_applicability:
+                result[k].append(kk)
+
+    return dict(result)
+
+
+def available_nlp_xai_methods_tf() -> List[str]:
+    return AVAILABLE_TF_XAI_METHODS_NLP
+
+
+def available_nlp_xai_methods_torch() -> List[str]:
+    return AVAILABLE_TORCH_XAI_METHODS_NLP
+
+
+def xai_methods_nlp_support_embeddings() -> List[str]:
+    return XAI_METHODS_NLP_SUPPORT_EMBEDDINGS
+
+
+def available_plain_text_perturbation_functions() -> List[str]:
+    return list(AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys())
+
+
+# -----------------------------------------------------

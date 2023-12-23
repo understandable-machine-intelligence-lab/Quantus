@@ -298,3 +298,191 @@ def plot_focus(
     plt.ylabel("Focus score")
     plt.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
     plt.show()
+
+
+# ---------------- NLP --------------------
+
+
+DEFAULT_SPECIAL_TOKENS = [
+    "[CLS]",
+    "[SEP]",
+    "[PAD]",
+]
+
+
+class ColorMapper:
+    """
+    - Highest score get red (255,0,0).
+    - Lowest score gets blue (0,0,255).
+    - Positive scores are linearly interpolated between red and white (255, 255, 255).
+    - Negative scores are linearly interpolated between blue and white (255, 255, 255).
+    """
+
+    def __init__(self, max_score: float, min_score: float):
+        self.max_score = max_score
+        self.min_score = min_score
+
+    def to_rgb(
+        self, score: float, normalize_to_1: bool = False
+    ) -> Tuple[float, float, float]:
+        k = 1.0 if normalize_to_1 else 255.0
+
+        if score >= 0:
+            red = k
+            green = k * (1 - score / self.max_score)
+            blue = k * (1 - score / self.max_score)
+        else:
+            red = k * (1 - abs(score / self.min_score))
+            green = k * (1 - abs(score / self.min_score))
+            blue = k
+        return red, green, blue
+
+
+def visualise_explanations_as_pyplot(
+    explanations: List[Explanation],
+    labels: Optional[List[str]] = None,
+    v_len_scale=0.75,
+    h_len_scale=1.25,
+):
+    """
+    Plots attributions over a batch of text sequence explanations. This function should be preferred is you need your
+    heatmaps to be correctly displayed in GitHubs preview. For longer inputs (over 15-20) tokens, the cells become
+    smaller, and it could be hard for viewer to see the actual tokens.
+
+    References:
+        - https://stackoverflow.com/questions/74046734/plot-text-saliency-map-in-jupyter-notebook
+
+    Parameters
+    ----------
+    explanations:
+        List of tuples (tokens, salience) containing batch of explanations.
+    labels:
+        Optional labels to display above each row.
+
+    Returns
+    -------
+    plot: matplotplib.pyplot.figure object, which will be automatically rendered by jupyter.
+    """
+
+    h_len = len(explanations)
+    v_len = len(explanations[0][0])
+
+    tokens = [i[0] for i in explanations]
+    scores = [i[1] for i in explanations]
+
+    fig, axes = plt.subplots(
+        h_len,
+        v_len,
+        figsize=(v_len * v_len_scale, h_len * h_len_scale),
+        gridspec_kw=dict(left=0.0, right=1.0),
+    )
+    hspace = 1.0 if labels is not None else 0.1
+    plt.subplots_adjust(hspace=hspace, wspace=0.0)
+    for i, ax in enumerate(axes):
+        color_mapper = ColorMapper(np.max(scores[i]), np.min(scores[i]))
+        if labels:
+            ax[v_len // 2].set_title(labels[i])
+
+        scores_row = scores[i]
+        tokens_row = tokens[i]
+        for j in range(v_len):
+            score = value_at_index_or_default(scores_row, j, 0.0)
+            token = value_at_index_or_default(tokens_row, j, "")
+            color = color_mapper.to_rgb(score, normalize_to_1=True)
+            rect = plt.Rectangle((0, 0), 1, 1, color=color)
+            ax[j].add_patch(rect)
+            ax[j].text(0.5, 0.5, token, ha="center", va="center")
+            ax[j].set_xlim(0, 1)
+            ax[j].set_ylim(0, 1)
+            ax[j].axis("off")
+            ax[j] = fig.add_axes([0, 0.05, 1, 0.9], fc=[0, 0, 0, 0])
+
+    ax = axes.ravel()[-1]
+    for axis in ["left", "right"]:
+        ax.spines[axis].set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.show()
+
+
+def plot_token_flipping_experiment(
+    score: np.ndarray | List[np.ndarray],
+    task: FlipTask = "pruning",
+    legend: List[str] | None = None,
+    style: Dict[str, ...] | None = None,
+) -> plt.Axes:
+    if isinstance(score, np.ndarray):
+        score = [score]
+
+    style = value_or_default(style, lambda: {})
+    fig, axes = plt.subplots()
+
+    axes.set(xlabel="% tokens flipped.")
+    axes.set(ylabel="$(y_o - y')^2$")
+    axes.set_title(f"Token {task} experiment")
+
+    with plt.style.context(style):
+        for i in score:
+            if i.ndim == 2:
+                i = np.mean(i, axis=0)
+            num_tokens = len(i)
+
+            x = np.arange(0, num_tokens + 1)
+            i = np.concatenate([[0.0], i])
+
+            axes.plot(i, x, marker="o")
+
+        if legend is not None:
+            axes.legend(legend)
+
+    return axes
+
+
+class box_plot(SimpleNamespace):
+    @staticmethod
+    def from_dict(
+        scores: dict[str, np.ndarray], metric_name: str, *, y_label=None, logscale=False
+    ) -> plt.Axes:
+        for k, v in scores.items():
+            if not np.ndim(v) == 1:
+                raise ValueError(
+                    f"Expected scores to be 1D, but found: {np.ndim(v)}D for key {k}"
+                )
+        # replace with polars for big amount of data?
+        import pandas as pd
+        from quantus.helpers.collection_utils import flatten
+
+        df = [pd.DataFrame.from_dict({k: v}) for k, v in scores.items()]
+        df = pd.concat(df, ignore_index=True)
+
+        fig, axs = plt.subplots(1)
+        df.boxplot(ax=axs)
+        plt.title(metric_name)
+        if y_label is not None:
+            plt.ylabel(y_label)
+        if logscale:
+            plt.yscale("log")
+        plt.setp(axs.get_xticklabels(), rotation=90, ha="right", rotation_mode="anchor")
+        return axs
+
+    @staticmethod
+    def from_ndarray(
+        scores: np.ndarray,
+        labels: Sequence[str],
+        metric_name: str,
+        y_label=None,
+        logscale=False,
+    ) -> plt.Axes:
+        if np.ndim(scores) != 2:
+            raise ValueError(f"Expected score to be 2D, but found: {np.ndim(scores)}")
+
+        if len(scores) != labels:
+            raise ValueError(
+                f"Expected scores to have same leading dimension as labels, but found: scores = {len(scores)}, labels = {len(labels)}"
+            )
+
+        scores_dict = {k: scores[i] for i, k in enumerate(labels)}
+
+        return box_plot.from_dict(
+            scores_dict, metric_name, y_label=y_label, logscale=logscale
+        )

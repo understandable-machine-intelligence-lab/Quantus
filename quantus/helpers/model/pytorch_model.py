@@ -19,6 +19,7 @@ from functools import lru_cache
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.torch_utils import list_layers, random_layer_generator
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
@@ -261,24 +262,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = deepcopy(self.model)
-
-        modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
-        ]
-
-        if order == "top_down":
-            modules = modules[::-1]
-
-        for module in modules:
-            if order == "independent":
-                random_layer_model.load_state_dict(original_parameters)
-            torch.manual_seed(seed=seed + 1)
-            module[1].reset_parameters()
-            yield module[0], random_layer_model
+        return random_layer_generator(self, order, seed)
 
     def sample(
         self,
@@ -458,11 +442,5 @@ class PyTorchModel(ModelInterface[nn.Module]):
         return np.hstack(hidden_outputs)
 
     @property
-    def random_layer_generator_length(self) -> int:
-        return len(
-            [
-                i
-                for i in self.model.named_modules()
-                if (hasattr(i[1], "reset_parameters"))
-            ]
-        )
+    def load_state_dict(self, original_parameters: Dict[str, torch.Tensor]):
+        self.model.load_state_dict(original_parameters)

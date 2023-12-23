@@ -5,17 +5,20 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+from __future__ import annotations
 
 import copy
-import random
-import warnings
-from typing import Any, Callable, Sequence, Tuple, Union, Optional
+from operator import attrgetter
+from typing import Sequence, TYPE_CHECKING, TypeVar, List, Tuple, Callable, Union, Optional
+
 import cv2
 import numpy as np
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
+from quantus.helpers.collection_utils import map_optional
+from quantus.helpers.nlp_utils import is_nlpaug_available
+from quantus.helpers.typing_utils import PerturbFn
 from quantus.helpers.utils import (
     get_baseline_value,
     blur_at_indices,
@@ -23,6 +26,11 @@ from quantus.helpers.utils import (
     get_leftover_shape,
     offset_coordinates,
 )
+if TYPE_CHECKING:
+    from quantus.helpers.model.text_classifier import Tokenizable
+    
+
+T = TypeVar("T")
 
 
 def perturb_batch(
@@ -556,3 +564,93 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
          Array unperturbed.
     """
     return arr
+
+
+def spelling_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k words in each entry of text by alternative spelling.
+
+    Examples
+    --------
+
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> spelling_replacement(x)
+    ... ['uneasy mishmash of stiles and genres.']
+
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.word import SpellingAug
+
+        aug = SpellingAug(
+            aug_max=k,
+            aug_min=k,
+            tokenizer=map_optional(tokenizer, attrgetter("split_into_tokens")),
+            reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
+        )
+        return aug.augment(x_batch)
+    else:
+        raise NotImplementedError
+
+
+def synonym_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k words in each entry of text by synonym.
+
+    Examples
+    --------
+
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> synonym_replacement(x)
+    ... ['nervous mishmash of styles and genres.']
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.word import SynonymAug
+
+        aug = SynonymAug(
+            aug_max=k,
+            aug_min=k,
+            tokenizer=map_optional(tokenizer, attrgetter("split_into_tokens")),
+            reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
+        )
+        return aug.augment(x_batch)
+    else:
+        raise NotImplementedError
+
+
+def typo_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k characters in k words in each entry of text mimicking typo.
+
+    Examples
+    --------
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> typo_replacement(x)
+    ... ['uneasy mishmash of xtyles and genres.']
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.char import KeyboardAug
+
+        aug = KeyboardAug(
+            aug_word_min=k,
+            aug_word_max=k,
+            tokenizer=map_optional(tokenizer, attrgetter("split_into_tokens")),
+            reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
+        )
+        return aug.augment(x_batch)
+    else:
+        raise NotImplementedError

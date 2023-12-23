@@ -7,13 +7,44 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
-from typing import Union
+from __future__ import annotations
+
+from functools import wraps
+from typing import Union, Protocol, TypeVar, Callable
 
 import numpy as np
 import scipy
 import skimage
 
+def vectorize_similarity(
+    func: Callable[[np.ndarray, np.ndarray], float]
+) -> Callable[[np.ndarray, np.ndarray], float | np.ndarray]:
+    """Decorator, which allows calling similarity_func on 1D and 2D inputs."""
+    vectorized_func = np.vectorize(func, signature="(n),(n)->()", cache=True)
 
+    @wraps(func)
+    def wrapper(a: np.ndarray, b: np.ndarray):
+        a = np.asarray(a)
+        b = np.asarray(b)
+
+        if np.ndim(a) != np.ndim(b):
+            raise ValueError(
+                f"a and b must have same shapes, but found, {a.shape = }, {b.shape = }"
+            )
+
+        if np.ndim(a) == 1:
+            return func(a, b)
+
+        if np.ndim(a) > 2:
+            raise ValueError(
+                f"{func.__name__} supports only 1D and 2D inputs, but found {a.ndim = }, {b.ndim = }."
+            )
+
+        return vectorized_func(a, b)
+
+    return wrapper
+
+@vectorize_similarity
 def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Spearman rank of two images (or explanations).
@@ -34,7 +65,7 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     """
     return scipy.stats.spearmanr(a, b)[0]
 
-
+@vectorize_similarity
 def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
@@ -55,7 +86,7 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     """
     return scipy.stats.pearsonr(a, b)[0]
 
-
+@vectorize_similarity
 def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
@@ -243,7 +274,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     """
     return scipy.spatial.distance.cosine(u=a, v=b)
 
-
+@vectorize_similarity
 def ssim(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
