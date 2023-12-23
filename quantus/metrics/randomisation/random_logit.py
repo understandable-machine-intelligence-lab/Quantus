@@ -26,6 +26,9 @@ if sys.version_info >= (3, 8):
     from typing import final
 else:
     from typing_extensions import final
+    
+from quantus.helpers.typing_utils import TextClassifier
+from quantus.helpers.nlp_utils import get_scores
 
 
 @final
@@ -276,7 +279,13 @@ class RandomLogit(Metric[List[float]]):
         )
         # Explain against a random class.
         a_perturbed = self.explain_batch(model, np.expand_dims(x, axis=0), y_off)
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
+        
+        if isinstance(model, TextClassifier):
+            # In case explanation have token in them, drop them.
+            a = get_scores(a)
+            a_perturbed = get_scores(a_perturbed)
+        
+        return self.similarity_func(np.reshape(a, -1), np.reshape(a_perturbed, -1))
 
     def custom_preprocess(
         self,

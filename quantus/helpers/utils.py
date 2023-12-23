@@ -10,9 +10,11 @@ import copy
 import re
 from importlib import util
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
+from functools import singledispatch
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
+import warnings
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
@@ -1087,3 +1089,49 @@ T = TypeVar("T")
 
 def identity(x: T) -> T:
     return x
+
+
+def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
+    # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
+    # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
+    # the hard way again one more time.
+    return np.asarray(logits)[np.arange(y_batch.shape[0]), y_batch]
+
+
+@singledispatch
+def flatten_over_batch(arr: np.ndarray) -> np.ndarray:
+    """Apply np.reshape(-1) keeping batch axis unchanged."""
+    batch_size = len(arr)
+    new_shape = (batch_size, -1)
+    return np.reshape(arr, new_shape)
+
+
+@singledispatch
+def flatten_over_axis(arr: np.ndarray, axis: tuple[int, ...]) -> np.ndarray:
+    old_shape = np.take(np.shape(arr), axis)
+    new_shape = (*old_shape, -1)
+    return np.reshape(arr, new_shape)
+
+
+if is_tensorflow_available():
+    # To keep as much computations on GPU as possible.
+
+    from transformers_gradients import is_xla_compatible_platform
+
+    @flatten_over_batch.register(tf.Tensor)
+    @tf.function(reduce_retracing=True, jit_compile=is_xla_compatible_platform())
+    def _(arr: tf.Tensor) -> tf.Tensor:
+        """Apply np.reshape(-1) keeping batch axis unchanged."""
+        batch_size = tf.shape(arr)[0]
+        new_shape = [batch_size, -1]
+        return tf.reshape(arr, new_shape)
+
+    @flatten_over_axis.register(tf.Tensor)
+    def _(arr: tf.Tensor, axis: tuple[int, ...]) -> tf.Tensor:
+        return flatten_over_axis_fn(arr, tf.constant(axis))
+
+    @tf.function(reduce_retracing=True, jit_compile=is_xla_compatible_platform())
+    def flatten_over_axis_fn(arr: tf.Tensor, axis) -> tf.Tensor:
+        old_shape = tf.gather(tf.shape(arr), axis)
+        new_shape = tf.concat([old_shape, [-1]], axis=0)
+        return tf.reshape(arr, new_shape)
