@@ -60,7 +60,7 @@ class Infidelity(Metric[List[float]]):
     """
 
     name = "Infidelity"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    data_applicability = {DataType.IMAGE}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.FAITHFULNESS
