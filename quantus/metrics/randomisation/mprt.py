@@ -119,7 +119,7 @@ class MPRT(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_average_second_moment_estimate.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -161,16 +161,7 @@ class MPRT(Metric):
         # Save metric-specific attributes.
         if similarity_func is None:
             similarity_func = correlation_spearman
-            
-        if normalise_func is None:
-            normalise_func = normalise_by_average_second_moment_estimate
-
-        if normalise_func_kwargs is None:
-            normalise_func_kwargs = {}
-
         self.similarity_func = similarity_func
-        self.normalise_func = normalise_func
-        self.normalise_func_kwargs = normalise_func_kwargs
         self.layer_order = layer_order
         self.seed = seed
         self.return_average_correlation = return_average_correlation
