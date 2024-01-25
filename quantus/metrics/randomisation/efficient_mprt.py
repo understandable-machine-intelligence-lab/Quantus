@@ -127,7 +127,7 @@ class EfficientMPRT(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_max.
+            If normalise_func=None, the default value is used, default=normalise_by_average_second_moment_estimate.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
