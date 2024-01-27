@@ -22,6 +22,20 @@ from quantus.metrics.localisation import (
 
 
 @pytest.fixture
+def all_in_gt_1d_0ch():
+    s_batch = np.zeros((10, 500))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 500))
+    s_batch[:, 50:150] = 1.0
+    a_batch[:, 50:150] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 500),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+    
+    
+@pytest.fixture
 def all_in_gt_1d_3ch():
     s_batch = np.zeros((10, 1, 224))
     a_batch = np.random.uniform(0, 0.1, size=(10, 1, 224))
@@ -385,6 +399,17 @@ def load_cifar10_mosaics(load_cifar10_images):
             True,
         ),
         (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_1d_0ch"),
+            {
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            True,
+        ),
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
@@ -526,6 +551,18 @@ def test_pointing_game(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
+            {
+                "init": {
+                    "k": 100,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_1d_0ch"),
             {
                 "init": {
                     "k": 100,
@@ -758,7 +795,18 @@ def test_top_k_intersection(
     [
         (
             lazy_fixture("load_1d_1ch_conv_model"),
-            lazy_fixture("all_in_gt_zeros_1d_3ch"),
+            lazy_fixture("all_in_gt_1d_0ch"),
+            {
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_zeros_1d_0ch"),
             {
                 "init": {
                     "disable_warnings": False,
@@ -934,6 +982,17 @@ def test_relevance_mass_accuracy(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
+            {
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_1d_0ch"),
             {
                 "init": {
                     "disable_warnings": False,
@@ -1125,6 +1184,17 @@ def test_relevance_rank_accuracy(
             1.0,
         ),
         (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_1d_0ch"),
+            {
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            1.0,
+        ),
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
@@ -1266,6 +1336,18 @@ def test_auc(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
+            {
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_1d_1ch_conv_model"),
+            lazy_fixture("all_in_gt_1d_0ch"),
             {
                 "init": {
                     "weighted": False,
