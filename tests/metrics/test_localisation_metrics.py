@@ -806,7 +806,7 @@ def test_top_k_intersection(
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
-            lazy_fixture("all_in_gt_zeros_1d_0ch"),
+            lazy_fixture("all_in_gt_1d_0ch"),
             {
                 "init": {
                     "disable_warnings": False,
