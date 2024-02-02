@@ -668,9 +668,9 @@ def generate_captum_explanation(
         explanation = torch.zeros(size=inputs.shape)
 
         if inputs.is_cuda:
-            inputs_numpy = inputs.cpu().numpy()
-        else:
-            inputs_numpy = inputs.detach().numpy()
+            inputs = inputs.cpu()
+
+        inputs_numpy = inputs.detach().numpy()
                 
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
