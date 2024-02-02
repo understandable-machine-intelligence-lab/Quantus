@@ -512,7 +512,7 @@ def generate_captum_explanation(
 
     if not isinstance(inputs, torch.Tensor):
         inputs = torch.Tensor(inputs).to(device)
-        # inputs.requires_grad_()
+        inputs.requires_grad_()
 
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
@@ -674,7 +674,7 @@ def generate_captum_explanation(
                 
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs_numpy[i].detach().numpy()), 0, 1)
+                np.clip(scipy.ndimage.sobel(inputs_numpy[i]), 0, 1)
             )
         if len(explanation.shape) > 2:
             explanation = explanation.mean(**reduce_axes)
