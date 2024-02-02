@@ -667,9 +667,14 @@ def generate_captum_explanation(
     elif method == "Control Var. Sobel Filter":
         explanation = torch.zeros(size=inputs.shape)
 
+        if inputs.is_cuda:
+            inputs_numpy = inputs.cpu().numpy()
+        else:
+            inputs_numpy = inputs[i].detach().numpy()
+                
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs[i].detach().numpy()), 0, 1)
+                np.clip(scipy.ndimage.sobel(inputs_numpy[i].detach().numpy()), 0, 1)
             )
         if len(explanation.shape) > 2:
             explanation = explanation.mean(**reduce_axes)
