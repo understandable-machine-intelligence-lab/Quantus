@@ -2,7 +2,7 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
-import numpy as np
+import cupy as np
 from zennit import attribution as zattr
 
 from quantus.functions.explanation_func import explain

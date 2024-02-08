@@ -10,7 +10,7 @@ from importlib import util
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple, List, Union, Generator, TypeVar, Generic
 
-import numpy as np
+import cupy as np
 
 if util.find_spec("tensorflow"):
     import tensorflow as tf

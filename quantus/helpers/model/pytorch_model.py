@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Tuple, List, Union, Generator
 import warnings
 import logging
 
-import numpy as np
+import cupy as np
 import torch
 from torch import nn
 from functools import lru_cache

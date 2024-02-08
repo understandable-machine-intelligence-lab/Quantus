@@ -10,7 +10,7 @@ import warnings
 from importlib import util
 from typing import Optional, Union
 
-import numpy as np
+import cupy as np
 import quantus
 import scipy
 

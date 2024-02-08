@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from typing import Union
 
-import numpy as np
+import cupy as np
 import pytest
 import torch
 from pytest_lazyfixture import lazy_fixture

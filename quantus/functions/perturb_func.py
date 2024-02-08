@@ -12,7 +12,7 @@ import random
 import warnings
 from typing import Any, Callable, Sequence, Tuple, Union, Optional
 import cv2
-import numpy as np
+import cupy as np
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 

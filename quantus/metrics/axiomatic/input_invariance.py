@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
 from quantus.helpers import asserts, warn

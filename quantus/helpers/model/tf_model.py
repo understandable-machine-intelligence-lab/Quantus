@@ -13,7 +13,7 @@ from keras.layers import Dense
 from keras import activations
 from keras import Model
 from keras.models import clone_model
-import numpy as np
+import cupy as np
 import tensorflow as tf
 from warnings import warn
 from cachetools import cachedmethod, LRUCache

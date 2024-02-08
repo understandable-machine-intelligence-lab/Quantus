@@ -385,7 +385,7 @@ e.g., multiple XAI methods, multifaceted evaluation through several metrics, or 
 You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
 
 ```python
-import numpy as np
+import cupy as np
 results = quantus.evaluate(
       metrics=metrics,
       xai_methods=xai_methods,

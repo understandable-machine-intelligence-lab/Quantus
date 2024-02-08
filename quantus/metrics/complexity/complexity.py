@@ -8,7 +8,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 import scipy
 
 from quantus.helpers import warn

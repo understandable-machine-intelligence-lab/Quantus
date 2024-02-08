@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional, no_type_check
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.discretise_func import top_n_sign
 from quantus.helpers.model.model_interface import ModelInterface

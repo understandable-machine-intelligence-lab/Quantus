@@ -8,7 +8,7 @@
 
 
 from typing import Callable, Tuple, Sequence, Union
-import numpy as np
+import cupy as np
 
 
 def assert_features_in_step(

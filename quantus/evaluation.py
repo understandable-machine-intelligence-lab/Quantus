@@ -9,7 +9,7 @@
 import warnings
 from typing import Union, Callable, Dict, Optional, Any
 
-import numpy as np
+import cupy as np
 import pandas as pd
 
 from quantus.helpers import asserts

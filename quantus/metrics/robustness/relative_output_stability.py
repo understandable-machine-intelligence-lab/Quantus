@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 if TYPE_CHECKING:
     import tensorflow as tf

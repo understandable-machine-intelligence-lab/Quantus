@@ -10,7 +10,7 @@ import math
 import random
 from typing import List, Tuple, Optional, Union, Any
 
-import numpy as np
+import cupy as np
 
 
 def build_single_mosaic(mosaic_images_list: List[np.ndarray]) -> np.ndarray:

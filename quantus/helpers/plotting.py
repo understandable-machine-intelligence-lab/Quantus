@@ -9,7 +9,7 @@
 from typing import List, Union, Dict, Any
 
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as np
 
 from quantus.helpers import warn
 

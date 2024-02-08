@@ -3,7 +3,7 @@ from typing import Union
 import pandas as pd
 import pytest
 from pytest_lazyfixture import lazy_fixture
-import numpy as np
+import cupy as np
 from quantus.evaluation import evaluate
 from quantus.functions.explanation_func import explain
 

@@ -1,5 +1,5 @@
 import pytest
-import numpy as np
+import cupy as np
 from quantus.functions.complexity_func import entropy, gini_coeffiient, discrete_entropy
 
 

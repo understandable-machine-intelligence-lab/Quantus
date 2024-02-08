@@ -2,7 +2,7 @@ from typing import Union, Optional, Dict
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
-import numpy as np
+import cupy as np
 import torch
 import pickle
 

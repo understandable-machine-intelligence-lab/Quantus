@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.perturb_func import noisy_linear_imputation
 from quantus.helpers import warn
