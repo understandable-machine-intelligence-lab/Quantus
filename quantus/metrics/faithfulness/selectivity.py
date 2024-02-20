@@ -364,7 +364,7 @@ class Selectivity(Metric[List[float]]):
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
             y_pred_perturb = float(model.predict(x_input)[:, y])
 
-            results[patch_id] = y_pred_perturb
+            results[patch_id] = y_pred - y_pred_perturb
 
         return results
 
