@@ -119,11 +119,11 @@ class InverseEstimation(Metric):
             **kwargs,
         )
 
-        # Asserts and warnings.
-        if metric_init.name == "ROAD":
-            metric_init.return_only_values = True
-        if metric_init.name == "Region-Perturbation":
-            metric_init.order = "morf"
+        # Asserts and warnings. # Skip for now, might revisit later.
+        # if metric_init.name == "ROAD":
+        #    metric_init.return_only_values = True
+        #if metric_init.name == "Region Perturbation":
+        #    metric_init.order = "morf"
 
         # TODO. Update warnings.
         if not self.disable_warnings:
