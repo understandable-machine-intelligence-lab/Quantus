@@ -235,6 +235,11 @@ class InverseEstimation(Metric):
             a_batch is not None
         ), "'a_batch' must be provided to run the inverse estimation."
 
+        assert self.metric_init.abs == True, (
+            "To run the inverse estimation, you cannot set 'a_batch' to "
+            "have positive attributions only. Set 'abs' param of the metric init to 'False'."
+        )
+
         self.scores = self.metric_init(
             model=model,
             x_batch=x_batch,
