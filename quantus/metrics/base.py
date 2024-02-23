@@ -140,7 +140,7 @@ class Metric(Generic[R]):
 
         if normalise_func_kwargs is not None:
             normalise_func = functools.partial(normalise_func, **normalise_func_kwargs)
-
+        
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
@@ -150,6 +150,7 @@ class Metric(Generic[R]):
         self.return_aggregate = return_aggregate
         self.aggregate_func = aggregate_func
         self.normalise_func = normalise_func
+        self.normalise_func_kwargs = normalise_func_kwargs or {}
 
         self.default_plot_func = default_plot_func
 
