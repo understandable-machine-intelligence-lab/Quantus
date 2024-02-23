@@ -271,7 +271,7 @@ class InverseEstimation(Metric):
         if self.method == "sign-flip":
             a_batch_inv = -np.array(a_batch)
         elif self.method == "value-swap":
-            indices = np.argsort(a_batch_inv)
+            indices = np.array([np.argsort(a) for a in a_batch])
             a_batch_inv = np.empty_like(a_batch)
             a_batch_inv[indices] = a_batch[list(reversed(indices))]
         
