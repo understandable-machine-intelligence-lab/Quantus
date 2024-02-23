@@ -58,7 +58,7 @@ class RegionPerturbation(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Region-Perturbation"
+    name = "Region Perturbation"
     data_applicability = {DataType.IMAGE}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
