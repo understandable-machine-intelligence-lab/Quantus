@@ -263,7 +263,17 @@ class InverseEstimation(Metric):
         self.metric_init.evaluation_scores = []
 
         # Run inverse experiment.
-        a_batch_inv = -np.array(a_batch)
+        inverse_estimation_method = kwargs.get("inverse_estimation_method", "sign-change")
+        if inverse_estimation_method == "sign-change":
+            a_batch_inv = -np.array(a_batch)
+        elif inverse_estimation_method == "value-swap":
+            indices = np.argsort(a_batch_inv)
+            a_batch_inv = np.empty_like(a_batch)
+            a_batch_inv[indices] = a_batch[list(reversed(indices))]
+        else:
+            raise ValueError("The 'inverse_estimation_method' in call **kwargs, \
+                             must be either 'sign-change' or 'value-swap'.")
+        
         self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
