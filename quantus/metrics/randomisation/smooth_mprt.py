@@ -29,6 +29,7 @@ from sklearn.utils import gen_batches
 from scipy import stats
 
 from quantus.functions.similarity_func import correlation_spearman
+from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.helpers import asserts, warn, utils
 from quantus.helpers.enums import (
     DataType,
@@ -130,7 +131,7 @@ class SmoothMPRT(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_max.
+            If normalise_func=None, the default value is used, default=normalise_by_average_second_moment_estimate.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -163,7 +164,16 @@ class SmoothMPRT(Metric):
         # Save metric-specific attributes.
         if similarity_func is None:
             similarity_func = correlation_spearman
+        if normalise_func is None:
+            normalise_func = normalise_by_average_second_moment_estimate
+
+        if normalise_func_kwargs is None:
+            normalise_func_kwargs = {}
+            
         self.similarity_func = similarity_func
+        self.normalise_func = normalise_func
+        self.abs = abs
+        self.normalise_func_kwargs = normalise_func_kwargs
         self.layer_order = layer_order
         self.seed = seed
         self.nr_samples = nr_samples
