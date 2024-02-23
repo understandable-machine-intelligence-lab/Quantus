@@ -152,11 +152,6 @@ class RegionPerturbation(Metric[List[float]]):
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
-        if isinstance(self.inverse_estimation, bool):
-            assert self.order in [
-                "morf",
-                "lerf",
-            ], "Inverse estimation assumes order is either 'morf' and 'lerf'."
 
         if not self.disable_warnings:
             warn.warn_parameterisation(
