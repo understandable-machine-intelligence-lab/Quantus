@@ -301,6 +301,14 @@ from quantus.functions.normalise_func import normalise_by_max
             {"shape": (8, 1, 28, 28)},
         ),
         (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "method": "Control Var. Sobel Filter",
+            },
+            {"min": -10000.0, "max": 10000.0},
+        ),
+        (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
@@ -335,8 +343,25 @@ from quantus.functions.normalise_func import normalise_by_max
             {"value": 0.0},
         ),
         (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "method": "Control Var. Constant",
+                "constant_value": 0.0,
+            },
+            {"value": 0.0},
+        ),
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
+            {
+                "method": "Control Var. Random Uniform",
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
             {
                 "method": "Control Var. Random Uniform",
             },
@@ -750,7 +775,6 @@ def test_explain_func(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
