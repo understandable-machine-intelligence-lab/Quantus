@@ -5,9 +5,8 @@ import numpy as np
 import pytest
 import torch
 from pytest_lazyfixture import lazy_fixture
-from scipy.special import softmax
-
 from quantus.helpers.model.pytorch_model import PyTorchModel
+from scipy.special import softmax
 
 
 @pytest.fixture
@@ -242,3 +241,37 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
     a1 = model.model(X)
     a2 = new_model(X_shift)
     assert torch.all(torch.isclose(a1, a2, atol=1e-04))
+
+
+@pytest.mark.pytorch_model
+@pytest.mark.parametrize(
+    "hf_model,data,model_kwargs,expected",
+    [
+        (
+            lazy_fixture("load_hf_distilbert_sequence_classifier"),
+            lazy_fixture("mock_hf_text"),
+            {},
+            np.array([[0.01157812, 0.03933399]]),
+        ),
+        (
+            lazy_fixture("load_hf_distilbert_sequence_classifier"),
+            lazy_fixture("mock_hf_text"),
+            {"labels": torch.tensor([1]), "output_hidden_states": True},
+            np.array([[0.01157812, 0.03933399]]),
+        ),
+        (
+            lazy_fixture("load_hf_distilbert_sequence_classifier"),
+            np.array([1, 2, 3]),
+            {},
+            ValueError,
+        ),
+    ],
+)
+def test_huggingface_classifier_predict(hf_model, data, model_kwargs, expected):
+    model = PyTorchModel(model=hf_model, model_predict_kwargs=model_kwargs)
+    if expected is ValueError:
+        with pytest.raises(expected):
+            out = model.predict(x=data)
+    else:
+        out = model.predict(x=data)
+        assert np.allclose(out, expected), "Test failed."

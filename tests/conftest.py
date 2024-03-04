@@ -1,26 +1,26 @@
-import pytest
-import pickle
-import torch
-import numpy as np
-from keras.datasets import cifar10
-import pandas as pd
-from sklearn.model_selection import train_test_split
 import os
+import pickle
 
-from quantus.helpers.model.models import (
-    LeNet,
-    LeNetTF,
-    CifarCNNModel,
-    ConvNet1D,
-    ConvNet1DTF,
-    TitanicSimpleTFModel,
-    TitanicSimpleTorchModel,
-)
+import numpy as np
+import pandas as pd
+import pytest
+import torch
+from keras.datasets import cifar10
+from quantus.helpers.model.models import (CifarCNNModel, ConvNet1D,
+                                          ConvNet1DTF, LeNet, LeNetTF,
+                                          TitanicSimpleTFModel,
+                                          TitanicSimpleTorchModel)
+from sklearn.model_selection import train_test_split
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          set_seed)
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
 BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
+RANDOM_SEED = 42
+
+set_seed(42)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -234,6 +234,29 @@ def load_mnist_model_softmax():
         torch.nn.Softmax(),
     )
     return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_hf_distilbert_sequence_classifier():
+    """
+    TODO
+    """
+    DISTILBERT_BASE = "distilbert-base-uncased"
+    model = AutoModelForSequenceClassification.from_pretrained(
+        DISTILBERT_BASE, cache_dir="/tmp/"
+    )
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mock_hf_text():
+    """
+    TODO
+    """
+    DISTILBERT_BASE = "distilbert-base-uncased"
+    REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
+    tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
+    return tokenizer(REFERENCE_TEXT, return_tensors="pt")
 
 
 @pytest.fixture(scope="session", autouse=True)
