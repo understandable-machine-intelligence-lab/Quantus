@@ -280,9 +280,9 @@ class PyTorchModel(ModelInterface[nn.Module]):
         random_layer_model = deepcopy(self.model)
 
         modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
+            layer
+            for layer in random_layer_model.named_modules()
+            if (hasattr(layer[1], "reset_parameters"))
         ]
 
         if order == "top_down":
@@ -365,7 +365,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         with torch.no_grad():
             new_model = deepcopy(self.model)
 
-            modules = [l for l in new_model.named_modules()]
+            modules = [layer for layer in new_model.named_modules()]
             module = modules[1]
 
             delta = torch.zeros(size=shape).fill_(input_shift)
@@ -392,8 +392,8 @@ class PyTorchModel(ModelInterface[nn.Module]):
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
-        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
-        we make the implementation flexible.
+        As the exact definition of "internal model representation" is left out in the original paper
+        (see: https://arxiv.org/pdf/2203.06877.pdf), we make the implementation flexible.
         It is up to the user whether all layers are used, or specific ones should be selected.
         The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
 
@@ -437,8 +437,8 @@ class PyTorchModel(ModelInterface[nn.Module]):
         # skip modules defined by subclassing API.
         hidden_layers = list(  # type: ignore
             filter(
-                lambda l: not isinstance(
-                    l[1], (self.model.__class__, torch.nn.Sequential)
+                lambda layer: not isinstance(
+                    layer_names[1], (self.model.__class__, torch.nn.Sequential)
                 ),
                 all_layers,
             )
