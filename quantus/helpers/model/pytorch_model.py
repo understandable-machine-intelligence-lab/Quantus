@@ -6,19 +6,20 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 import copy
+import logging
+import warnings
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List, Union, Generator
-import warnings
-import logging
+from functools import lru_cache
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from torch import nn
-from functools import lru_cache
-
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+from torch import nn
+from transformers import PreTrainedModel
+from transformers.tokenization_utils import BatchEncoding
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
@@ -97,6 +98,19 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         return linear_model
 
+    def _obtain_predictions(self, x, model_predict_kwargs):
+        pred = None
+        if isinstance(self.model, PreTrainedModel):
+            if not isinstance(x, BatchEncoding):
+                raise ValueError(
+                    "When using HuggingFace pretrained models, please use Tokenizers output for `x`"
+                )
+            pred = self.model(**x, **model_predict_kwargs).logits
+        elif isinstance(self.model, nn.Module):
+            pred_model = self.get_softmax_arg_model()
+            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+        return pred
+
     def get_softmax_arg_model(self) -> torch.nn:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
@@ -156,14 +170,17 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         return self.model  # Case 5
 
-    def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
+    def predict(
+        self, x: Union[np.ndarray, BatchEncoding], grad: bool = False, **kwargs
+    ) -> np.array:
         """
         Predict on the given input.
 
         Parameters
         ----------
-        x: np.ndarray
-            A given input that the wrapped model predicts on.
+        x: np.ndarray, BatchEncoding
+            A given input that the wrapped model predicts on. This can be either a numpy
+            or a BatchEncoding (Tokenizers output from huggingface's Tokenizer library)
         grad: boolean
             Indicates if gradient-calculation is disabled or not.
         kwargs: optional
@@ -177,15 +194,13 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
         model_predict_kwargs = {**self.model_predict_kwargs, **kwargs}
-
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
 
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred_model = self.get_softmax_arg_model()
-            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+            pred = self._obtain_predictions(x, model_predict_kwargs)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
