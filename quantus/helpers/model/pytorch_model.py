@@ -115,7 +115,10 @@ class PyTorchModel(ModelInterface[nn.Module]):
                     "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
                     "or make sure you're passing a dict with input_ids and attention_mask as keys"
                 )
+            pred_model = self.get_softmax_arg_model()
             pred = self.model(**x, **model_predict_kwargs).logits
+            if self.softmax:
+                return torch.softmax(pred, dim=-1)
         elif isinstance(self.model, nn.Module):
             pred_model = self.get_softmax_arg_model()
             pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)

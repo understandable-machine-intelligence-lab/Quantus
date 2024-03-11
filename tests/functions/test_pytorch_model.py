@@ -245,17 +245,19 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
 
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
-    "hf_model,data,model_kwargs,expected",
+    "hf_model,data,softmax,model_kwargs,expected",
     [
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             lazy_fixture("mock_hf_text"),
+            False,
             {},
             np.array([[0.01157812, 0.03933399]]),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             lazy_fixture("mock_hf_text"),
+            False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
             np.array([[0.01157812, 0.03933399]]),
         ),
@@ -263,19 +265,28 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             {'input_ids': torch.tensor([[  101,  1996,  4248,  2829,  4419, 14523,  2058,  1996, 13971,  3899,
                 102]]), 'attention_mask': torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])},
+            False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
             np.array([[0.01157812, 0.03933399]]),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
+            lazy_fixture("mock_hf_text"),
+            True,
+            {},
+            np.array([[0.49306148, 0.5069385]]),
+        ),
+        (
+            lazy_fixture("load_hf_distilbert_sequence_classifier"),
             np.array([1, 2, 3]),
+            False,
             {},
             ValueError,
         ),
     ],
 )
-def test_huggingface_classifier_predict(hf_model, data, model_kwargs, expected):
-    model = PyTorchModel(model=hf_model, model_predict_kwargs=model_kwargs)
+def test_huggingface_classifier_predict(hf_model, data, softmax, model_kwargs, expected):
+    model = PyTorchModel(model=hf_model, softmax=softmax, model_predict_kwargs=model_kwargs)
     if expected is ValueError:
         with pytest.raises(expected):
             out = model.predict(x=data)
