@@ -101,9 +101,19 @@ class PyTorchModel(ModelInterface[nn.Module]):
     def _obtain_predictions(self, x, model_predict_kwargs):
         pred = None
         if isinstance(self.model, PreTrainedModel):
-            if not isinstance(x, BatchEncoding):
+            # BatchEncoding is the default output from Tokenizers which contains
+            # necessary keys such as `input_ids` and `attention_mask`.
+            # It is also possible to pass a Dict with those keys.
+            if not (
+                isinstance(x, BatchEncoding)
+                or (
+                    isinstance(x, dict)
+                    and ("input_ids" in x.keys() and "attention_mask" in x.keys())
+                )
+            ):
                 raise ValueError(
-                    "When using HuggingFace pretrained models, please use Tokenizers output for `x`"
+                    "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
+                    "or make sure you're passing a dict with input_ids and attention_mask as keys"
                 )
             pred = self.model(**x, **model_predict_kwargs).logits
         elif isinstance(self.model, nn.Module):

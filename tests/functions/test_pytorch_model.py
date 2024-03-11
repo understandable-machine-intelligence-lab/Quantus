@@ -261,6 +261,13 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
+            {'input_ids': torch.tensor([[  101,  1996,  4248,  2829,  4419, 14523,  2058,  1996, 13971,  3899,
+                102]]), 'attention_mask': torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])},
+            {"labels": torch.tensor([1]), "output_hidden_states": True},
+            np.array([[0.01157812, 0.03933399]]),
+        ),
+        (
+            lazy_fixture("load_hf_distilbert_sequence_classifier"),
             np.array([1, 2, 3]),
             {},
             ValueError,
