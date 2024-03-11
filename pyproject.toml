@@ -52,6 +52,7 @@ dynamic = ["version"]
 #
 [project.optional-dependencies]
 tests = [
+    "cachetools>=5.3.3",
     "captum>=0.6.0",
     "coverage>=7.2.3",
     "flake8<=4.0.1; python_version == '3.7'",
