@@ -451,7 +451,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         hidden_layers = list(  # type: ignore
             filter(
                 lambda layer: not isinstance(
-                    layer_names[1], (self.model.__class__, torch.nn.Sequential)
+                    layer[1], (self.model.__class__, torch.nn.Sequential)
                 ),
                 all_layers,
             )
