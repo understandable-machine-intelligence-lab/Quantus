@@ -35,7 +35,9 @@ jobs:
       - name: Setup test environment
         run: tox run --notest
       - name: Test with PyTest
-        run: tox run
+        run: |
+          pip list | grep keras
+          tox run
       - name: Test building package
         run: |
           tox run -e build
