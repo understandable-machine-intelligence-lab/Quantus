@@ -320,8 +320,10 @@ class InverseEstimation(Metric):
             self.evaluation_scores = self.get_mean_score
 
         self.all_evaluation_scores.extend(self.metric_init.evaluation_scores)
-
-        return inv_scores
+        
+        print(np.shape(inv_scores))
+        print(np.shape(inv_scores.reshape(-1)))
+        return inv_scores.reshape(-1)
 
     def convert_attributions_to_rankings(self):
         pass
