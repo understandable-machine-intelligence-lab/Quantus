@@ -36,7 +36,7 @@ jobs:
         run: tox run --notest
       - name: Test with PyTest
         run: |
-          pip list | grep keras
+          pip list
           tox run
       - name: Test building package
         run: |
