@@ -125,9 +125,9 @@ class InverseEstimation(Metric):
         #if metric_init.name == "Region Perturbation":
         #    metric_init.order = "morf"
 
-        self.method = kwargs.get("method", "sign-flip")
-        if self.method not in ["sign-flip", "value-swap"]:
-            raise ValueError("The 'inverse_estimation_method' in init **kwargs, \
+        self.inverse_method = kwargs.get("inverse_method", "sign-flip")
+        if self.inverse_method not in ["sign-flip", "value-swap"]:
+            raise ValueError("The 'inverse_method' in init **kwargs, \
                              must be either 'sign-flip' or 'value-swap'.")
 
         # TODO. Update warnings.
@@ -268,9 +268,9 @@ class InverseEstimation(Metric):
         self.metric_init.evaluation_scores = []
 
         # Run inverse experiment.
-        if self.method == "sign-flip":
+        if self.inverse_method == "sign-flip":
             a_batch_inv = -np.array(a_batch)
-        elif self.method == "value-swap":
+        elif self.inverse_method == "value-swap":
             indices = np.array([np.argsort(a) for a in a_batch])
             a_batch_inv = np.empty_like(a_batch)
             a_batch_inv[indices] = a_batch[list(reversed(indices))]
