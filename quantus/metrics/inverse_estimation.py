@@ -46,8 +46,8 @@ class InverseEstimation(Metric):
     name = "Inverse-Estimation"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
-    evaluation_category = EvaluationCategory.FAITHFULNESS
+    score_direction = ScoreDirection.HIGHER
+    #evaluation_category = EvaluationCategory.FAITHFULNESS
 
     def __init__(
         self,
