@@ -268,13 +268,18 @@ class InverseEstimation(Metric):
         # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
+        # Attributions needs to have only one axis, else flatten and reshape back.
+        shape_ori = a_batch.shape
+        a_batch = a_batch.reshape((shape_ori[0],-1))
+
         # Run inverse experiment.
         if self.inverse_method == "sign-flip":
             a_batch_inv = -np.array(a_batch)
         elif self.inverse_method == "value-swap":
-            indices = np.array([np.argsort(a) for a in a_batch])
+            indices = np.argsort(a_batch, axis=1)
             a_batch_inv = np.empty_like(a_batch)
-            a_batch_inv[indices] = a_batch[list(reversed(indices))]
+            a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:,::-1]]
+        a_batch_inv.reshape(shape_ori)
         
         self.scores_inv = self.metric_init(
             model=model,
