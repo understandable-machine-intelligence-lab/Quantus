@@ -73,19 +73,15 @@ If you find this toolkit or its companion paper
 interesting or useful in your research, please use the following Bibtex annotation to cite us:
 
 ```bibtex
-@article{hedstrom2022quantus,
-      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations},
-      author={Anna Hedström and
-              Leander Weber and
-              Dilyara Bareeva and
-              Franz Motzkus and
-              Wojciech Samek and
-              Sebastian Lapuschkin and
-              Marina M.-C. Höhne},
-      year={2022},
-      eprint={2202.06861},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@article{hedstrom2023quantus,
+  author  = {Anna Hedstr{\"{o}}m and Leander Weber and Daniel Krakowczyk and Dilyara Bareeva and Franz Motzkus and Wojciech Samek and Sebastian Lapuschkin and Marina Marina M.{-}C. H{\"{o}}hne},
+  title   = {Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations and Beyond},
+  journal = {Journal of Machine Learning Research},
+  year    = {2023},
+  volume  = {24},
+  number  = {34},
+  pages   = {1--11},
+  url     = {http://jmlr.org/papers/v24/22-0142.html}
 }
 ```
 

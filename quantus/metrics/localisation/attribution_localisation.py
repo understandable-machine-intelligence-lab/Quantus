@@ -57,6 +57,7 @@ class AttributionLocalisation(Metric[List[float]]):
         self,
         weighted: bool = False,
         max_size: float = 1.0,
+        positive_attributions: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable] = None,
@@ -76,6 +77,9 @@ class AttributionLocalisation(Metric[List[float]]):
             default=False.
         max_size: float
             The maximum ratio for  the size of the bounding box to image, default=1.0.
+        positive_attributions: boolean
+            Indicates whether only positive attributions should be used, i.e., clipping,
+            default=False.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=True.
         normalise: boolean
@@ -118,6 +122,7 @@ class AttributionLocalisation(Metric[List[float]]):
         # Save metric-specific attributes.
         self.weighted = weighted
         self.max_size = max_size
+        self.positive_attributions = positive_attributions
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -270,6 +275,8 @@ class AttributionLocalisation(Metric[List[float]]):
 
         # Prepare shapes.
         a = a.flatten()
+        if self.positive_attributions:
+            a = np.clip(a, 0, None)
         s = s.flatten().astype(bool)
 
         # Compute ratio.

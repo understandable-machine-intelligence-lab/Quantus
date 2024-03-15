@@ -8,7 +8,7 @@
 
 import warnings
 from importlib import util
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 import numpy as np
 import quantus
@@ -391,7 +391,6 @@ def generate_tf_explanation(
         )
 
     elif method == "SmoothGrad":
-
         num_samples = kwargs.get("num_samples", 5)
         noise = kwargs.get("noise", 0.1)
         explainer = tf_explain.core.smoothgrad.SmoothGrad()
@@ -513,6 +512,7 @@ def generate_captum_explanation(
 
     if not isinstance(inputs, torch.Tensor):
         inputs = torch.Tensor(inputs).to(device)
+        inputs.requires_grad_()
 
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
@@ -667,14 +667,22 @@ def generate_captum_explanation(
     elif method == "Control Var. Sobel Filter":
         explanation = torch.zeros(size=inputs.shape)
 
+        if inputs.is_cuda:
+            inputs = inputs.cpu()
+
+        inputs_numpy = inputs.detach().numpy()
+                
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
+                np.clip(scipy.ndimage.sobel(inputs_numpy[i]), 0, 1)
             )
-        explanation = explanation.mean(**reduce_axes)
+        if len(explanation.shape) > 2:
+            explanation = explanation.mean(**reduce_axes)
 
     elif method == "Control Var. Random Uniform":
-        explanation = torch.rand(size=(inputs.shape[0], *inputs.shape[2:]))
+        explanation = torch.rand(size=(inputs.shape))
+        if len(explanation.shape) > 2:
+            explanation = explanation.mean(**reduce_axes)
 
     elif method == "Control Var. Constant":
         assert (
@@ -686,13 +694,16 @@ def generate_captum_explanation(
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                value=kwargs["constant_value"], arr=inputs[i], return_shape=(1,)
+                value=kwargs["constant_value"],
+                arr=inputs[i],
+                return_shape=kwargs.get("return_shape", (1,)),
             )[0]
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
             )
 
-        explanation = explanation.mean(**reduce_axes)
+        if len(explanation.shape) > 2:
+            explanation = explanation.mean(**reduce_axes)
 
     else:
         raise KeyError(
