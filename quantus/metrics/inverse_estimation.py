@@ -273,14 +273,30 @@ class InverseEstimation(Metric):
         a_batch = a_batch.reshape((shape_ori[0],-1))
 
         # Run inverse experiment.
-        if self.inverse_method == "sign-flip":
-            a_batch_inv = -np.array(a_batch)
-        elif self.inverse_method == "value-swap":
-            indices = np.argsort(a_batch, axis=1)
-            a_batch_inv = np.empty_like(a_batch)
-            a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:,::-1]]
-        a_batch_inv.reshape(shape_ori)
+        def get_inverse_attributions(inverse_method: str, a_batch: np.array):
+            if inverse_method == "sign-flip":
+                a_batch_inv = -np.array(a_batch)
+            elif inverse_method == "value-swap":
+                indices = np.argsort(a_batch, axis=1)
+                a_batch_inv = np.empty_like(a_batch)
+                a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:,::-1]]
+            a_batch_inv.reshape(shape_ori)
+            return a_batch_inv
         
+        def inverse_wrapper(model, inputs, targets, **kwargs):
+            explain_func = kwargs["explain_func"]
+            inverse_method = kwargs["inverse_method"]
+            a_batch = explain_func(model, inputs, targets, **kwargs)
+            a_batch_inv = get_inverse_attributions(inverse_method=inverse_method, a_batch=a_batch)
+            return a_batch_inv
+        
+        # Get inverse attributions.
+        a_batch_inv = get_inverse_attributions(inverse_method=self.inverse_method, a_batch=a_batch)
+
+        # Metrics that depend on re-computing explanations need inverse wrapping.
+        explain_func_kwargs["explain_func"] = explain_func
+        explain_func_kwargs["inverse_method"] = self.inverse_method
+
         self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
@@ -288,7 +304,7 @@ class InverseEstimation(Metric):
             a_batch=a_batch_inv,
             s_batch=s_batch,
             channel_first=channel_first,
-            explain_func=explain_func,
+            explain_func=inverse_wrapper,
             explain_func_kwargs=explain_func_kwargs,
             softmax=softmax,
             device=device,
