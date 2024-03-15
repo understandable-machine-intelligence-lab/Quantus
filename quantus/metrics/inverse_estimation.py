@@ -52,6 +52,7 @@ class InverseEstimation(Metric):
     def __init__(
         self,
         metric_init: Metric,
+        inverse_method: str = "sign-flip",
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[Callable] = None,
@@ -125,7 +126,7 @@ class InverseEstimation(Metric):
         #if metric_init.name == "Region Perturbation":
         #    metric_init.order = "morf"
 
-        self.inverse_method = kwargs.get("inverse_method", "sign-flip")
+        self.inverse_method = inverse_method
         if self.inverse_method not in ["sign-flip", "value-swap"]:
             raise ValueError("The 'inverse_method' in init **kwargs, \
                              must be either 'sign-flip' or 'value-swap'.")
