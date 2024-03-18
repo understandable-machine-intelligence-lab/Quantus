@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import scipy
-import numpy as np
+import cupy as np
 
 
 def freedman_diaconis_rule(a_batch: np.ndarray) -> int:

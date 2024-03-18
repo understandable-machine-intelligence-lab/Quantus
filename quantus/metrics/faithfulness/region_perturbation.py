@@ -10,7 +10,7 @@ import itertools
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.helpers import asserts, plotting, utils, warn

@@ -29,7 +29,7 @@ from typing import (
 )
 
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as np
 from sklearn.utils import gen_batches
 from tqdm.auto import tqdm
 

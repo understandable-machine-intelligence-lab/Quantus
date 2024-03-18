@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from typing import List, TYPE_CHECKING, Callable, Mapping
-import numpy as np
+import cupy as np
 import functools
 
 if sys.version_info >= (3, 8):

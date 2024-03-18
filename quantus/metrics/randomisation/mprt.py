@@ -22,7 +22,7 @@ from typing import (
 )
 
 
-import numpy as np
+import cupy as np
 from tqdm.auto import tqdm
 from sklearn.utils import gen_batches
 

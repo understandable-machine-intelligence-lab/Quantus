@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 from quantus.helpers import plotting, warn
 from quantus.helpers.enums import (

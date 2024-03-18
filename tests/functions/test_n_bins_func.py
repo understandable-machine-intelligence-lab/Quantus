@@ -2,7 +2,7 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.n_bins_func import *
-import numpy as np
+import cupy as np
 
 
 @pytest.fixture

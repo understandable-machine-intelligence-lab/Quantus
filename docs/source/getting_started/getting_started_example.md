@@ -242,7 +242,7 @@ xai_methods = {
 You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
 
 ```python
-import numpy as np
+import cupy as np
 results = quantus.evaluate(
       metrics=metrics,
       xai_methods=xai_methods,
@@ -275,7 +275,7 @@ For example, if you want to replace `similarity_func` in your evaluation, you ca
 
 ```python
 import scipy
-import numpy as np
+import cupy as np
 
 def my_similarity_func(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate the similarity of a and b by subtraction."""

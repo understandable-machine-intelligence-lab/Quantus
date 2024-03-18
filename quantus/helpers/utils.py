@@ -11,7 +11,7 @@ import re
 from importlib import util
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
 
-import numpy as np
+import cupy as np
 from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts

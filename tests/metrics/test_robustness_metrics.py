@@ -1,7 +1,7 @@
 from typing import Union, Dict
 from pytest_lazyfixture import lazy_fixture
 import pytest
-import numpy as np
+import cupy as np
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.discretise_func import floating_points, rank, sign, top_n_sign

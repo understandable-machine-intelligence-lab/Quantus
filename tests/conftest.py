@@ -1,7 +1,7 @@
 import pytest
 import pickle
 import torch
-import numpy as np
+import cupy as np
 from keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split

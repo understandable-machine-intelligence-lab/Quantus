@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import distance_euclidean, lipschitz_constant

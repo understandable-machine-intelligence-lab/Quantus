@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 
 from quantus.functions.similarity_func import ssim
 from quantus.helpers import asserts, warn

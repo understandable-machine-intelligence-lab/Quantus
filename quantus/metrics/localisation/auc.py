@@ -9,7 +9,7 @@
 import sys
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
+import cupy as np
 from sklearn.metrics import auc, roc_curve
 
 from quantus.helpers import asserts, warn

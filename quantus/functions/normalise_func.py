@@ -9,7 +9,7 @@
 import warnings
 from typing import Optional, Sequence
 
-import numpy as np
+import cupy as np
 
 
 def normalise_by_max(

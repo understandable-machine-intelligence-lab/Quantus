@@ -1,5 +1,5 @@
 import pytest
-import numpy as np
+import cupy as np
 from pytest_mock import MockerFixture
 
 
