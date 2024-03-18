@@ -20,7 +20,9 @@ BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
 RANDOM_SEED = 42
 
-set_seed(42)
+@pytest.fixture(scope='function', autouse=True)
+def reset_prngs():
+    set_seed(42)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -236,7 +238,7 @@ def load_mnist_model_softmax():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", autouse=False)
 def load_hf_distilbert_sequence_classifier():
     """
     TODO
@@ -248,8 +250,8 @@ def load_hf_distilbert_sequence_classifier():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
-def mock_hf_text():
+@pytest.fixture(scope="session", autouse=False)
+def dummy_hf_tokenizer():
     """
     TODO
     """

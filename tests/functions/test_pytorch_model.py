@@ -250,17 +250,17 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
     [
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
-            lazy_fixture("mock_hf_text"),
+            lazy_fixture("dummy_hf_tokenizer"),
             False,
             {},
-            nullcontext(np.array([[0.01157812, 0.03933399]])),
+            nullcontext(np.array([[0.00424026, -0.03878461]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
-            lazy_fixture("mock_hf_text"),
+            lazy_fixture("dummy_hf_tokenizer"),
             False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
-            nullcontext(np.array([[0.01157812, 0.03933399]])),
+            nullcontext(np.array([[0.00424026, -0.03878461]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
@@ -268,14 +268,14 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
                 102]]), 'attention_mask': torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])},
             False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
-            nullcontext(np.array([[0.01157812, 0.03933399]])),
+            nullcontext(np.array([[0.00424026, -0.03878461]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
-            lazy_fixture("mock_hf_text"),
+            lazy_fixture("dummy_hf_tokenizer"),
             True,
             {},
-            nullcontext(np.array([[0.49306148, 0.5069385]])),
+            nullcontext(np.array([[0.51075452, 0.4892454]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
