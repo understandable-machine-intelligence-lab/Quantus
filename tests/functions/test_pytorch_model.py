@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from contextlib import nullcontext
 from typing import Union
 
 import numpy as np
@@ -252,14 +253,14 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
             lazy_fixture("mock_hf_text"),
             False,
             {},
-            np.array([[0.01157812, 0.03933399]]),
+            nullcontext(np.array([[0.01157812, 0.03933399]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             lazy_fixture("mock_hf_text"),
             False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
-            np.array([[0.01157812, 0.03933399]]),
+            nullcontext(np.array([[0.01157812, 0.03933399]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
@@ -267,29 +268,26 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
                 102]]), 'attention_mask': torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])},
             False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
-            np.array([[0.01157812, 0.03933399]]),
+            nullcontext(np.array([[0.01157812, 0.03933399]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             lazy_fixture("mock_hf_text"),
             True,
             {},
-            np.array([[0.49306148, 0.5069385]]),
+            nullcontext(np.array([[0.49306148, 0.5069385]])),
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             np.array([1, 2, 3]),
             False,
             {},
-            ValueError,
+            pytest.raises(ValueError),
         ),
     ],
 )
 def test_huggingface_classifier_predict(hf_model, data, softmax, model_kwargs, expected):
     model = PyTorchModel(model=hf_model, softmax=softmax, model_predict_kwargs=model_kwargs)
-    if expected is ValueError:
-        with pytest.raises(expected):
-            out = model.predict(x=data)
-    else:
+    with expected:
         out = model.predict(x=data)
-        assert np.allclose(out, expected), "Test failed."
+        assert np.allclose(out, expected.enter_result), "Test failed."

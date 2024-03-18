@@ -11,15 +11,17 @@ import warnings
 from contextlib import suppress
 from copy import deepcopy
 from functools import lru_cache
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
-from quantus.helpers import utils
-from quantus.helpers.model.model_interface import ModelInterface
 from torch import nn
 from transformers import PreTrainedModel
 from transformers.tokenization_utils import BatchEncoding
+
+from quantus.helpers import utils
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
@@ -115,16 +117,16 @@ class PyTorchModel(ModelInterface[nn.Module]):
                     "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
                     "or make sure you're passing a dict with input_ids and attention_mask as keys"
                 )
-            pred_model = self.get_softmax_arg_model()
             pred = self.model(**x, **model_predict_kwargs).logits
             if self.softmax:
                 return torch.softmax(pred, dim=-1)
+            return pred
         elif isinstance(self.model, nn.Module):
             pred_model = self.get_softmax_arg_model()
-            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
-        return pred
+            return pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+        raise ValueError("Predictions cant be null")
 
-    def get_softmax_arg_model(self) -> torch.nn:
+    def get_softmax_arg_model(self) -> torch.nn.Module:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation as the last layer and softmax=false,
@@ -184,8 +186,11 @@ class PyTorchModel(ModelInterface[nn.Module]):
         return self.model  # Case 5
 
     def predict(
-        self, x: Union[np.ndarray, BatchEncoding], grad: bool = False, **kwargs
-    ) -> np.array:
+        self,
+        x: Union[npt.ArrayLike, Mapping[str, npt.ArrayLike]],
+        grad: bool = False,
+        **kwargs,
+    ) -> np.ndarray:
         """
         Predict on the given input.
 

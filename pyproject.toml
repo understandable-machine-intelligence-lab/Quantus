@@ -53,7 +53,6 @@ dynamic = ["version"]
 #
 [project.optional-dependencies]
 tests = [
-    "cachetools>=5.3.3",
     "captum>=0.6.0",
     "coverage>=7.2.3",
     "flake8<=4.0.1; python_version == '3.7'",
@@ -77,8 +76,6 @@ tests = [
     "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
     "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
     "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'",
-    "transformers<=4.30.2; python_version == '3.7'",
-    "transformers>=4.38.2; python_version > '3.7'",
 ]
 torch = [
     "torch<=1.11.0; python_version == '3.7'",
@@ -109,8 +106,13 @@ zennit = [
     "quantus[torch]",
     "zennit>=0.5.1"
 ]
+transformers = [
+    "quantus[torch, tensorflow]",
+    "transformers<=4.30.2; python_version == '3.7'",
+    "transformers>=4.38.2; python_version > '3.7'",
+]
 full = [
-    "quantus[captum,tf_explain,zennit]"
+    "quantus[captum,tf_explain,zennit, transformers]"
 ]
 
 [build-system]
