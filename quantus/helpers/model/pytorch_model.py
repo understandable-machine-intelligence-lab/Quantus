@@ -6,16 +6,19 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 import copy
+import logging
+import warnings
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List, Union, Generator
-import warnings
-import logging
+from functools import lru_cache
+from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import torch
 from torch import nn
-from functools import lru_cache
+from transformers import PreTrainedModel
+from transformers.tokenization_utils import BatchEncoding
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
@@ -97,7 +100,33 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         return linear_model
 
-    def get_softmax_arg_model(self) -> torch.nn:
+    def _obtain_predictions(self, x, model_predict_kwargs):
+        pred = None
+        if isinstance(self.model, PreTrainedModel):
+            # BatchEncoding is the default output from Tokenizers which contains
+            # necessary keys such as `input_ids` and `attention_mask`.
+            # It is also possible to pass a Dict with those keys.
+            if not (
+                isinstance(x, BatchEncoding)
+                or (
+                    isinstance(x, dict)
+                    and ("input_ids" in x.keys() and "attention_mask" in x.keys())
+                )
+            ):
+                raise ValueError(
+                    "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
+                    "or make sure you're passing a dict with input_ids and attention_mask as keys"
+                )
+            pred = self.model(**x, **model_predict_kwargs).logits
+            if self.softmax:
+                return torch.softmax(pred, dim=-1)
+            return pred
+        elif isinstance(self.model, nn.Module):
+            pred_model = self.get_softmax_arg_model()
+            return pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+        raise ValueError("Predictions cant be null")
+
+    def get_softmax_arg_model(self) -> torch.nn.Module:
         """
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation as the last layer and softmax=false,
@@ -156,14 +185,20 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         return self.model  # Case 5
 
-    def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
+    def predict(
+        self,
+        x: Union[npt.ArrayLike, Mapping[str, npt.ArrayLike]],
+        grad: bool = False,
+        **kwargs,
+    ) -> np.ndarray:
         """
         Predict on the given input.
 
         Parameters
         ----------
-        x: np.ndarray
-            A given input that the wrapped model predicts on.
+        x: np.ndarray, BatchEncoding
+            A given input that the wrapped model predicts on. This can be either a numpy
+            or a BatchEncoding (Tokenizers output from huggingface's Tokenizer library)
         grad: boolean
             Indicates if gradient-calculation is disabled or not.
         kwargs: optional
@@ -177,15 +212,13 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
         model_predict_kwargs = {**self.model_predict_kwargs, **kwargs}
-
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
 
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred_model = self.get_softmax_arg_model()
-            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+            pred = self._obtain_predictions(x, model_predict_kwargs)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
@@ -265,9 +298,9 @@ class PyTorchModel(ModelInterface[nn.Module]):
         random_layer_model = deepcopy(self.model)
 
         modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
+            layer
+            for layer in random_layer_model.named_modules()
+            if (hasattr(layer[1], "reset_parameters"))
         ]
 
         if order == "top_down":
@@ -350,7 +383,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         with torch.no_grad():
             new_model = deepcopy(self.model)
 
-            modules = [l for l in new_model.named_modules()]
+            modules = [layer for layer in new_model.named_modules()]
             module = modules[1]
 
             delta = torch.zeros(size=shape).fill_(input_shift)
@@ -377,8 +410,8 @@ class PyTorchModel(ModelInterface[nn.Module]):
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
-        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
-        we make the implementation flexible.
+        As the exact definition of "internal model representation" is left out in the original paper
+        (see: https://arxiv.org/pdf/2203.06877.pdf), we make the implementation flexible.
         It is up to the user whether all layers are used, or specific ones should be selected.
         The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
 
@@ -422,8 +455,8 @@ class PyTorchModel(ModelInterface[nn.Module]):
         # skip modules defined by subclassing API.
         hidden_layers = list(  # type: ignore
             filter(
-                lambda l: not isinstance(
-                    l[1], (self.model.__class__, torch.nn.Sequential)
+                lambda layer: not isinstance(
+                    layer[1], (self.model.__class__, torch.nn.Sequential)
                 ),
                 all_layers,
             )
