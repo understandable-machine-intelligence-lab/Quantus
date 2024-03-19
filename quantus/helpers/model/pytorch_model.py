@@ -11,7 +11,7 @@ import warnings
 from contextlib import suppress
 from copy import deepcopy
 from functools import lru_cache
-from importlib import utils
+from importlib import util
 from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
@@ -22,7 +22,7 @@ from torch import nn
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 
-if utils.find_spec("transformers"):
+if util.find_spec("transformers"):
     from transformers import PreTrainedModel
     from transformers.tokenization_utils import BatchEncoding
 else:
