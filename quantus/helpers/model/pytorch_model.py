@@ -116,7 +116,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
                 isinstance(x, BatchEncoding)
                 or (
                     isinstance(x, dict)
-                    and ("input_ids" in x.keys() and "attention_mask" in x.keys())
+                    and ("input_ids" in x and "attention_mask" in x)
                 )
             ):
                 raise ValueError(
