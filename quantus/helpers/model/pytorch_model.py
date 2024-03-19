@@ -11,17 +11,23 @@ import warnings
 from contextlib import suppress
 from copy import deepcopy
 from functools import lru_cache
+from importlib import utils
 from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from torch import nn
-from transformers import PreTrainedModel
-from transformers.tokenization_utils import BatchEncoding
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+
+if utils.find_spec("transformers"):
+    from transformers import PreTrainedModel
+    from transformers.tokenization_utils import BatchEncoding
+else:
+    PreTrainedModel = None
+    BatchEncoding = None
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
