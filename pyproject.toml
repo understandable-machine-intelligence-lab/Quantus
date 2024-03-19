@@ -96,5 +96,5 @@ tests = [
 
 
 [build-system]
-requires = ["flit-core >= 3.9"]
-build-backend = "flit_core.buildapi"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
