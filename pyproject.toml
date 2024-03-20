@@ -68,7 +68,7 @@ captum = [
     "quantus[torch]",
     "captum>=0.6.0"
 ]
-tf_explain = [
+tf-explain = [
     "quantus[tensorflow]",
     "tf-explain>=0.3.1"
 ]
@@ -81,7 +81,7 @@ transformers = [
     "transformers>=4.38.2",
 ]
 full = [
-    "quantus[captum,tf_explain,zennit,transformers]"
+    "quantus[captum,tf-explain,zennit,transformers]"
 ]
 tests = [
     "coverage>=7.2.3",
@@ -94,10 +94,6 @@ tests = [
     "quantus[full]"
 ]
 
-
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.version]
-path = "quantus/__init__.py"
+requires = ["flit-core >= 3.4"]
+build-backend = "flit_core.buildapi"

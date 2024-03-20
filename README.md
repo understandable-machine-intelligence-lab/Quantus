@@ -25,12 +25,11 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 - If you want to contribute/ improve/ extend Quantus, join our [Discord](https://discord.gg/HB77krUE)!
 - New metrics added: [EfficientMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/efficient_mprt.py) and [SmoothMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/smooth_mprt.py) by [Hedström et al., (2023)](https://openreview.net/pdf?id=vVpefYmnsG)
-- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases)
+- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) with [Python 3.7 discontinued](https://devguide.python.org/versions/)
 - Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/), [tf-explain](https://tf-explain.readthedocs.io/en/latest/) and [zennit](https://github.com/chr5tphr/zennit))
-- ❌ Discontinued support for Python 3.7 (https://devguide.python.org/versions/)
 
 ## Citation
 
