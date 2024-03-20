@@ -59,7 +59,7 @@ torch = [
     "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'",
 ]
 tensorflow = [
-    # 2.16 is shipeed without keras
+    # 2.16 is shipped without keras
     "tensorflow<2.16.0",
     # keras V3 broke everything
     "keras<3"
