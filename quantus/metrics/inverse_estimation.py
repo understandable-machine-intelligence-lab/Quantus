@@ -268,12 +268,12 @@ class InverseEstimation(Metric):
         # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
-        # Attributions needs to have only one axis, else flatten and reshape back.
-        shape_ori = a_batch.shape
-        a_batch = a_batch.reshape((shape_ori[0],-1))
-
         # Run inverse experiment.
         def get_inverse_attributions(inverse_method: str, a_batch: np.array):
+
+            # Attributions need to have only one axis, else flatten and reshape back.
+            shape_ori = a_batch.shape
+            a_batch = a_batch.reshape((shape_ori[0], -1))
             if inverse_method == "sign-flip":
                 a_batch_inv = -np.array(a_batch)
             elif inverse_method == "value-swap":
@@ -287,7 +287,7 @@ class InverseEstimation(Metric):
             explain_func = kwargs["explain_func"]
             inverse_method = kwargs["inverse_method"]
             a_batch = explain_func(model, inputs, targets, **kwargs)
-            a_batch_inv = get_inverse_attributions(inverse_method=inverse_method, a_batch=a_batch)
+            a_batch_inv = get_inverse_attributions(inverse_method=inverse_method, a_batch=a_batch, shape_ori=shape_ori)
             return a_batch_inv
         
         # Get inverse attributions.
