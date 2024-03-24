@@ -108,7 +108,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
     def _obtain_predictions(self, x, model_predict_kwargs):
         pred = None
-        if isinstance(self.model, PreTrainedModel):
+        if PreTrainedModel is not None and isinstance(self.model, PreTrainedModel):
             # BatchEncoding is the default output from Tokenizers which contains
             # necessary keys such as `input_ids` and `attention_mask`.
             # It is also possible to pass a Dict with those keys.
