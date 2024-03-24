@@ -75,10 +75,10 @@ pip install "quantus[full]"
 
 The package requirements are as follows:
 ```
-python>=3.7.0
+python>=3.8.0
 torch>=1.11.0
 tensorflow>=2.5.0
 ```
 Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions 
-to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …). 
+to be installed depends on your Python version (3.8-3.11) and platform (`darwin`, `linux`, …). 
 See `[project.optional-dependencies]` section in the `pyproject.toml` file.
