@@ -10,7 +10,7 @@
 [![Launch Tutorials](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/understandable-machine-intelligence-lab/Quantus/HEAD?labpath=tutorials)
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 [![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
-![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)
+![Python version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
@@ -25,7 +25,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 - If you want to contribute/ improve/ extend Quantus, join our [Discord](https://discord.gg/HB77krUE)!
 - New metrics added: [EfficientMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/efficient_mprt.py) and [SmoothMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/smooth_mprt.py) by [Hedström et al., (2023)](https://openreview.net/pdf?id=vVpefYmnsG)
-- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) but note, support for Python 3.7 will be discontinued in future releases (https://devguide.python.org/versions/)
+- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) with [Python 3.7 discontinued](https://devguide.python.org/versions/)
 - Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
@@ -189,13 +189,13 @@ pip install "quantus[tensorflow]"
 
 The package requirements are as follows:
 ```
-python>=3.7.0
+python>=3.8.0
 torch>=1.11.0
 tensorflow>=2.5.0
 ```
 
 Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions
-to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …).
+to be installed depends on your Python version (3.8-3.11) and platform (`darwin`, `linux`, …).
 See `[project.optional-dependencies]` section in the `pyproject.toml` file.
 
 ## Getting started
