@@ -74,7 +74,7 @@ With Quantus, we can obtain richer insights on how the methods compare e.g., b) 
  
 ### Metrics
 
-This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. The library contains implementations of the following evaluation metrics:
+This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation (sensitivity) or 6) axiomatic metrics. The library contains implementations of the following evaluation metrics:
 
 <details>
   <summary><b>Faithfulness</b></summary>
@@ -139,7 +139,7 @@ captures to what extent explanations are concise i.e., that few features are use
 </details>
 
 <details>
-<summary><b>Randomisation</b></summary>
+<summary><b>Randomisation (Sensitivity)</b></summary>
 tests to what extent explanations deteriorate as inputs to the evaluation problem e.g., model parameters are increasingly randomised
      <br><br>
 <ul>
