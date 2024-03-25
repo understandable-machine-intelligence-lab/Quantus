@@ -321,24 +321,24 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        # print(
-        #    "Scores shape", np.array(self.scores).shape, np.array(self.scores_inv).shape
-        # )
+        print(
+            "Scores shape", np.array(self.scores).shape, np.array(self.scores_inv).shape
+        )
         inv_scores = (np.array(self.scores) - np.array(self.scores_inv)).tolist()
 
-        # print("Shape inv", np.shape(inv_scores))
+        print("Shape inv", np.shape(inv_scores))
 
         self.evaluation_scores = inv_scores
 
-        # print("Shape evaluation_scores", np.shape(self.evaluation_scores))
+        print("Shape evaluation_scores", np.shape(self.evaluation_scores))
 
         if self.return_aggregate:
-            # print("Returning aggregate score.")
-            self.evaluation_scores = self.get_mean_score  # .reshape(-1)
+            print("Returning aggregate score.")
+            self.evaluation_scores = self.get_mean_score.reshape(-1)
 
         self.all_evaluation_scores.extend(self.metric_init.evaluation_scores)
 
-        # print("Shape inv_scores reshaped", np.shape(self.evaluation_scores))
+        print("Shape inv_scores reshaped", np.shape(self.evaluation_scores))
 
         return self.evaluation_scores
 
