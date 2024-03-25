@@ -53,7 +53,8 @@ class InverseEstimation(Metric):
         self,
         metric_init: Metric,
         inverse_method: str = "sign-flip",
-        return_auc_per_sample: bool = True,
+        return_mean_per_sample: bool = True,
+        return_auc_per_sample: bool = False,
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[Callable] = None,
@@ -122,10 +123,14 @@ class InverseEstimation(Metric):
         )
 
         self.return_auc_per_sample = return_auc_per_sample
+        self.return_mean_per_sample = return_mean_per_sample
         self.inverse_method = inverse_method
         self.metric_init = metric_init
 
         # TODO. Update warnings.
+        assert not (
+            self.return_mean_per_sample and self.return_auc_per_sample
+        ), "Only one of 'return_mean_per_sample' and 'return_auc_per_sample' can be True."
         if self.inverse_method not in ["sign-flip", "value-swap"]:
             raise ValueError(
                 "The 'inverse_method' in init **kwargs, \
@@ -307,7 +312,7 @@ class InverseEstimation(Metric):
             a_batch=a_batch_inv,
             s_batch=s_batch,
             channel_first=self.channel_first,
-            explain_func=self.inverse_wrapper,
+            explain_func=self.inverse_explain_wrapper,
             explain_func_kwargs=self.explain_func_kwargs,
             softmax=self.softmax,
             device=self.device,
@@ -317,28 +322,24 @@ class InverseEstimation(Metric):
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
         inv_scores = (np.array(self.scores_ori) - np.array(self.scores_inv)).tolist()
-
-        print(np.shape(inv_scores))
-        if self.return_auc_per_sample:
-            inv_scores = self.get_mean_score.reshape(-1)
-            print(np.shape(inv_scores))
+        # print("Scores shape", np.shape(self.scores_ori), np.shape(self.scores_inv))
+        # print("Inverse shape", np.shape(inv_scores))
+        if self.return_mean_per_sample:
+            inv_scores = self.get_mean_score(scores=inv_scores)
+            # print("Agg shape", np.shape(inv_scores))
+        elif self.return_auc_per_sample:
+            inv_scores = self.get_auc_score(scores=inv_scores)
+            # print("Agg shape", np.shape(inv_scores))
 
         return inv_scores
 
-    def convert_attributions_to_rankings(self):
-        pass
-
-    @property
-    def get_mean_score(self):
+    def get_mean_score(self, scores):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(np.array(self.evaluation_scores), axis=1)
+        return np.mean(np.array(scores), axis=1)
 
-    @property
-    def get_auc_score(self):
+    def get_auc_score(self, scores):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
+        return np.mean([utils.calculate_auc(np.array(curve)) for curve in scores])
 
     def get_inverse_attributions(self, a_batch: np.array):
 
@@ -356,7 +357,7 @@ class InverseEstimation(Metric):
         a_batch_inv = a_batch_inv.reshape(shape_ori)
         return a_batch_inv
 
-    def inverse_wrapper(self, model, inputs, targets, **kwargs):
+    def inverse_explain_wrapper(self, model, inputs, targets, **kwargs):
         # explain_func = kwargs["explain_func"]
         # inverse_method = kwargs["inverse_method"]
         a_batch = self.explain_func(model, inputs, targets, **self.explain_func_kwargs)

@@ -223,6 +223,15 @@ def test_inverse_estimation_with_pixel_flipping(
 
     print("x_batch shape", np.shape(x_batch))
 
+    inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
+    scores = inv(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
+    )
+
     try:
 
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
