@@ -220,9 +220,6 @@ def test_inverse_estimation_with_pixel_flipping(
 
     metric_init = PixelFlipping(**init_params)
     metric_init.softmax = True
-
-    print("x_batch shape", np.shape(x_batch))
-
     inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
     scores = inv(
         model=model,
@@ -231,7 +228,6 @@ def test_inverse_estimation_with_pixel_flipping(
         a_batch=a_batch,
         **call_params,
     )
-
     try:
 
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
@@ -242,6 +238,7 @@ def test_inverse_estimation_with_pixel_flipping(
             a_batch=a_batch,
             **call_params,
         )
+        # print("x_batch shape", np.shape(x_batch))
         # print(f"\n\n\tscores: {np.shape(inv.scores)},\n{inv.scores}")
         # print(f"\n\n\tscores_inv: {np.shape(inv.scores_inv)},\n{inv.scores_inv}")
         # print(

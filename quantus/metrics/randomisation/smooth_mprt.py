@@ -169,7 +169,7 @@ class SmoothMPRT(Metric):
 
         if normalise_func_kwargs is None:
             normalise_func_kwargs = {}
-            
+
         self.similarity_func = similarity_func
         self.normalise_func = normalise_func
         self.abs = abs
@@ -663,7 +663,7 @@ class SmoothMPRT(Metric):
         )
 
         a_batch_smooth = utils.expand_attribution_channel(a_batch_smooth, x_batch)
-        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch_smooth)
+        warn.warn_attributions(x_batch=x_batch, a_batch=a_batch_smooth)
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:

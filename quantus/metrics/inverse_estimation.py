@@ -329,7 +329,6 @@ class InverseEstimation(Metric):
             # print("Agg shape", np.shape(inv_scores))
         elif self.return_auc_per_sample:
             inv_scores = self.get_auc_score(scores=inv_scores)
-            # print("Agg shape", np.shape(inv_scores))
 
         return inv_scores
 
