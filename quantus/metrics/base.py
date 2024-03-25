@@ -421,7 +421,7 @@ class Metric(Generic[R]):
 
         """
         self.channel_first = channel_first
-        self.model_predict_kwargs = model_predict_kwargs
+        self.model_predict_kwargs = model_predict_kwargs or {}
         self.softmax = softmax
         self.device = device
 
@@ -450,7 +450,7 @@ class Metric(Generic[R]):
 
         if a_batch is not None:
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-            asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+            warn.warn_attributions(x_batch=x_batch, a_batch=a_batch)
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
             # Normalise with specified keyword arguments if requested.
@@ -933,7 +933,7 @@ class Metric(Generic[R]):
             model=model, inputs=x_batch, targets=y_batch, **self.explain_func_kwargs
         )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        warn.warn_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:

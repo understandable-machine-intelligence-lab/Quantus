@@ -122,12 +122,15 @@ class InverseEstimation(Metric):
         )
 
         self.return_auc_per_sample = return_auc_per_sample
+        self.inverse_method = inverse_method
+        self.metric_init = metric_init
+
+        # TODO. Update warnings.
         if self.inverse_method not in ["sign-flip", "value-swap"]:
             raise ValueError(
                 "The 'inverse_method' in init **kwargs, \
                              must be either 'sign-flip' or 'value-swap'."
             )
-        self.inverse_method = inverse_method
         if self.metric_init.return_aggregate:
             print(
                 "The metric is not designed to return an aggregate score, setting return_aggregate=False."
@@ -139,15 +142,12 @@ class InverseEstimation(Metric):
             "have positive attributions only. Set 'abs' param of the metric init to 'False'."
         )
 
-        # TODO. Update warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
                 citation=("Update here."),
             )
-
-        self.metric_init = metric_init
 
     def __call__(
         self,
@@ -156,7 +156,7 @@ class InverseEstimation(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
+        channel_first: Optional[bool] = True,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
@@ -274,8 +274,8 @@ class InverseEstimation(Metric):
         self.explain_func_kwargs["explain_func"] = self.explain_func
         self.explain_func_kwargs["inverse_method"] = self.inverse_method
 
-        self.scores = self.metric_init(
-            model=model,
+        self.scores_ori = self.metric_init(
+            model=model.get_model(),
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
@@ -288,7 +288,7 @@ class InverseEstimation(Metric):
             model_predict_kwargs=self.model_predict_kwargs,
             **kwargs,
         )
-        assert len(self.scores) == len(x_batch), (
+        assert len(self.scores_ori) == len(x_batch), (
             "To run the inverse estimation, the number of evaluation scores "
             "must match the number of instances in the batch."
         )
@@ -301,7 +301,7 @@ class InverseEstimation(Metric):
 
         # Run inverse experiment.
         self.scores_inv = self.metric_init(
-            model=model,
+            model=model.get_model(),
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch_inv,
@@ -316,14 +316,14 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        inv_scores = (np.array(self.scores) - np.array(self.scores_inv)).tolist()
+        inv_scores = (np.array(self.scores_ori) - np.array(self.scores_inv)).tolist()
 
-        self.evaluation_scores = inv_scores
-
+        print(np.shape(inv_scores))
         if self.return_auc_per_sample:
-            self.evaluation_scores = self.get_mean_score.reshape(-1)
+            inv_scores = self.get_mean_score.reshape(-1)
+            print(np.shape(inv_scores))
 
-        return self.evaluation_scores
+        return inv_scores
 
     def convert_attributions_to_rankings(self):
         pass
@@ -357,10 +357,8 @@ class InverseEstimation(Metric):
         return a_batch_inv
 
     def inverse_wrapper(self, model, inputs, targets, **kwargs):
-        explain_func = kwargs["explain_func"]
-        inverse_method = kwargs["inverse_method"]
-        a_batch = explain_func(model, inputs, targets, **kwargs)
-        a_batch_inv = self.get_inverse_attributions(
-            inverse_method=inverse_method, a_batch=a_batch
-        )
+        # explain_func = kwargs["explain_func"]
+        # inverse_method = kwargs["inverse_method"]
+        a_batch = self.explain_func(model, inputs, targets, **self.explain_func_kwargs)
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
         return a_batch_inv
