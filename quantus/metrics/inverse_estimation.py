@@ -53,6 +53,7 @@ class InverseEstimation(Metric):
         self,
         metric_init: Metric,
         inverse_method: str = "sign-flip",
+        return_auc_per_sample: bool = True,
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[Callable] = None,
@@ -112,7 +113,7 @@ class InverseEstimation(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
+            return_aggregate=self.return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
@@ -120,18 +121,23 @@ class InverseEstimation(Metric):
             **kwargs,
         )
 
-        # Asserts and warnings. # Skip for now, might revisit later.
-        # if metric_init.name == "ROAD":
-        #    metric_init.return_only_values = True
-        # if metric_init.name == "Region Perturbation":
-        #    metric_init.order = "morf"
-
-        self.inverse_method = inverse_method
+        self.return_auc_per_sample = return_auc_per_sample
         if self.inverse_method not in ["sign-flip", "value-swap"]:
             raise ValueError(
                 "The 'inverse_method' in init **kwargs, \
                              must be either 'sign-flip' or 'value-swap'."
             )
+        self.inverse_method = inverse_method
+        if self.metric_init.return_aggregate:
+            print(
+                "The metric is not designed to return an aggregate score, setting return_aggregate=False."
+            )
+            self.metric_init.return_aggregate = False
+
+        assert self.metric_init.abs == False, (
+            "To run the inverse estimation, you cannot set 'a_batch' to "
+            "have positive attributions only. Set 'abs' param of the metric init to 'False'."
+        )
 
         # TODO. Update warnings.
         if not self.disable_warnings:
@@ -233,20 +239,40 @@ class InverseEstimation(Metric):
             >>> metric = Metric(abs=True, normalise=False)
             >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        if self.metric_init.return_aggregate:
-            print(
-                "The metric is not designed to return an aggregate score, setting return_aggregate=False."
-            )
-            self.metric_init.return_aggregate = False
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
+            softmax=softmax,
+            device=device,
+            batch_size=batch_size,
+            **kwargs,
+        )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: Optional[np.ndarray] = None,
+        **kwargs,
+    ) -> List[float]:
 
         assert (
             a_batch is not None
         ), "'a_batch' must be provided to run the inverse estimation."
 
-        assert self.metric_init.abs == False, (
-            "To run the inverse estimation, you cannot set 'a_batch' to "
-            "have positive attributions only. Set 'abs' param of the metric init to 'False'."
-        )
+        # Metrics that depend on re-computing explanations need inverse wrapping.
+        self.explain_func_kwargs["explain_func"] = self.explain_func
+        self.explain_func_kwargs["inverse_method"] = self.inverse_method
 
         self.scores = self.metric_init(
             model=model,
@@ -254,12 +280,12 @@ class InverseEstimation(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            channel_first=channel_first,
-            explain_func=explain_func,
-            explain_func_kwargs=explain_func_kwargs,
-            softmax=softmax,
-            device=device,
-            model_predict_kwargs=model_predict_kwargs,
+            channel_first=self.channel_first,
+            explain_func=self.explain_func,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
             **kwargs,
         )
         assert len(self.scores) == len(x_batch), (
@@ -270,75 +296,32 @@ class InverseEstimation(Metric):
         # Empty the evaluation scores before re-scoring with the metric.
         self.metric_init.evaluation_scores = []
 
-        # Run inverse experiment.
-        def get_inverse_attributions(inverse_method: str, a_batch: np.array):
-
-            # Attributions need to have only one axis, else flatten and reshape back.
-            shape_ori = a_batch.shape
-            a_batch = a_batch.reshape((shape_ori[0], -1))
-            if inverse_method == "sign-flip":
-                a_batch_inv = -np.array(a_batch)
-            elif inverse_method == "value-swap":
-                indices = np.argsort(a_batch, axis=1)
-                a_batch_inv = np.empty_like(a_batch)
-                a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = (
-                    a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:, ::-1]]
-                )
-            a_batch_inv = a_batch_inv.reshape(shape_ori)
-            return a_batch_inv
-
-        def inverse_wrapper(model, inputs, targets, **kwargs):
-            explain_func = kwargs["explain_func"]
-            inverse_method = kwargs["inverse_method"]
-            a_batch = explain_func(model, inputs, targets, **kwargs)
-            a_batch_inv = get_inverse_attributions(
-                inverse_method=inverse_method, a_batch=a_batch
-            )
-            return a_batch_inv
-
         # Get inverse attributions.
-        a_batch_inv = get_inverse_attributions(
-            inverse_method=self.inverse_method, a_batch=a_batch
-        )
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
 
-        # Metrics that depend on re-computing explanations need inverse wrapping.
-        explain_func_kwargs["explain_func"] = explain_func
-        explain_func_kwargs["inverse_method"] = self.inverse_method
-
+        # Run inverse experiment.
         self.scores_inv = self.metric_init(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch_inv,
             s_batch=s_batch,
-            channel_first=channel_first,
-            explain_func=inverse_wrapper,
-            explain_func_kwargs=explain_func_kwargs,
-            softmax=softmax,
-            device=device,
-            model_predict_kwargs=model_predict_kwargs,
+            channel_first=self.channel_first,
+            explain_func=self.inverse_wrapper,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
             **kwargs,
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        print(
-            "Scores shape", np.array(self.scores).shape, np.array(self.scores_inv).shape
-        )
         inv_scores = (np.array(self.scores) - np.array(self.scores_inv)).tolist()
-
-        print("Shape inv", np.shape(inv_scores))
 
         self.evaluation_scores = inv_scores
 
-        print("Shape evaluation_scores", np.shape(self.evaluation_scores))
-
-        if self.return_aggregate:
-            print("Returning aggregate score.")
+        if self.return_auc_per_sample:
             self.evaluation_scores = self.get_mean_score.reshape(-1)
-
-        self.all_evaluation_scores.extend(self.metric_init.evaluation_scores)
-
-        print("Shape inv_scores reshaped", np.shape(self.evaluation_scores))
 
         return self.evaluation_scores
 
@@ -356,3 +339,28 @@ class InverseEstimation(Metric):
         return np.mean(
             [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
         )
+
+    def get_inverse_attributions(self, a_batch: np.array):
+
+        # Attributions need to have only one axis, else flatten and reshape back.
+        shape_ori = a_batch.shape
+        a_batch = a_batch.reshape((shape_ori[0], -1))
+        if self.inverse_method == "sign-flip":
+            a_batch_inv = -np.array(a_batch)
+        elif self.inverse_method == "value-swap":
+            indices = np.argsort(a_batch, axis=1)
+            a_batch_inv = np.empty_like(a_batch)
+            a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[
+                np.arange(a_batch_inv.shape[0])[:, None], indices[:, ::-1]
+            ]
+        a_batch_inv = a_batch_inv.reshape(shape_ori)
+        return a_batch_inv
+
+    def inverse_wrapper(self, model, inputs, targets, **kwargs):
+        explain_func = kwargs["explain_func"]
+        inverse_method = kwargs["inverse_method"]
+        a_batch = explain_func(model, inputs, targets, **kwargs)
+        a_batch_inv = self.get_inverse_attributions(
+            inverse_method=inverse_method, a_batch=a_batch
+        )
+        return a_batch_inv

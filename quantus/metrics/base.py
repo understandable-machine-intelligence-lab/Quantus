@@ -1,4 +1,5 @@
 """This module implements the base class for creating evaluation metrics."""
+
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
@@ -140,7 +141,7 @@ class Metric(Generic[R]):
 
         if normalise_func_kwargs is not None:
             normalise_func = functools.partial(normalise_func, **normalise_func_kwargs)
-        
+
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
@@ -419,6 +420,10 @@ class Metric(Generic[R]):
             A general preprocess.
 
         """
+        self.channel_first = channel_first
+        self.model_predict_kwargs = model_predict_kwargs
+        self.softmax = softmax
+        self.device = device
 
         # Reshape input batch to channel first order:
         if not isinstance(channel_first, bool):  # None is not a boolean instance.
@@ -429,10 +434,10 @@ class Metric(Generic[R]):
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
                 model=model,
-                channel_first=channel_first,
-                softmax=softmax,
-                device=device,
-                model_predict_kwargs=model_predict_kwargs,
+                channel_first=self.channel_first,
+                softmax=self.softmax,
+                device=self.device,
+                model_predict_kwargs=self.model_predict_kwargs,
             )
 
         # Save as attribute, some metrics need it during processing.
