@@ -23,10 +23,10 @@ from quantus.metrics.localisation import (
 
 @pytest.fixture
 def all_in_gt_1d_0ch():
-    s_batch = np.zeros((10, 500))
+    s_batch = np.zeros((10, 1, 500))
     a_batch = np.random.uniform(0, 0.1, size=(10, 500))
-    s_batch[:, 50:150] = 1.0
-    a_batch[:, 50:150] = 1.0
+    s_batch[:, :, 50:150] = 1.0
+    a_batch[:, :, 50:150] = 1.0
     return {
         "x_batch": np.random.randn(10, 500),
         "y_batch": np.random.randint(0, 10, size=10),
