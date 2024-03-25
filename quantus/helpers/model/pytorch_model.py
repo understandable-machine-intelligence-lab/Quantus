@@ -362,6 +362,38 @@ class PyTorchModel(ModelInterface[nn.Module]):
                         )
         return model_copy
 
+    def perturb_layer_weights(self, layer_idx: int, noise: float):
+        """
+        Perturb the weights of a specific layer in a PyTorch model.
+
+        Parameters
+        ----------
+        model : torch.nn.Module
+            The PyTorch model.
+        layer_idx : int
+            The index of the layer to perturb.
+        noise : float
+            The standard deviation of the Gaussian noise to add to the weights.
+
+        Returns
+        -------
+        None
+        """
+        original_parameters = self.state_dict()
+        model_copy = deepcopy(self.model)
+        model_copy.load_state_dict(original_parameters)
+
+        # Get the specific layer.
+        layer = list(model_copy.modules())[layer_idx]
+
+        # Generate Gaussian noise.
+        noise_tensor = torch.randn_like(layer.weight) * noise
+
+        # Add the noise to the layer's weights.
+        layer.weight.data.add_(noise_tensor)
+
+        return model_copy
+
     def add_mean_shift_to_first_layer(
         self,
         input_shift: Union[int, float],
