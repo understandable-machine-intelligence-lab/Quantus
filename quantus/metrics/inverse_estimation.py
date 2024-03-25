@@ -47,7 +47,7 @@ class InverseEstimation(Metric):
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
-    #evaluation_category = EvaluationCategory.FAITHFULNESS
+    # evaluation_category = EvaluationCategory.FAITHFULNESS
 
     def __init__(
         self,
@@ -123,13 +123,15 @@ class InverseEstimation(Metric):
         # Asserts and warnings. # Skip for now, might revisit later.
         # if metric_init.name == "ROAD":
         #    metric_init.return_only_values = True
-        #if metric_init.name == "Region Perturbation":
+        # if metric_init.name == "Region Perturbation":
         #    metric_init.order = "morf"
 
         self.inverse_method = inverse_method
         if self.inverse_method not in ["sign-flip", "value-swap"]:
-            raise ValueError("The 'inverse_method' in init **kwargs, \
-                             must be either 'sign-flip' or 'value-swap'.")
+            raise ValueError(
+                "The 'inverse_method' in init **kwargs, \
+                             must be either 'sign-flip' or 'value-swap'."
+            )
 
         # TODO. Update warnings.
         if not self.disable_warnings:
@@ -279,19 +281,25 @@ class InverseEstimation(Metric):
             elif inverse_method == "value-swap":
                 indices = np.argsort(a_batch, axis=1)
                 a_batch_inv = np.empty_like(a_batch)
-                a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:,::-1]]
-            a_batch_inv.reshape(shape_ori)
+                a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = (
+                    a_batch[np.arange(a_batch_inv.shape[0])[:, None], indices[:, ::-1]]
+                )
+            a_batch_inv = a_batch_inv.reshape(shape_ori)
             return a_batch_inv
-        
+
         def inverse_wrapper(model, inputs, targets, **kwargs):
             explain_func = kwargs["explain_func"]
             inverse_method = kwargs["inverse_method"]
             a_batch = explain_func(model, inputs, targets, **kwargs)
-            a_batch_inv = get_inverse_attributions(inverse_method=inverse_method, a_batch=a_batch, shape_ori=shape_ori)
+            a_batch_inv = get_inverse_attributions(
+                inverse_method=inverse_method, a_batch=a_batch
+            )
             return a_batch_inv
-        
+
         # Get inverse attributions.
-        a_batch_inv = get_inverse_attributions(inverse_method=self.inverse_method, a_batch=a_batch)
+        a_batch_inv = get_inverse_attributions(
+            inverse_method=self.inverse_method, a_batch=a_batch
+        )
 
         # Metrics that depend on re-computing explanations need inverse wrapping.
         explain_func_kwargs["explain_func"] = explain_func
@@ -313,17 +321,26 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
+        # print(
+        #    "Scores shape", np.array(self.scores).shape, np.array(self.scores_inv).shape
+        # )
         inv_scores = (np.array(self.scores) - np.array(self.scores_inv)).tolist()
+
+        # print("Shape inv", np.shape(inv_scores))
+
         self.evaluation_scores = inv_scores
 
+        # print("Shape evaluation_scores", np.shape(self.evaluation_scores))
+
         if self.return_aggregate:
-            self.evaluation_scores = self.get_mean_score
+            # print("Returning aggregate score.")
+            self.evaluation_scores = self.get_mean_score  # .reshape(-1)
 
         self.all_evaluation_scores.extend(self.metric_init.evaluation_scores)
-        
-        print(np.shape(inv_scores))
-        print(np.shape(inv_scores.reshape(-1)))
-        return inv_scores.reshape(-1)
+
+        # print("Shape inv_scores reshaped", np.shape(self.evaluation_scores))
+
+        return self.evaluation_scores
 
     def convert_attributions_to_rankings(self):
         pass
