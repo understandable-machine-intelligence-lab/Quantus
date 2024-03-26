@@ -426,9 +426,9 @@ class Metric(Generic[R]):
         self.device = device
 
         # Reshape input batch to channel first order:
-        if not isinstance(channel_first, bool):  # None is not a boolean instance.
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch = utils.make_channel_first(x_batch, channel_first)
+        if not isinstance(self.channel_first, bool):  # None is not a boolean instance.
+            self.channel_first = utils.infer_channel_first(x_batch)
+        x_batch = utils.make_channel_first(x_batch, self.channel_first)
 
         if model is not None:
             # Use attribute value if not passed explicitly.

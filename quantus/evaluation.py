@@ -160,6 +160,8 @@ def evaluate(
 
     if call_kwargs is None:
         call_kwargs = {"call_kwargs_empty": {}}
+    elif not isinstance(call_kwargs, Dict):
+        raise TypeError("call_kwargs type should be of Dict[str, Dict] (if not None).")
 
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("call_kwargs type should be of Dict[str, Dict] (if not None).")
