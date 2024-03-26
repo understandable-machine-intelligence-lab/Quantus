@@ -104,8 +104,7 @@ class InverseEstimation(Metric):
             Keyword arguments.
         """
         if metric_init.default_plot_func is None:
-            # TODO. Create specific plot.
-            default_plot_func = plotting.plot_pixel_flipping_experiment
+            default_plot_func = plotting.plot_inverse_curves
 
         self.return_aggregate = return_aggregate
 
@@ -321,16 +320,17 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
-        inv_scores = (np.array(self.scores_ori) - np.array(self.scores_inv)).tolist()
-        # print("Scores shape", np.shape(self.scores_ori), np.shape(self.scores_inv))
-        # print("Inverse shape", np.shape(inv_scores))
+        inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
+        print("Scores shape", np.shape(self.scores_ori), np.shape(self.scores_inv))
+        print("Inverse shape", np.shape(inv_scores))
+        print("Inverse shape", np.reshape(inv_scores, (len(inv_scores), -1)).shape)
         if self.return_mean_per_sample:
             inv_scores = self.get_mean_score(scores=inv_scores)
-            # print("Agg shape", np.shape(inv_scores))
+            print("Agg shape", np.shape(inv_scores))
         elif self.return_auc_per_sample:
             inv_scores = self.get_auc_score(scores=inv_scores)
 
-        return inv_scores
+        return inv_scores.tolist()
 
     def get_mean_score(self, scores):
         """Calculate the area under the curve (AUC) score for several test samples."""
@@ -341,6 +341,7 @@ class InverseEstimation(Metric):
         return np.mean([utils.calculate_auc(np.array(curve)) for curve in scores])
 
     def get_inverse_attributions(self, a_batch: np.array):
+        """Get the inverse attributions of the input attributions."""
 
         # Attributions need to have only one axis, else flatten and reshape back.
         shape_ori = a_batch.shape
@@ -357,8 +358,7 @@ class InverseEstimation(Metric):
         return a_batch_inv
 
     def inverse_explain_wrapper(self, model, inputs, targets, **kwargs):
-        # explain_func = kwargs["explain_func"]
-        # inverse_method = kwargs["inverse_method"]
+        """Wrapper for the explanation function that computes the inverse attributions."""
         a_batch = self.explain_func(model, inputs, targets, **self.explain_func_kwargs)
         a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
         return a_batch_inv

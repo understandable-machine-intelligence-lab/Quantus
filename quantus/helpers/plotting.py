@@ -67,6 +67,67 @@ def plot_pixel_flipping_experiment(
     plt.show()
 
 
+def plot_inverse_curves(
+    y_batch: np.ndarray,
+    scores_ori: List[Any],
+    scores_inv: List[Any],
+    single_class: Union[int, None] = None,
+    *args,
+    **kwargs,
+) -> None:
+    """
+    Plot the pixel-flipping experiment as done in paper:
+
+    References:
+        1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
+        decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
+
+    Parameters
+    ----------
+    y_batch: np.ndarray
+         The list of true labels.
+    scores_ori: list
+        The list of evalution scores.
+    scores_inv: list
+        The list of evalution scores (inverse curve).
+    single_class: integer, optional
+        An integer to specify the label to plot.
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    None
+    """
+
+    fig = plt.figure(figsize=(8, 6))
+    if single_class is None:
+        for c in np.unique(y_batch):
+            indices = np.where(y_batch == c)
+            plt.plot(
+                np.linspace(0, 1, len(scores_ori[0])),
+                np.mean(np.array(scores_ori)[indices], axis=0),
+                label=f"Original curve: {str(c)} ({indices[0].size} samples)",
+            )
+            plt.plot(
+                np.linspace(0, 1, len(scores_inv[0])),
+                np.mean(np.array(scores_inv)[indices], axis=0),
+                label=f"Inverse curve: {str(c)} ({indices[0].size} samples)",
+            )
+    plt.xlabel("Fraction of pixels flipped")
+    plt.ylabel("Mean Prediction")
+    plt.gca().set_yticklabels(
+        ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
+    )
+    plt.gca().set_xticklabels(
+        ["{:.0f}%".format(x * 100) for x in plt.gca().get_xticks()]
+    )
+    plt.legend()
+    plt.show()
+
+
 def plot_selectivity_experiment(results: Dict[str, List[Any]], *args, **kwargs) -> None:
     """
     Plot the selectivity experiment as done in paper:
