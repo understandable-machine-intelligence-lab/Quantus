@@ -116,7 +116,7 @@ def plot_inverse_curves(
                 np.mean(np.array(scores_inv)[indices], axis=0),
                 label=f"Inverse curve: {str(c)} ({indices[0].size} samples)",
             )
-    plt.xlabel("Fraction of pixels flipped")
+    plt.xlabel("Fraction masked")
     plt.ylabel("Mean Prediction")
     plt.gca().set_yticklabels(
         ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
