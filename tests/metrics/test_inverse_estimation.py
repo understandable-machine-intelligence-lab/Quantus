@@ -41,6 +41,26 @@ from quantus.metrics.localisation import RelevanceRankAccuracy
             },
             {"min": -1000.0, "max": 1000.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": True,
+                "init": {
+                    "normalise": True,
+                    "abs": False,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            {"min": -1000.0, "max": 1000.0},
+        ),
     ],
 )
 def test_inverse_estimation_with_relevance_rank_accuracy(
@@ -51,7 +71,7 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
 ):
     x_batch = data["x_batch"]
     y_batch = data["y_batch"]
-    s_batch = np.zeros((10, 1, 28, 28))
+    s_batch = np.zeros((len(x_batch), 1, 28, 28))
     s_batch[:, :, 0:15, 0:15] = 1.0
 
     init_params = params.get("init", {})
@@ -75,6 +95,20 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
     metric_init = RelevanceRankAccuracy(**init_params)
     metric_init.softmax = True
 
+    inv = InverseEstimation(
+        metric_init=metric_init,
+        return_aggregate=True,
+        return_mean_per_sample=False,
+    )
+    scores = inv(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        s_batch=s_batch,
+        **call_params,
+    )
+
     try:
 
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
@@ -87,10 +121,10 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
             **call_params,
         )
         # print("x_batch shape", np.shape(x_batch))
-        # print(f"\n\n\tscores: {np.shape(inv.scores)},\n{inv.scores}")
+        # print(f"\n\n\tscores_ori: {np.shape(inv.scores_ori)},\n{inv.scores_ori}")
         # print(f"\n\n\tscores_inv: {np.shape(inv.scores_inv)},\n{inv.scores_inv}")
         # print(
-        #    f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
+        #     f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
         # )
         # print(f"\n\n\tscores: {np.shape(scores)},\n{scores}")
 
@@ -315,6 +349,7 @@ def test_inverse_estimation_with_pixel_flipping(
 
     metric_init = PixelFlipping(**init_params)
     metric_init.softmax = True
+
     try:
 
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
@@ -326,10 +361,10 @@ def test_inverse_estimation_with_pixel_flipping(
             **call_params,
         )
         # print("x_batch shape", np.shape(x_batch))
-        # print(f"\n\n\tscores: {np.shape(inv.scores)},\n{inv.scores}")
+        # print(f"\n\n\tscores_ori: {np.shape(inv.scores_ori)},\n{inv.scores_ori}")
         # print(f"\n\n\tscores_inv: {np.shape(inv.scores_inv)},\n{inv.scores_inv}")
         # print(
-        #    f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
+        #     f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
         # )
         # print(f"\n\n\tscores: {np.shape(scores)},\n{scores}")
 

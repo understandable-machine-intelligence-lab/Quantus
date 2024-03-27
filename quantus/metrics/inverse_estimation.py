@@ -18,6 +18,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import Metric
+import warnings
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -319,17 +320,11 @@ class InverseEstimation(Metric):
             **kwargs,
         )
 
-        # Compute the inverse, empty the evaluation scores again and overwrite with the inverse scores.
+        # Compute the inverse scores.
         inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
-        print("Scores shape", np.shape(self.scores_ori), np.shape(self.scores_inv))
-        print("Inverse shape", np.shape(inv_scores))
-        print("Inverse shape", np.reshape(inv_scores, (len(inv_scores), -1)).shape)
-        if self.return_mean_per_sample:
-            inv_scores = self.get_mean_score(scores=inv_scores)
-            print("Agg shape", np.shape(inv_scores))
-        elif self.return_auc_per_sample:
-            inv_scores = self.get_auc_score(scores=inv_scores)
-
+        inv_scores = self.aggregate_inverse_scores(
+            inv_scores=inv_scores, nr_samples=len(x_batch)
+        )
         return inv_scores.tolist()
 
     def get_mean_score(self, scores):
@@ -339,6 +334,20 @@ class InverseEstimation(Metric):
     def get_auc_score(self, scores):
         """Calculate the area under the curve (AUC) score for several test samples."""
         return np.mean([utils.calculate_auc(np.array(curve)) for curve in scores])
+
+    def aggregate_inverse_scores(self, inv_scores: np.array, nr_samples: int):
+        """Compute the mean / AUC score for the inverse estimation, if passed as vectors (like pixel-flipping curves) per sample."""
+        if inv_scores.size == nr_samples:
+            warnings.warn(
+                f"Cannot compute mean score for scores with shape {inv_scores.shape}. Set 'return_mean_per_sample' and 'return_auc_per_sample' to False to return the raw scores."
+            )
+            return inv_scores
+        else:
+            if self.return_mean_per_sample:
+                inv_scores = self.get_mean_score(scores=inv_scores)
+            elif self.return_auc_per_sample:
+                inv_scores = self.get_auc_score(scores=inv_scores)
+            return inv_scores
 
     def get_inverse_attributions(self, a_batch: np.array):
         """Get the inverse attributions of the input attributions."""
