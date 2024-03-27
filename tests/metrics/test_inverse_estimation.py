@@ -95,20 +95,6 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
     metric_init = RelevanceRankAccuracy(**init_params)
     metric_init.softmax = True
 
-    inv = InverseEstimation(
-        metric_init=metric_init,
-        return_aggregate=True,
-        return_mean_per_sample=False,
-    )
-    scores = inv(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        s_batch=s_batch,
-        **call_params,
-    )
-
     try:
 
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
@@ -120,13 +106,6 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
             s_batch=s_batch,
             **call_params,
         )
-        # print("x_batch shape", np.shape(x_batch))
-        # print(f"\n\n\tscores_ori: {np.shape(inv.scores_ori)},\n{inv.scores_ori}")
-        # print(f"\n\n\tscores_inv: {np.shape(inv.scores_inv)},\n{inv.scores_inv}")
-        # print(
-        #     f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
-        # )
-        # print(f"\n\n\tscores: {np.shape(scores)},\n{scores}")
 
         if "exception" not in expected:
             assert all(
