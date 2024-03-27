@@ -58,7 +58,7 @@ class RegionPerturbation(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Region-Perturbation"
+    name = "Region Perturbation"
     data_applicability = {DataType.IMAGE}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -152,6 +152,7 @@ class RegionPerturbation(Metric[List[float]]):
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
+
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -232,32 +233,32 @@ class RegionPerturbation(Metric[List[float]]):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
