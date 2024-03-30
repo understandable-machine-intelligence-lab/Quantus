@@ -108,25 +108,27 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
     def _obtain_predictions(self, x, model_predict_kwargs):
         pred = None
-        if PreTrainedModel is not None and isinstance(self.model, PreTrainedModel):
+        if PreTrainedModel is not None:
             # BatchEncoding is the default output from Tokenizers which contains
             # necessary keys such as `input_ids` and `attention_mask`.
             # It is also possible to pass a Dict with those keys.
-            if not (
-                isinstance(x, BatchEncoding)
-                or (
-                    isinstance(x, dict) and ("input_ids" in x and "attention_mask" in x)
-                )
-            ):
-                raise ValueError(
-                    "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
-                    "or make sure you're passing a dict with input_ids and attention_mask as keys"
-                )
-            pred = self.model(**x, **model_predict_kwargs).logits
-            if self.softmax:
-                return torch.softmax(pred, dim=-1)
-            return pred
-        elif isinstance(self.model, nn.Module):
+            if isinstance(self.model, PreTrainedModel):
+                if not (
+                    isinstance(x, BatchEncoding)
+                    or (
+                        isinstance(x, dict)
+                        and ("input_ids" in x and "attention_mask" in x)
+                    )
+                ):
+                    raise ValueError(
+                        "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
+                        "or make sure you're passing a dict with input_ids and attention_mask as keys"
+                    )
+                pred = self.model(**x, **model_predict_kwargs).logits
+                if self.softmax:
+                    return torch.softmax(pred, dim=-1)
+                return pred
+        if isinstance(self.model, nn.Module):
             pred_model = self.get_softmax_arg_model()
             return pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
         raise ValueError("Predictions cant be null")
