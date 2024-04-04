@@ -54,6 +54,7 @@ class InverseEstimation(Metric):
         self,
         metric_init: Metric,
         inverse_method: str = "sign-flip",
+        area_between_curves: bool = False, 
         return_mean_per_sample: bool = True,
         return_auc_per_sample: bool = False,
         abs: bool = False,
@@ -125,6 +126,7 @@ class InverseEstimation(Metric):
         self.return_auc_per_sample = return_auc_per_sample
         self.return_mean_per_sample = return_mean_per_sample
         self.inverse_method = inverse_method
+        self.area_between_curves = area_between_curves
         self.metric_init = metric_init
 
         # TODO. Update warnings.
@@ -321,11 +323,21 @@ class InverseEstimation(Metric):
         )
 
         # Compute the inverse scores.
-        inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
-        inv_scores = self.aggregate_inverse_scores(
-            inv_scores=inv_scores, nr_samples=len(x_batch)
-        )
-        return inv_scores.tolist()
+        if self.area_between_curves:
+            scores_ori = self.aggregate_inverse_scores(
+                inv_scores=self.scores_ori, nr_samples=len(x_batch)
+            )
+            scores_inv = self.aggregate_inverse_scores(
+                inv_scores=self.scores_inv, nr_samples=len(x_batch)
+            )
+            
+            return (np.array(scores_ori) - np.array(scores_inv)).tolist()
+        else:
+            inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
+            inv_scores = self.aggregate_inverse_scores(
+                inv_scores=inv_scores, nr_samples=len(x_batch)
+            )
+            return inv_scores.tolist()
 
     def get_mean_score(self, scores):
         """Calculate the area under the curve (AUC) score for several test samples."""
