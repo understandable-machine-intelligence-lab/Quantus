@@ -55,7 +55,7 @@ class Consistency(Metric[List[float]]):
     name = "Consistency"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
+    score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.ROBUSTNESS
 
     def __init__(
