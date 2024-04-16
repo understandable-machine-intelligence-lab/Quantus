@@ -414,7 +414,7 @@ class RegionPerturbation(Metric[List[float]]):
             results[patch_id] = y_pred - y_pred_perturb
 
         if self.return_auc_per_sample:
-            return float(utils.calculate_auc(preds))
+            return float(utils.calculate_auc(results))
 
         return results
 
