@@ -190,7 +190,7 @@ class RegionPerturbation(Metric[List[float]]):
         device: Optional[str] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[float]:
+    ) -> Union[List[float], float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -287,7 +287,7 @@ class RegionPerturbation(Metric[List[float]]):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-    ) -> List[float]:
+    ) -> Union[List[float], float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -432,7 +432,7 @@ class RegionPerturbation(Metric[List[float]]):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         **kwargs,
-    ) -> List[List[float]]:
+    ) -> List[Union[List[float], float]]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
