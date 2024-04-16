@@ -69,6 +69,7 @@ class RegionPerturbation(Metric[List[float]]):
         patch_size: int = 8,
         order: str = "morf",
         regions_evaluation: int = 100,
+        return_auc_per_sample: bool = False,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -92,7 +93,9 @@ class RegionPerturbation(Metric[List[float]]):
             The number of regions to evaluate, default=100.
         order: string
             Indicates whether attributions are ordered randomly ("random"),
-                according to the most relevant first ("morf"), or least relevant first ("lerf"), default="morf".
+            according to the most relevant first ("morf"), or least relevant first ("lerf"), default="morf".
+        return_auc_per_sample: boolean
+            Indicates if an AUC score should be computed over the curve and returned.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -146,6 +149,7 @@ class RegionPerturbation(Metric[List[float]]):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
+        self.return_auc_per_sample = return_auc_per_sample
         self.perturb_func = make_perturb_func(
             perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
         )
@@ -408,6 +412,9 @@ class RegionPerturbation(Metric[List[float]]):
             y_pred_perturb = float(model.predict(x_input)[:, y])
 
             results[patch_id] = y_pred - y_pred_perturb
+
+        if self.return_auc_per_sample:
+            return float(utils.calculate_auc(preds))
 
         return results
 
