@@ -1,3 +1,4 @@
+import sys
 from collections import OrderedDict
 from contextlib import nullcontext
 from importlib import reload
@@ -305,16 +306,15 @@ def test_huggingface_classifier_predict(
 @pytest.fixture
 def mock_transformers_not_installed(mocker: pytest_mock.MockFixture):
     mocker.patch("importlib.util.find_spec", return_value=None)
-    from quantus.helpers.model import pytorch_model
-
-    reload(pytorch_model)
+    del sys.modules['quantus.helpers.model.pytorch_model']
+    from quantus.helpers.model.pytorch_model import PyTorchModel as MockModel
     # Mock the model's behavior
-    model_instance = PyTorchModel(model=mocker.MagicMock(spec=None))
-    # model_instance.model.training = False
+    model_instance = MockModel(model=mocker.MagicMock(spec=None))
+    model_instance.model.training = False
     # model_instance.model.return_value.logits = torch.tensor([[0.1, 0.9]])
     # model_instance.softmax = False
     yield model_instance
-    mocker.resetall()
+    mocker.resetall(return_value=True, side_effect=True)
 
 
 @pytest.mark.pytorch_model
