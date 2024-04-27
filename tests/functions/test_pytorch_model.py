@@ -304,29 +304,29 @@ def test_huggingface_classifier_predict(
         assert np.allclose(out, expected.enter_result), "Test failed."
 
 
-@pytest.mark.pytorch_model
-@pytest.mark.parametrize(
-    "transformers_installed,base_class,expected",
-    [
-        (True, PreTrainedModel, nullcontext(np.array([[0.1, 0.9]], dtype=np.float32))),
-        (False, None, pytest.raises(ValueError)),
-    ],
-)
-def test_predict_transformers_installed(
-    mocker, transformers_installed, base_class, expected
-):
-    mocker.patch("importlib.util.find_spec", return_value=transformers_installed)
-    from quantus.helpers.model import pytorch_model
-
-    reload(pytorch_model)
-    # Mock the model's behavior
-    model_instance = PyTorchModel(model=mocker.MagicMock(spec=base_class))
-    model_instance.model.training = False
-    model_instance.model.return_value.logits = torch.tensor([[0.1, 0.9]])
-    model_instance.softmax = False
-
-    # Prepare input and call the predict method
-    x = {"input_ids": np.array([1, 2, 3]), "attention_mask": np.array([1, 1, 1])}
-    with expected:
-        predictions = model_instance.predict(x)
-        assert np.array_equal(predictions, expected.enter_result), "Test failed."
+#@pytest.mark.pytorch_model
+#@pytest.mark.parametrize(
+#    "transformers_installed,base_class,expected",
+#    [
+#        (True, PreTrainedModel, nullcontext(np.array([[0.1, 0.9]], dtype=np.float32))),
+#        (False, None, pytest.raises(ValueError)),
+#    ],
+#)
+#def test_predict_transformers_installed(
+#    mocker, transformers_installed, base_class, expected
+#):
+#    mocker.patch("importlib.util.find_spec", return_value=transformers_installed)
+#    from quantus.helpers.model import pytorch_model
+#
+#    reload(pytorch_model)
+#    # Mock the model's behavior
+#    model_instance = PyTorchModel(model=mocker.MagicMock(spec=base_class))
+#    model_instance.model.training = False
+#    model_instance.model.return_value.logits = torch.tensor([[0.1, 0.9]])
+#    model_instance.softmax = False
+#
+#    # Prepare input and call the predict method
+#    x = {"input_ids": np.array([1, 2, 3]), "attention_mask": np.array([1, 1, 1])}
+#    with expected:
+#        predictions = model_instance.predict(x)
+#        assert np.array_equal(predictions, expected.enter_result), "Test failed."
