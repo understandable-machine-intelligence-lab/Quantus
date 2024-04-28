@@ -518,7 +518,7 @@ def safe_isinstance(obj: Any, class_path_str: Iterable[str] | str) -> bool:
     bool: True if isinstance is true and the package exists, False otherwise
 
     """
-    # Take from https://github.com/shap/shap/blob/dffc346f323ff8cf55f39f71c613ebd00e1c88f8/shap/utils/_general.py#L197
+    # Taken from https://github.com/shap/shap/blob/dffc346f323ff8cf55f39f71c613ebd00e1c88f8/shap/utils/_general.py#L197
 
     if isinstance(class_path_str, str):
         class_path_str = [class_path_str]
