@@ -20,14 +20,19 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    Type,
     Union,
+    TypeGuard,
+    TypedDict,
 )
+
 
 import numpy as np
 import numpy.typing as npt
 import torch
 import sys
-from torch import nn
+from torch import clamp, nn
+from torch._C import device
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
@@ -110,10 +115,19 @@ class PyTorchModel(ModelInterface[nn.Module]):
         return linear_model
 
     def _obtain_predictions(
-        self, x: Any, model_predict_kwargs: dict[str, Any]
+        self,
+        x: torch.Tensor | Mapping[str, torch.Tensor | npt.ArrayLike],
+        model_predict_kwargs: dict[str, Any],
     ) -> torch.Tensor:
         if safe_isinstance(self.model, "transformers.modeling_utils.PreTrainedModel"):
-            assert_batch_encoding_like(x)
+
+            if not is_batch_encoding_like(x):
+                raise ValueError(
+                    "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
+                    "or make sure you're passing a dict with input_ids and attention_mask as keys"
+                )
+
+            x = {k: torch.as_tensor(v, device=self.device) for k, v in x.items()}
             pred = self.model(**x, **model_predict_kwargs).logits
             if self.softmax:
                 return torch.softmax(pred, dim=-1)
@@ -260,7 +274,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
 
-    def get_model(self) -> torch.nn:
+    def get_model(self) -> torch.nn.Module:
         """
         Get the original torch model.
         """
@@ -316,7 +330,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         mean: float,
         std: float,
         noise_type: str = "multiplicative",
-    ) -> torch.nn:
+    ) -> torch.nn.Module:
         """
         Sample a model by means of adding normally distributed noise.
 
@@ -554,17 +568,20 @@ def safe_isinstance(obj: Any, class_path_str: Iterable[str] | str) -> bool:
     return False
 
 
-def assert_batch_encoding_like(x: Any):
+class BatchEncodingLike(TypedDict):
+    input_ids: torch.Tensor | npt.ArrayLike
+    attention_mask: torch.Tensor | npt.ArrayLike
+
+
+def is_batch_encoding_like(x: Any) -> TypeGuard[BatchEncodingLike]:
     # BatchEncoding is the default output from Tokenizers which contains
     # necessary keys such as `input_ids` and `attention_mask`.
     # It is also possible to pass a Dict with those keys.
     if safe_isinstance(x, "transformers.tokenization_utils_base.BatchEncoding"):
-        return
+        return True
 
-    if isinstance(x, Mapping) and "input_ids" in x and "attention_mask" in x:
-        return
+    elif isinstance(x, Mapping) and "input_ids" in x and "attention_mask" in x:
+        return True
 
-    raise ValueError(
-        "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
-        "or make sure you're passing a dict with input_ids and attention_mask as keys"
-    )
+    else:
+        return False
