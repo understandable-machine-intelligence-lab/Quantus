@@ -11,18 +11,16 @@ import warnings
 from contextlib import suppress
 from copy import deepcopy
 from functools import lru_cache
-from importlib import util
 from typing import (
     Any,
     Dict,
     Generator,
+    Iterable,
     List,
     Mapping,
     Optional,
     Tuple,
     Union,
-    TypedDict,
-    TypeGuard,
 )
 
 import numpy as np
@@ -501,7 +499,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         )
 
 
-def safe_isinstance(obj: Any, class_path_str: str) -> bool:
+def safe_isinstance(obj: Any, class_path_str: Iterable[str] | str) -> bool:
     """Acts as a safe version of isinstance without having to explicitly
     import packages which may not exist in the users environment.
 
@@ -523,14 +521,10 @@ def safe_isinstance(obj: Any, class_path_str: str) -> bool:
     # Take from https://github.com/shap/shap/blob/dffc346f323ff8cf55f39f71c613ebd00e1c88f8/shap/utils/_general.py#L197
 
     if isinstance(class_path_str, str):
-        class_path_strs = [class_path_str]
-    elif isinstance(class_path_str, list) or isinstance(class_path_str, tuple):
-        class_path_strs = class_path_str
-    else:
-        class_path_strs = [""]
+        class_path_str = [class_path_str]
 
     # try each module path in order
-    for class_path_str in class_path_strs:
+    for class_path_str in class_path_str:
         if "." not in class_path_str:
             raise ValueError(
                 "class_path_str must be a string or list of strings specifying a full \
