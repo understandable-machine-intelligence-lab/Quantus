@@ -1,8 +1,9 @@
-import sys
 from collections import OrderedDict
 from contextlib import nullcontext
-from importlib import reload
-from typing import Union
+from typing import Any, Union
+from types import ModuleType
+import sys
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -304,23 +305,27 @@ def test_huggingface_classifier_predict(
 
 
 @pytest.fixture
-def mock_transformers_not_installed(mocker: pytest_mock.MockFixture):
-    mocker.patch("importlib.util.find_spec", return_value=None)
-    del sys.modules['quantus.helpers.model.pytorch_model']
-    from quantus.helpers.model.pytorch_model import PyTorchModel as MockModel
-    # Mock the model's behavior
-    model_instance = MockModel(model=mocker.MagicMock(spec=None))
-    model_instance.model.training = False
-    # model_instance.model.return_value.logits = torch.tensor([[0.1, 0.9]])
-    # model_instance.softmax = False
-    yield model_instance
+def mock_transformers_not_installed(mocker: pytest_mock.MockerFixture):
+    mock_dict = {k: v for k, v in sys.modules.items() if "transformers" not in k}
+    mocker.patch.dict("sys.modules", mock_dict)
+    model = MagicMock(spec=None)
+    model.training = False
+    yield model
     mocker.resetall(return_value=True, side_effect=True)
 
 
 @pytest.mark.pytorch_model
-def test_predict_transformers_installed(mock_transformers_not_installed):
-    model_instance = mock_transformers_not_installed
-    # Prepare input and call the predict method
+def test_predict_transformers_not_installed(mock_transformers_not_installed):
+    model = PyTorchModel(model=mock_transformers_not_installed, softmax=True)
     x = {"input_ids": np.array([1, 2, 3]), "attention_mask": np.array([1, 1, 1])}
     with pytest.raises(ValueError):
-        _ = model_instance.predict(x)
+        model.predict(x)
+
+
+@pytest.mark.pytorch_model
+def test_predict_invalid_input(load_hf_distilbert_sequence_classifier):
+    model = PyTorchModel(load_hf_distilbert_sequence_classifier)
+    # Prepare input and call the predict method
+    x = torch.tensor([1, 2, 3, 4])
+    with pytest.raises(ValueError):
+        model.predict(x)

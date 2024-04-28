@@ -12,22 +12,27 @@ from contextlib import suppress
 from copy import deepcopy
 from functools import lru_cache
 from importlib import util
-from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    TypedDict,
+    TypeGuard,
+)
 
 import numpy as np
 import numpy.typing as npt
 import torch
+import sys
 from torch import nn
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
-
-if util.find_spec("transformers"):
-    from transformers import PreTrainedModel
-    from transformers.tokenization_utils import BatchEncoding
-else:
-    PreTrainedModel = None
-    BatchEncoding = None
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
@@ -106,28 +111,16 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         return linear_model
 
-    def _obtain_predictions(self, x, model_predict_kwargs):
-        pred = None
-        if PreTrainedModel is not None:
-            # BatchEncoding is the default output from Tokenizers which contains
-            # necessary keys such as `input_ids` and `attention_mask`.
-            # It is also possible to pass a Dict with those keys.
-            if isinstance(self.model, PreTrainedModel):
-                if not (
-                    isinstance(x, BatchEncoding)
-                    or (
-                        isinstance(x, dict)
-                        and ("input_ids" in x and "attention_mask" in x)
-                    )
-                ):
-                    raise ValueError(
-                        "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
-                        "or make sure you're passing a dict with input_ids and attention_mask as keys"
-                    )
-                pred = self.model(**x, **model_predict_kwargs).logits
-                if self.softmax:
-                    return torch.softmax(pred, dim=-1)
-                return pred
+    def _obtain_predictions(
+        self, x: Any, model_predict_kwargs: dict[str, Any]
+    ) -> torch.Tensor:
+        if safe_isinstance(self.model, "transformers.modeling_utils.PreTrainedModel"):
+            assert_batch_encoding_like(x)
+            pred = self.model(**x, **model_predict_kwargs).logits
+            if self.softmax:
+                return torch.softmax(pred, dim=-1)
+            return pred
+
         if isinstance(self.model, nn.Module):
             pred_model = self.get_softmax_arg_model()
             return pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
@@ -506,3 +499,78 @@ class PyTorchModel(ModelInterface[nn.Module]):
                 if (hasattr(i[1], "reset_parameters"))
             ]
         )
+
+
+def safe_isinstance(obj: Any, class_path_str: str) -> bool:
+    """Acts as a safe version of isinstance without having to explicitly
+    import packages which may not exist in the users environment.
+
+    Checks if obj is an instance of type specified by class_path_str.
+
+    Parameters
+    ----------
+    obj: Any
+        Some object you want to test against
+    class_path_str: str or list
+        A string or list of strings specifying full class paths
+        Example: `sklearn.ensemble.RandomForestRegressor`
+
+    Returns
+    -------
+    bool: True if isinstance is true and the package exists, False otherwise
+
+    """
+    # Take from https://github.com/shap/shap/blob/dffc346f323ff8cf55f39f71c613ebd00e1c88f8/shap/utils/_general.py#L197
+
+    if isinstance(class_path_str, str):
+        class_path_strs = [class_path_str]
+    elif isinstance(class_path_str, list) or isinstance(class_path_str, tuple):
+        class_path_strs = class_path_str
+    else:
+        class_path_strs = [""]
+
+    # try each module path in order
+    for class_path_str in class_path_strs:
+        if "." not in class_path_str:
+            raise ValueError(
+                "class_path_str must be a string or list of strings specifying a full \
+                module path to a class. Eg, 'sklearn.ensemble.RandomForestRegressor'"
+            )
+
+        # Splits on last occurrence of "."
+        module_name, class_name = class_path_str.rsplit(".", 1)
+
+        # here we don't check further if the model is not imported, since we shouldn't have
+        # an object of that types passed to us if the model the type is from has never been
+        # imported. (and we don't want to import lots of new modules for no reason)
+        if module_name not in sys.modules:
+            continue
+
+        module = sys.modules[module_name]
+
+        # Get class
+        _class = getattr(module, class_name, None)
+
+        if _class is None:
+            continue
+
+        if isinstance(obj, _class):
+            return True
+
+    return False
+
+
+def assert_batch_encoding_like(x: Any):
+    # BatchEncoding is the default output from Tokenizers which contains
+    # necessary keys such as `input_ids` and `attention_mask`.
+    # It is also possible to pass a Dict with those keys.
+    if safe_isinstance(x, "transformers.tokenization_utils_base.BatchEncoding"):
+        return
+
+    if isinstance(x, Mapping) and "input_ids" in x and "attention_mask" in x:
+        return
+
+    raise ValueError(
+        "When using HuggingFace pretrained models, please use Tokenizers output for `x` "
+        "or make sure you're passing a dict with input_ids and attention_mask as keys"
+    )
