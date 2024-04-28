@@ -121,7 +121,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
             npt.ArrayLike,
             Mapping[str, Union[torch.Tensor, npt.ArrayLike]],
         ],
-        model_predict_kwargs: dict[str, Any],
+        model_predict_kwargs: Dict[str, Any],
     ) -> torch.Tensor:
         if safe_isinstance(self.model, "transformers.modeling_utils.PreTrainedModel"):
 
