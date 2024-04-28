@@ -518,7 +518,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         )
 
 
-def safe_isinstance(obj: Any, class_path_str: Iterable[str] | str) -> bool:
+def safe_isinstance(obj: Any, class_path_str: Union[Iterable[str], str]) -> bool:
     """Acts as a safe version of isinstance without having to explicitly
     import packages which may not exist in the users environment.
 
