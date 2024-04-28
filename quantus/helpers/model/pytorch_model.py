@@ -21,7 +21,6 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    TypeGuard,
     TypedDict,
 )
 
@@ -34,6 +33,12 @@ from torch import nn
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+
+
+if sys.version_info >= (3, 10):
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
 
 
 class PyTorchModel(ModelInterface[nn.Module]):
@@ -134,9 +139,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         elif isinstance(self.model, nn.Module):
             pred_model = self.get_softmax_arg_model()
-            return pred_model(
-                torch.Tensor(x).to(self.device), **model_predict_kwargs
-            )
+            return pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
         else:
             raise ValueError("Predictions cant be null")
 
