@@ -1,9 +1,7 @@
 from collections import OrderedDict
 from contextlib import nullcontext
-from typing import Any, Union
-from types import ModuleType
+from typing import Union
 import sys
-from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -308,7 +306,7 @@ def test_huggingface_classifier_predict(
 def mock_transformers_not_installed(mocker: pytest_mock.MockerFixture):
     mock_dict = {k: v for k, v in sys.modules.items() if "transformers" not in k}
     mocker.patch.dict("sys.modules", mock_dict)
-    model = MagicMock(spec=None)
+    model = mocker.MagicMock(spec=None)
     model.training = False
     yield model
     mocker.resetall(return_value=True, side_effect=True)
