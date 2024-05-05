@@ -1,45 +1,40 @@
-"""This module contains the implementation of the Faithfulness Estimate metric."""
+"""This module contains the implementation of the Pixel-Flipping metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-import sys
-from typing import Any, Callable, Dict, List, Optional
+
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.functions.similarity_func import correlation_pearson
-from quantus.helpers import asserts, warn
-from quantus.helpers.enums import (
-    DataType,
-    EvaluationCategory,
-    ModelType,
-    ScoreDirection,
-)
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import utils
+from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import Metric
+import warnings
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
-if sys.version_info >= (3, 8):
-    from typing import final
-else:
-    from typing_extensions import final
 
-
-@final
-class FaithfulnessEstimate(Metric[List[float]]):
+class InverseEstimation(Metric):
     """
-    Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
+    Implementation of Inverse Estimation experiment by Author et al., 2023.
 
-    Computes the correlations of probability drops and the relevance scores on various points,
-    showing the aggregate statistics.
+    The basic idea is to ..............
 
     References:
-        1) David Alvarez-Melis and Tommi S. Jaakkola.: "Towards robust interpretability with self-explaining
-        neural networks." NeurIPS (2018): 7786-7795.
+        1) ..........
 
     Attributes:
         -  _name: The name of the metric.
@@ -49,38 +44,35 @@ class FaithfulnessEstimate(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Faithfulness Estimate"
+    name = "Inverse-Estimation"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.FAITHFULNESS
+    # evaluation_category = EvaluationCategory.FAITHFULNESS
 
     def __init__(
         self,
-        similarity_func: Optional[Callable] = None,
-        features_in_step: int = 1,
+        metric_init: Metric,
+        inverse_method: str = "sign-flip",
+        area_between_curves: bool = False, 
+        return_mean_per_sample: bool = True,
+        return_auc_per_sample: bool = False,
         abs: bool = False,
-        normalise: bool = True,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Optional[Callable] = None,
-        perturb_baseline: str = "black",
-        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: bool = False,
+        return_aggregate: Optional[bool] = True,
         aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
-        disable_warnings: bool = False,
-        display_progressbar: bool = False,
+        disable_warnings: Optional[bool] = None,
+        display_progressbar: Optional[bool] = None,
         **kwargs,
     ):
         """
         Parameters
         ----------
-        similarity_func: callable
-            Similarity function applied to compare input and perturbed input.
-                If None, the default value is used, default=correlation_spearman.
-        features_in_step: integer
-            The size of the step, default=1.
+        metric_init: Metric
+            The metric to be used for the inverse estimation.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -102,6 +94,8 @@ class FaithfulnessEstimate(Metric[List[float]]):
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
             Callable that aggregates the scores given an evaluation call.
+        return_auc_per_sample: boolean
+            Indicates if an AUC score should be computed over the curve and returned.
         default_plot_func: callable
             Callable that plots the metrics result.
         disable_warnings: boolean
@@ -111,12 +105,17 @@ class FaithfulnessEstimate(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
+        if metric_init.default_plot_func is None:
+            default_plot_func = plotting.plot_inverse_curves
+
+        self.return_aggregate = return_aggregate
+
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
+            return_aggregate=self.return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
@@ -124,43 +123,51 @@ class FaithfulnessEstimate(Metric[List[float]]):
             **kwargs,
         )
 
-        # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = correlation_pearson
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
-        self.similarity_func = similarity_func
-        self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
+        self.return_auc_per_sample = return_auc_per_sample
+        self.return_mean_per_sample = return_mean_per_sample
+        self.inverse_method = inverse_method
+        self.area_between_curves = area_between_curves
+        self.metric_init = metric_init
+
+        # TODO. Update warnings.
+        assert not (
+            self.return_mean_per_sample and self.return_auc_per_sample
+        ), "Only one of 'return_mean_per_sample' and 'return_auc_per_sample' can be True."
+        if self.inverse_method not in ["sign-flip", "value-swap"]:
+            raise ValueError(
+                "The 'inverse_method' in init **kwargs, \
+                             must be either 'sign-flip' or 'value-swap'."
+            )
+        if self.metric_init.return_aggregate:
+            print(
+                "The metric is not designed to return an aggregate score, setting return_aggregate=False."
+            )
+            self.metric_init.return_aggregate = False
+
+        assert self.metric_init.abs == False, (
+            "To run the inverse estimation, you cannot set 'a_batch' to "
+            "have positive attributions only. Set 'abs' param of the metric init to 'False'."
         )
 
-        # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline' and similarity function "
-                    "'similarity_func'"
-                ),
-                citation=(
-                    "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
-                    " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
-                ),
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=("Update here."),
             )
 
     def __call__(
         self,
         model,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
+        x_batch: np.array,
+        y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
+        channel_first: Optional[bool] = True,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
-        softmax: Optional[bool] = False,
+        softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
@@ -201,9 +208,6 @@ class FaithfulnessEstimate(Metric[List[float]]):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -240,7 +244,7 @@ class FaithfulnessEstimate(Metric[List[float]]):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >>> metric = Metric(abs=True, normalise=False)
-            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         return super().__call__(
             model=model,
@@ -248,7 +252,7 @@ class FaithfulnessEstimate(Metric[List[float]]):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -259,124 +263,123 @@ class FaithfulnessEstimate(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        # Flatten the attributions.
-        a = a.flatten()
-
-        # Get indices of sorted attributions (descending).
-        a_indices = np.argsort(-a)
-
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-        pred_deltas = [None for _ in range(n_perturbations)]
-        att_sums = [None for _ in range(n_perturbations)]
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            pred_deltas[i_ix] = float(y_pred - y_pred_perturb)
-
-            # Sum attributions.
-            att_sums[i_ix] = np.sum(a[a_ix])
-
-        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-        return similarity
-
-    def custom_preprocess(self, x_batch: np.ndarray, **kwargs) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        kwargs:
-            Unused.
-
-        Returns
-        -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
-        """
-        # Asserts.
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
-        )
-
     def evaluate_batch(
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        s_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> List[float]:
-        """
-        This method performs XAI evaluation on a single batch of explanations.
-        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInterface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        kwargs:
-            Unused.
+        assert (
+            a_batch is not None
+        ), "'a_batch' must be provided to run the inverse estimation."
 
-        Returns
-        -------
-        scores_batch:
-            The evaluation results.
-        """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Metrics that depend on re-computing explanations need inverse wrapping.
+        self.explain_func_kwargs["explain_func"] = self.explain_func
+        self.explain_func_kwargs["inverse_method"] = self.inverse_method
+
+        self.scores_ori = self.metric_init(
+            model=model.get_model(),
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=self.channel_first,
+            explain_func=self.explain_func,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
+            **kwargs,
+        )
+        assert len(self.scores_ori) == len(x_batch), (
+            "To run the inverse estimation, the number of evaluation scores "
+            "must match the number of instances in the batch."
+        )
+
+        # Empty the evaluation scores before re-scoring with the metric.
+        self.metric_init.evaluation_scores = []
+
+        # Get inverse attributions.
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
+
+        # Run inverse experiment.
+        self.scores_inv = self.metric_init(
+            model=model.get_model(),
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch_inv,
+            s_batch=s_batch,
+            channel_first=self.channel_first,
+            explain_func=self.inverse_explain_wrapper,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
+            **kwargs,
+        )
+
+        # Compute the inverse scores.
+        if self.area_between_curves:
+            scores_ori = self.aggregate_inverse_scores(
+                inv_scores=self.scores_ori, nr_samples=len(x_batch)
+            )
+            scores_inv = self.aggregate_inverse_scores(
+                inv_scores=self.scores_inv, nr_samples=len(x_batch)
+            )
+            
+            return (np.array(scores_ori) - np.array(scores_inv)).tolist()
+        else:
+            inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
+            inv_scores = self.aggregate_inverse_scores(
+                inv_scores=inv_scores, nr_samples=len(x_batch)
+            )
+            return inv_scores.tolist()
+
+    def get_mean_score(self, scores):
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return np.mean(np.array(scores), axis=1)
+
+    def get_auc_score(self, scores):
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return np.mean([utils.calculate_auc(np.array(curve)) for curve in scores])
+
+    def aggregate_inverse_scores(self, inv_scores: np.array, nr_samples: int):
+        """Compute the mean / AUC score for the inverse estimation, if passed as vectors (like pixel-flipping curves) per sample."""
+        if inv_scores.size == nr_samples:
+            warnings.warn(
+                f"Cannot compute mean score for scores with shape {inv_scores.shape}. Set 'return_mean_per_sample' and 'return_auc_per_sample' to False to return the raw scores."
+            )
+            return inv_scores
+        else:
+            if self.return_mean_per_sample:
+                inv_scores = self.get_mean_score(scores=inv_scores)
+            elif self.return_auc_per_sample:
+                inv_scores = self.get_auc_score(scores=inv_scores)
+            return inv_scores
+
+    def get_inverse_attributions(self, a_batch: np.array):
+        """Get the inverse attributions of the input attributions."""
+
+        # Attributions need to have only one axis, else flatten and reshape back.
+        shape_ori = a_batch.shape
+        a_batch = a_batch.reshape((shape_ori[0], -1))
+        if self.inverse_method == "sign-flip":
+            a_batch_inv = -np.array(a_batch)
+        elif self.inverse_method == "value-swap":
+            indices = np.argsort(a_batch, axis=1)
+            a_batch_inv = np.empty_like(a_batch)
+            a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[
+                np.arange(a_batch_inv.shape[0])[:, None], indices[:, ::-1]
+            ]
+        a_batch_inv = a_batch_inv.reshape(shape_ori)
+        return a_batch_inv
+
+    def inverse_explain_wrapper(self, model, inputs, targets, **kwargs):
+        """Wrapper for the explanation function that computes the inverse attributions."""
+        a_batch = self.explain_func(model, inputs, targets, **self.explain_func_kwargs)
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
+        return a_batch_inv
