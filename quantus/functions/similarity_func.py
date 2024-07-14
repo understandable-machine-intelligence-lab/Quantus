@@ -35,7 +35,7 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_pearson(a: np.array, b: np.array, batched=False, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -45,6 +45,8 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
         Keyword arguments.
 
@@ -53,7 +55,13 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return scipy.stats.pearsonr(a, b)[0]
+    if batched:
+        assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
+    return (
+        scipy.stats.pearsonr(a, b, axis=1)[0]
+        if batched
+        else scipy.stats.pearsonr(a, b)[0]
+    )
 
 
 def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
@@ -145,7 +153,7 @@ def lipschitz_constant(
     b: np.array,
     c: Union[np.array, None],
     d: Union[np.array, None],
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.

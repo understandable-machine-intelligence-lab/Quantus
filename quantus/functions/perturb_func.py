@@ -118,6 +118,58 @@ def baseline_replacement_by_indices(
     return arr_perturbed
 
 
+def batch_baseline_replacement_by_indices(
+    arr: np.array,
+    indices: Tuple[slice, ...],
+    perturb_baseline: Union[float, int, str, np.array],
+    **kwargs,
+) -> np.array:
+    """
+    Replace indices in an array by a given baseline.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+        Array to be perturbed. Shape N x F, where N is batch size and F is number of features.
+    indices: np.ndarray
+        Indices of the array to perturb. Shape N x I, where N is batch size and I is the number of indices to perturb.
+    perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+
+    # Assert dimensions
+    assert (
+        len(arr.shape) == 2
+    ), "The array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the features"
+    assert (
+        len(indices.shape) == 2
+    ), "The indices array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the indices to perturb"
+
+    batch_size = arr.shape[0]
+    arr_perturbed = copy.copy(arr)
+
+    # Get the baseline value.
+    baseline_value = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(indices.shape),
+        batched=True,
+        **kwargs,
+    )
+
+    # Perturb the array.
+    arr_perturbed[np.arange(batch_size)[:, None], indices] = baseline_value
+
+    return arr_perturbed
+
+
 def baseline_replacement_by_shift(
     arr: np.array,
     indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],

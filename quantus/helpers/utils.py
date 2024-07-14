@@ -60,13 +60,13 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
         )
 
 
-def get_baseline_value(
-    value: Union[float, int, str, np.array],
+def batch_get_baseline_value(
+    value: Union[str, np.array],
     arr: np.ndarray,
     return_shape: Tuple,
     patch: Optional[np.ndarray] = None,
     **kwargs,
-) -> np.array:
+) -> Union[np.array, float]:
     """
     Get the baseline value to fill the array with, in the shape of return_shape.
 
@@ -77,11 +77,11 @@ def get_baseline_value(
         baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
         "neighbourhood_random_min_max"), or the array (np.array) to be returned.
     arr: np.ndarray
-        CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+        BxCxHxW image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
     return_shape: tuple
-        CxWxH shape to be returned.
+        BxCxHxW shape to be returned.
     patch: np.ndarray, optional
-        CxWxH patch array to calculate baseline values.
+        BxCxHxW patch array to calculate baseline values.
         Necessary for "neighbourhood_mean" and "neighbourhood_random_min_max" methods.
     kwargs: optional
             Keyword arguments.
@@ -125,8 +125,81 @@ def get_baseline_value(
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")
 
 
+def get_baseline_value(
+    value: Union[float, int, str, np.array],
+    arr: np.ndarray,
+    return_shape: Tuple,
+    patch: Optional[np.ndarray] = None,
+    batched: bool = False,
+    **kwargs,
+) -> np.array:
+    """
+    Get the baseline value to fill the array with, in the shape of return_shape.
+
+    Parameters
+    ----------
+    value: float, int, str, np.ndarray
+        Either the value (float, int) to fill the array with, a method (string) used to construct
+        baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
+        "neighbourhood_random_min_max"), or the array (np.array) to be returned.
+    arr: np.ndarray
+        CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+    return_shape: tuple
+        CxWxH shape to be returned.
+    patch: np.ndarray, optional
+        CxWxH patch array to calculate baseline values.
+        Necessary for "neighbourhood_mean" and "neighbourhood_random_min_max" methods.
+    batched: bool,
+        If True, the arr and patch are assumed to be of shape B x <single_array_shape>. The aggregations are done over the individual batch elements.
+    kwargs: optional
+            Keyword arguments.
+
+    Returns
+    -------
+    np.ndarray
+        Baseline array in return_shape.
+
+    """
+
+    kwargs["return_shape"] = return_shape
+    if isinstance(value, (float, int)):
+        return np.full(return_shape, value)
+    elif isinstance(value, np.ndarray):
+        if value.ndim == 0:
+            return np.full(return_shape, value)
+        elif value.shape == return_shape:
+            return value
+        else:
+            raise ValueError(
+                "Shape {} of argument 'value' cannot be fitted to required shape {} of return value".format(
+                    value.shape, return_shape
+                )
+            )
+    elif isinstance(value, str):
+        fill_dict = get_baseline_dict(arr, patch, batched, **kwargs)
+        if value.lower() == "random":
+            raise ValueError(
+                "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
+                "the current release. Please use 'uniform' instead and pass lower- and upper bounds to "
+                "kwargs as see fit (default values are set to 'uniform_low=0.0' and 'uniform_high=1.0' "
+                "which will replicate the results of 'random').\n"
+            )
+        if value.lower() not in fill_dict:
+            raise ValueError(
+                f"Ensure that 'value'(string) is in {list(fill_dict.keys())}"
+            )
+        fill_value = fill_dict[value.lower()]
+        # Expand the second dimension if batched to enable broadcasting
+        if batched:
+            fill_value = fill_value[:, None]
+        return np.full(return_shape, fill_value)
+
+    else:
+        raise ValueError("Specify 'value' as a np.array, string, integer or float.")
+
+
 def get_baseline_dict(
-    arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
+    arr: np.ndarray, patch: Optional[np.ndarray] = None, batched: bool = False, **kwargs
 ) -> dict:
     """
     Make a dictionary of baseline approaches depending on the input x (or patch of input).
@@ -138,6 +211,8 @@ def get_baseline_dict(
     patch: np.ndarray, optional
         CxWxH patch array to calculate baseline values, necessary for "neighbourhood_mean" and
         "neighbourhood_random_min_max" methods.
+    batched: bool
+        If True, the arr and patch are assumed to be of shape B x <single_array_shape>. The aggregations are done over the individual batch elements.
     kwargs: optional
             Keyword arguments..
 
@@ -146,20 +221,28 @@ def get_baseline_dict(
         fill_dict: dict
             Maps all available baseline methods to baseline values.
     """
+
+    # Aggregate over elements of batch
+    aggregation_axes = (
+        tuple(range(1 if batched else 0, len(arr.shape)))
+        if not patch
+        else tuple(range(1 if batched else 0, len(patch.shape)))
+    )
     fill_dict = {
-        "mean": float(arr.mean()),
+        "mean": arr.mean(axis=aggregation_axes),
         "uniform": np.random.uniform(
             low=kwargs.get("uniform_low", 0.0),
             high=kwargs.get("uniform_high", 1.0),
             size=kwargs["return_shape"],
         ),
-        "black": float(arr.min()),
-        "white": float(arr.max()),
+        "black": arr.min(axis=aggregation_axes),
+        "white": arr.max(axis=aggregation_axes),
     }
     if patch is not None:
-        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
-        fill_dict["neighbourhood_random_min_max"] = float(
-            np.random.uniform(low=patch.min(), high=patch.max())
+        fill_dict["neighbourhood_mean"] = patch.mean(axis=aggregation_axes)
+        fill_dict["neighbourhood_random_min_max"] = np.random.uniform(
+            low=patch.min(axis=aggregation_axes),
+            high=patch.max(axis=aggregation_axes),
         )
     return fill_dict
 

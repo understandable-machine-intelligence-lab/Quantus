@@ -5,6 +5,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from quantus.metrics.faithfulness.faithfulness_correlation import (
+    BatchFaithfulnessCorrelation,
     FaithfulnessCorrelation,
 )
 from quantus.metrics.faithfulness.faithfulness_estimate import FaithfulnessEstimate
