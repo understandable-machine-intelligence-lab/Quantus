@@ -382,7 +382,7 @@ class BatchFaithfulnessCorrelation(Metric[List[float]]):
 
         similarity = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
 
-        return similarity
+        return similarity.tolist()
 
 
 @final

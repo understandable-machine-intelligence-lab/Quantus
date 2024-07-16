@@ -60,71 +60,6 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
         )
 
 
-def batch_get_baseline_value(
-    value: Union[str, np.array],
-    arr: np.ndarray,
-    return_shape: Tuple,
-    patch: Optional[np.ndarray] = None,
-    **kwargs,
-) -> Union[np.array, float]:
-    """
-    Get the baseline value to fill the array with, in the shape of return_shape.
-
-    Parameters
-    ----------
-    value: float, int, str, np.ndarray
-        Either the value (float, int) to fill the array with, a method (string) used to construct
-        baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
-        "neighbourhood_random_min_max"), or the array (np.array) to be returned.
-    arr: np.ndarray
-        BxCxHxW image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
-    return_shape: tuple
-        BxCxHxW shape to be returned.
-    patch: np.ndarray, optional
-        BxCxHxW patch array to calculate baseline values.
-        Necessary for "neighbourhood_mean" and "neighbourhood_random_min_max" methods.
-    kwargs: optional
-            Keyword arguments.
-
-    Returns
-    -------
-    np.ndarray
-        Baseline array in return_shape.
-
-    """
-
-    kwargs["return_shape"] = return_shape
-    if isinstance(value, (float, int)):
-        return np.full(return_shape, value)
-    elif isinstance(value, np.ndarray):
-        if value.ndim == 0:
-            return np.full(return_shape, value)
-        elif value.shape == return_shape:
-            return value
-        else:
-            raise ValueError(
-                "Shape {} of argument 'value' cannot be fitted to required shape {} of return value".format(
-                    value.shape, return_shape
-                )
-            )
-    elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch, **kwargs)
-        if value.lower() == "random":
-            raise ValueError(
-                "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
-                "the current release. Please use 'uniform' instead and pass lower- and upper bounds to "
-                "kwargs as see fit (default values are set to 'uniform_low=0.0' and 'uniform_high=1.0' "
-                "which will replicate the results of 'random').\n"
-            )
-        if value.lower() not in fill_dict:
-            raise ValueError(
-                f"Ensure that 'value'(string) is in {list(fill_dict.keys())}"
-            )
-        return np.full(return_shape, fill_dict[value.lower()])
-    else:
-        raise ValueError("Specify 'value' as a np.array, string, integer or float.")
-
-
 def get_baseline_value(
     value: Union[float, int, str, np.array],
     arr: np.ndarray,
@@ -233,7 +168,8 @@ def get_baseline_dict(
         "uniform": np.random.uniform(
             low=kwargs.get("uniform_low", 0.0),
             high=kwargs.get("uniform_high", 1.0),
-            size=kwargs["return_shape"],
+            # Return only (batch_size, ) if batched to align with other fill_dict values
+            size=kwargs["return_shape"][0] if batched else kwargs["return_shape"],
         ),
         "black": arr.min(axis=aggregation_axes),
         "white": arr.max(axis=aggregation_axes),
@@ -1082,7 +1018,7 @@ def offset_coordinates(
     return off_coords[valid], valid
 
 
-def calculate_auc(values: np.array, dx: int = 1):
+def calculate_auc(values: np.array, dx: int = 1, batched: bool = False):
     """
     Calculate area under the curve using the composite trapezoidal rule.
 
@@ -1098,6 +1034,8 @@ def calculate_auc(values: np.array, dx: int = 1):
     np.ndarray
         Definite integral of values.
     """
+    if batched:
+        return np.trapz(values, dx=dx, axis=1)
     return np.trapz(np.array(values), dx=dx)
 
 

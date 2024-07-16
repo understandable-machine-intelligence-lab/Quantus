@@ -8,14 +8,21 @@ from quantus.metrics.faithfulness.faithfulness_correlation import (
     BatchFaithfulnessCorrelation,
     FaithfulnessCorrelation,
 )
-from quantus.metrics.faithfulness.faithfulness_estimate import FaithfulnessEstimate
+from quantus.metrics.faithfulness.faithfulness_estimate import (
+    BatchFaithfulnessEstimate,
+    FaithfulnessEstimate,
+)
 from quantus.metrics.faithfulness.infidelity import Infidelity
 from quantus.metrics.faithfulness.irof import IROF
-from quantus.metrics.faithfulness.monotonicity import Monotonicity
+from quantus.metrics.faithfulness.monotonicity import BatchMonotonicity, Monotonicity
 from quantus.metrics.faithfulness.monotonicity_correlation import (
+    BatchMonotonicityCorrelation,
     MonotonicityCorrelation,
 )
-from quantus.metrics.faithfulness.pixel_flipping import PixelFlipping
+from quantus.metrics.faithfulness.pixel_flipping import (
+    BatchPixelFlipping,
+    PixelFlipping,
+)
 from quantus.metrics.faithfulness.region_perturbation import RegionPerturbation
 from quantus.metrics.faithfulness.road import ROAD
 from quantus.metrics.faithfulness.selectivity import Selectivity
