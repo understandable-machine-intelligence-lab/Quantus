@@ -14,7 +14,9 @@ import scipy
 import skimage
 
 
-def correlation_spearman(a: np.array, b: np.array, batched=False, **kwargs) -> float:
+def correlation_spearman(
+    a: np.array, b: np.array, batched: bool = False, **kwargs
+) -> Union[float, np.array]:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -31,8 +33,8 @@ def correlation_spearman(a: np.array, b: np.array, batched=False, **kwargs) -> f
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     if batched:
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
@@ -43,7 +45,9 @@ def correlation_spearman(a: np.array, b: np.array, batched=False, **kwargs) -> f
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(a: np.array, b: np.array, batched=False, **kwargs) -> float:
+def correlation_pearson(
+    a: np.array, b: np.array, batched: bool = False, **kwargs
+) -> Union[float, np.array]:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -60,8 +64,8 @@ def correlation_pearson(a: np.array, b: np.array, batched=False, **kwargs) -> fl
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     if batched:
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
@@ -69,7 +73,9 @@ def correlation_pearson(a: np.array, b: np.array, batched=False, **kwargs) -> fl
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_kendall_tau(
+    a: np.array, b: np.array, batched: bool = False, **kwargs
+) -> Union[float, np.array]:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -79,14 +85,20 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
         Keyword arguments.
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
+    if batched:
+        assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
+        # No support for axis currently, so just iterating over the batch
+        return np.array([scipy.stats.kendalltau(a_i, b_i)[0] for a_i, b_i in zip(a, b)])
     return scipy.stats.kendalltau(a, b)[0]
 
 

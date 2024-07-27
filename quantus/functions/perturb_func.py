@@ -120,7 +120,7 @@ def baseline_replacement_by_indices(
 
 def batch_baseline_replacement_by_indices(
     arr: np.array,
-    indices: Tuple[slice, ...],
+    indices: np.array,
     perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
 ) -> np.array:
