@@ -332,7 +332,7 @@ class Monotonicity(Metric[List[float]]):
             return_shape=(
                 batch_size,
                 n_features,
-            ),  # TODO. Double-check this over using = (1,).
+            ),
             batched=True,
         )
         x_baseline = np.full((batch_size, n_features), baseline_value).reshape(

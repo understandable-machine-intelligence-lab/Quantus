@@ -1034,9 +1034,8 @@ def calculate_auc(values: np.array, dx: int = 1, batched: bool = False):
     np.ndarray
         Definite integral of values.
     """
-    if batched:
-        return np.trapz(values, dx=dx, axis=1)
-    return np.trapz(np.array(values), dx=dx)
+    axis = 1 if batched else -1
+    return np.trapz(np.array(values), dx=dx, axis=axis)
 
 
 T = TypeVar("T")
