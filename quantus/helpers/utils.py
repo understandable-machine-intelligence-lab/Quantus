@@ -578,7 +578,7 @@ def get_block_indices(x_batch: np.array, patch_size: int) -> np.array:
     )
 
     for block_index in block_indices:
-        yield blocks[0, 0, *block_index].reshape(batch_size, -1)
+        yield blocks[0, 0, block_index[0], block_index[1]].reshape(batch_size, -1)
 
 
 def get_nr_patches(
