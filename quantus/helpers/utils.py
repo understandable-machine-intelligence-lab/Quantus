@@ -13,6 +13,8 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
+import skimage
+import math
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
@@ -560,6 +562,25 @@ def create_patch_slice(
     return tuple(patch_slice)
 
 
+def get_block_indices(x_batch: np.array, patch_size: int) -> np.array:
+    batch_size = x_batch.shape[0]
+    x_indices = np.stack(
+        [np.arange(x.size) for x in x_batch],
+        axis=0,
+    ).reshape(*x_batch.shape)
+    blocks = skimage.util.view_as_blocks(
+        x_indices, (*x_batch.shape[:2], patch_size, patch_size)
+    )
+    blocks_h, blocks_w = blocks.shape[2:4]
+    block_indices = np.stack(
+        np.unravel_index(list(range(blocks_h * blocks_w)), shape=(blocks_h, blocks_w)),
+        axis=1,
+    )
+
+    for block_index in block_indices:
+        yield blocks[0, 0, *block_index].reshape(batch_size, -1)
+
+
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
 ) -> int:
@@ -719,6 +740,14 @@ def _unpad_array(
 
     unpadded_arr = arr[tuple(unpad_slice)]
     return unpadded_arr
+
+
+def get_padding_size(dim: int, patch_size: int) -> Tuple[int]:
+    modulo = dim % patch_size
+    if modulo == 0:
+        return (0, 0)
+    half_modulo = modulo / 2
+    return (math.floor(half_modulo), math.ceil(half_modulo))
 
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
