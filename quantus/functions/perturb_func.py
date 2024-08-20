@@ -170,6 +170,53 @@ def batch_baseline_replacement_by_indices(
     return arr_perturbed
 
 
+def baseline_replacement_by_mask(
+    arr: np.array,
+    mask: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    **kwargs,
+) -> np.array:
+    """
+    Replace indices in an array by a given baseline.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+        Array to be perturbed. Shape is arbitrary.
+    mask: np.ndarray
+        Boolean mask of the array to perturb. Shape must be the same as the arr.
+    perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+
+    # Assert dimensions
+    assert (
+        arr.shape == mask.shape
+    ), "The shape of arr must be the same as the mask shape"
+
+    arr_perturbed = copy.copy(arr)
+
+    # Get the baseline value.
+    baseline_value = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(arr.shape),
+        **kwargs,
+    )
+
+    # Perturb the array.
+    arr_perturbed = np.where(mask, baseline_value, arr_perturbed)
+
+    return arr_perturbed
+
+
 def baseline_replacement_by_shift(
     arr: np.array,
     indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],

@@ -9,7 +9,7 @@ from quantus.metrics.faithfulness.faithfulness_correlation import (
 )
 from quantus.metrics.faithfulness.faithfulness_estimate import FaithfulnessEstimate
 from quantus.metrics.faithfulness.infidelity import BatchInfidelity, Infidelity
-from quantus.metrics.faithfulness.irof import IROF
+from quantus.metrics.faithfulness.irof import IROF, BatchIROF
 from quantus.metrics.faithfulness.monotonicity import Monotonicity
 from quantus.metrics.faithfulness.monotonicity_correlation import (
     MonotonicityCorrelation,
