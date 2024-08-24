@@ -14,9 +14,7 @@ import scipy
 import skimage
 
 
-def correlation_spearman(
-    a: np.array, b: np.array, batched: bool = False, **kwargs
-) -> Union[float, np.array]:
+def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -45,9 +43,7 @@ def correlation_spearman(
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(
-    a: np.array, b: np.array, batched: bool = False, **kwargs
-) -> Union[float, np.array]:
+def correlation_pearson(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -73,9 +69,7 @@ def correlation_pearson(
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(
-    a: np.array, b: np.array, batched: bool = False, **kwargs
-) -> Union[float, np.array]:
+def correlation_kendall_tau(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -120,7 +114,7 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return scipy.spatial.distance.euclidean(u=a, v=b)
+    return ((a - b) ** 2).sum(axis=-1) ** 0.5
 
 
 def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
@@ -141,7 +135,7 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return scipy.spatial.distance.cityblock(u=a, v=b)
+    return abs(a - b).sum(-1)
 
 
 def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
@@ -201,9 +195,9 @@ def lipschitz_constant(
     d2 = kwargs.get("norm_denominator", distance_euclidean)
 
     if np.shape(a) == ():
-        return float(abs(a - b) / (d2(c, d) + eps))
+        return abs(a - b) / (d2(c, d) + eps)
     else:
-        return float(d1(a, b) / (d2(a=c, b=d) + eps))
+        return d1(a, b) / (d2(a=c, b=d) + eps)
 
 
 def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
@@ -287,9 +281,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    max_point, min_point = np.max(np.concatenate([a, b])), np.min(
-        np.concatenate([a, b])
-    )
+    max_point, min_point = np.max(np.concatenate([a, b])), np.min(np.concatenate([a, b]))
     data_range = float(np.abs(max_point - min_point))
     return skimage.metrics.structural_similarity(
         im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range

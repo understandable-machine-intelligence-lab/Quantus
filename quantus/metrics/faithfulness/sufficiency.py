@@ -256,15 +256,12 @@ class BatchSufficiency(Metric[List[float]]):
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)
-        print(dist_matrix)
         dist_matrix = self.normalise_func(dist_matrix)
         a_sim_matrix = np.zeros_like(dist_matrix)
         a_sim_matrix[dist_matrix <= self.threshold] = 1
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch[0].shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batched=True)
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         return {
@@ -578,9 +575,7 @@ class Sufficiency(Metric[List[float]]):
         a_sim_matrix[dist_matrix <= self.threshold] = 1
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch[0].shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batched=True)
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         return {
@@ -619,8 +614,6 @@ class Sufficiency(Metric[List[float]]):
         """
 
         return [
-            self.evaluate_instance(
-                i=i, a_sim_vector=a_sim_vector, y_pred_classes=y_pred_classes
-            )
+            self.evaluate_instance(i=i, a_sim_vector=a_sim_vector, y_pred_classes=y_pred_classes)
             for i, a_sim_vector in zip(i_batch, a_sim_vector_batch)
         ]
