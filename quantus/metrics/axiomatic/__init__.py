@@ -4,6 +4,6 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.axiomatic.completeness import Completeness
+from quantus.metrics.axiomatic.completeness import Completeness, BatchCompleteness
 from quantus.metrics.axiomatic.input_invariance import InputInvariance
-from quantus.metrics.axiomatic.non_sensitivity import NonSensitivity
+from quantus.metrics.axiomatic.non_sensitivity import NonSensitivity, BatchNonSensitivity

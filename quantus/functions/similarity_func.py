@@ -263,7 +263,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, **kwargs) -> float:
+def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -273,6 +273,8 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         Whether the arrays are batched.
     kwargs: optional
         Keyword arguments.
 
@@ -281,11 +283,17 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    max_point, min_point = np.max(np.concatenate([a, b])), np.min(np.concatenate([a, b]))
-    data_range = float(np.abs(max_point - min_point))
-    return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range
-    )
+
+    def inner(aa: np.array, bb: np.array) -> float:
+        max_point, min_point = np.max(np.concatenate([aa, bb])), np.min(np.concatenate([aa, bb]))
+        data_range = float(np.abs(max_point - min_point))
+        return skimage.metrics.structural_similarity(
+            im1=aa, im2=bb, win_size=kwargs.get("win_size", None), data_range=data_range
+        )
+
+    if batched:
+        return [inner(aa, bb) for aa, bb in zip(a, b)]
+    return inner(a, b)
 
 
 def difference(a: np.array, b: np.array, **kwargs) -> np.array:

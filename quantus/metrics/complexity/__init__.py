@@ -4,6 +4,6 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.complexity.complexity import Complexity
-from quantus.metrics.complexity.effective_complexity import EffectiveComplexity
-from quantus.metrics.complexity.sparseness import Sparseness
+from quantus.metrics.complexity.complexity import Complexity, BatchComplexity
+from quantus.metrics.complexity.effective_complexity import EffectiveComplexity, BatchEffectiveComplexity
+from quantus.metrics.complexity.sparseness import Sparseness, BatchSparseness
