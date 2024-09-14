@@ -6,5 +6,5 @@
 
 from quantus.metrics.randomisation.mprt import MPRT, ModelParameterRandomisation
 from quantus.metrics.randomisation.efficient_mprt import EfficientMPRT
-from quantus.metrics.randomisation.smooth_mprt import SmoothMPRT
+from quantus.metrics.randomisation.smooth_mprt import SmoothMPRT, BatchSmoothMPRT
 from quantus.metrics.randomisation.random_logit import RandomLogit, BatchRandomLogit
