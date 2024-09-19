@@ -249,40 +249,6 @@ class Sufficiency(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(
-        i: int,
-        a_sim_vector: np.ndarray,
-        y_pred_classes: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        i: int
-            The index of the current instance.
-        a_sim_vector: any
-            The custom input to be evaluated on an instance-basis.
-        y_pred_classes: np,ndarray
-            The class predictions of the complete input dataset.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        # Metric logic.
-        pred_a = y_pred_classes[i]
-        low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
-        low_dist_a = low_dist_a[low_dist_a != i]
-        pred_low_dist_a = y_pred_classes[low_dist_a]
-
-        if len(low_dist_a) == 0:
-            return 0
-        return np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
-
     def custom_batch_preprocess(
         self, model: ModelInterface, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
     ) -> Dict[str, np.ndarray]:
@@ -295,9 +261,7 @@ class Sufficiency(Metric[List[float]]):
         a_sim_matrix[dist_matrix <= self.threshold] = 1
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch[0].shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         return {
@@ -334,10 +298,11 @@ class Sufficiency(Metric[List[float]]):
         evaluation_scores:
             List of measured sufficiency for each entry in the batch.
         """
-
-        return [
-            self.evaluate_instance(
-                i=i, a_sim_vector=a_sim_vector, y_pred_classes=y_pred_classes
-            )
-            for i, a_sim_vector in zip(i_batch, a_sim_vector_batch)
-        ]
+        batch_size = y_pred_classes.shape[0]
+        # Metric logic.
+        a_sim_vector_batch *= 1 - np.eye(batch_size, dtype=np.int32)
+        pred_classes_equality = y_pred_classes[None] == y_pred_classes[:, None]
+        low_dist_freqs = a_sim_vector_batch.sum(-1)
+        return (pred_classes_equality * a_sim_vector_batch).sum(-1) / np.where(
+            low_dist_freqs == 0, np.inf, low_dist_freqs
+        )

@@ -132,9 +132,7 @@ class ROAD(Metric[List[float]]):
 
         self.percentages = percentages
         self.a_size = None
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, noise=noise
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, noise=noise)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -256,57 +254,6 @@ class ROAD(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> List[float]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        list:
-            The evaluation results.
-        """
-        # Order indices.
-        ordered_indices = np.argsort(a, axis=None)[::-1]
-
-        results_instance = np.array([None for _ in self.percentages])
-
-        for p_ix, p in enumerate(self.percentages):
-            top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
-
-            x_perturbed = self.perturb_func(  # type: ignore
-                arr=x,
-                indices=top_k_indices,
-            )
-
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            class_pred_perturb = np.argmax(model.predict(x_input))
-
-            # Write a boolean into the percentage results.
-            results_instance[p_ix] = int(y == class_pred_perturb)
-
-        # Return list of booleans for each percentage.
-        return results_instance
-
     def custom_batch_preprocess(self, a_batch: np.ndarray, **kwargs) -> None:
         """ROAD requires `a_size` property to be set to `image_height` * `image_width` of an explanation."""
         if self.a_size is None:
@@ -330,9 +277,10 @@ class ROAD(Metric[List[float]]):
         """
 
         # Calculate accuracy for every number of most important pixels removed.
+        percentage_scores = self.evaluation_scores[0].mean(axis=0)
         self.evaluation_scores = {
-            percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
-            for p_ix, percentage in enumerate(self.percentages)
+            percentage: percentage_score
+            for p_ix, (percentage, percentage_score) in enumerate(zip(self.percentages, percentage_scores))
         }
 
     def evaluate_batch(
@@ -365,7 +313,38 @@ class ROAD(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        # Get indices of sorted attributions (descending).
+        ordered_indices = np.argsort(-a_batch, axis=1)
+        results = []
+        for p in self.percentages:
+            top_k_indices = ordered_indices[:, : int(self.a_size * p / 100)]
+
+            x_perturbed = []
+            for x_element, top_k_index in zip(x_batch, top_k_indices):
+                x_perturbed_element = self.perturb_func(  # type: ignore
+                    arr=x_element,
+                    indices=top_k_index,
+                )
+                x_perturbed.append(x_perturbed_element)
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed)
+            x_perturbed = np.stack(x_perturbed, axis=0)
+
+            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+            class_pred_perturb = np.argmax(model.predict(x_input), axis=-1)
+
+            # Write a boolean into the percentage results.
+            results.append(y_batch == class_pred_perturb)
+        results = np.stack(results, axis=1).astype(int)
+        # print(results_instance)
+        # Return list of booleans for each percentage.
+        return [results]

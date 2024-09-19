@@ -10,9 +10,12 @@ import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
+import math
 
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import (
+    batch_baseline_replacement_by_indices,
+)
 from quantus.functions.similarity_func import correlation_pearson
 from quantus.helpers import asserts, plotting, warn
 from quantus.helpers.enums import (
@@ -141,7 +144,7 @@ class SensitivityN(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -149,9 +152,7 @@ class SensitivityN(Metric[List[float]]):
         self.similarity_func = similarity_func
         self.n_max_percentage = n_max_percentage
         self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -275,69 +276,6 @@ class SensitivityN(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> Dict[str, List[float]]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-            (Dict[str, List[float]]): The evaluation results.
-        """
-
-        # Reshape the attributions.
-        a = a.flatten()
-
-        # Get indices of sorted attributions (descending).
-        a_indices = np.argsort(-a)
-
-        # Predict on x.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        att_sums = []
-        pred_deltas = []
-        x_perturbed = x.copy()
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-            x_perturbed = self.perturb_func(
-                arr=x_perturbed,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Sum attributions.
-            att_sums.append(float(a[a_ix].sum()))
-
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            pred_deltas.append(y_pred - y_pred_perturb)
-
-        # Each list-element of self.evaluation_scores will be such a dictionary
-        # We will unpack that later in custom_postprocess().
-        return {"att_sums": att_sums, "pred_deltas": pred_deltas}
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -382,35 +320,18 @@ class SensitivityN(Metric[List[float]]):
         -------
         None
         """
-        max_features = int(
-            self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
-        )
+        max_features = int(self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step)
 
         # Get pred_deltas and att_sums from result list.
-        sub_results_pred_deltas: List[Any] = [
-            r["pred_deltas"] for r in self.evaluation_scores
-        ]
-        sub_results_att_sums: List[Any] = [
-            r["att_sums"] for r in self.evaluation_scores
-        ]
-
-        # Re-arrange sub-lists so that they are sorted by n.
-        sub_results_pred_deltas_l: Dict[int, Any] = {k: [] for k in range(max_features)}
-        sub_results_att_sums_l: Dict[int, Any] = {k: [] for k in range(max_features)}
-
-        for k in range(max_features):
-            for pred_deltas_instance in sub_results_pred_deltas:
-                sub_results_pred_deltas_l[k].append(pred_deltas_instance[k])
-            for att_sums_instance in sub_results_att_sums:
-                sub_results_att_sums_l[k].append(att_sums_instance[k])
+        pred_deltas: np.array = self.evaluation_scores[0]["pred_deltas"]
+        att_sums: np.array = self.evaluation_scores[0]["att_sums"]
 
         # Compute the similarity for each n.
-        self.evaluation_scores = [
-            self.similarity_func(
-                a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
-            )
-            for k in range(max_features)
-        ]
+        self.evaluation_scores = self.similarity_func(
+            a=pred_deltas[:, :max_features].T,
+            b=att_sums[:, :max_features].T,
+            batched=True,
+        )
 
     def evaluate_batch(
         self,
@@ -442,7 +363,53 @@ class SensitivityN(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a_batch, axis=1)
+
+        # Predict on x.
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        n_perturbations = math.ceil(n_features / self.features_in_step)
+        pred_deltas = []
+        att_sums = []
+        x_batch_shape = x_batch.shape
+        x_perturbed = x_batch.copy()
+        for perturbation_step_index in range(n_perturbations):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                :,
+                perturbation_step_index * self.features_in_step : (perturbation_step_index + 1) * self.features_in_step,
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x_perturbed.reshape(batch_size, -1),
+                indices=a_ix,
+            )
+            x_perturbed = x_perturbed.reshape(*x_batch_shape)
+
+            # Check if the perturbation caused change
+            for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+
+            # Sum attributions.
+            att_sums.append(a_batch[np.arange(batch_size)[:, None], a_ix].sum(axis=-1))
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+            pred_deltas.append(y_pred - y_pred_perturb)
+        pred_deltas = np.stack(pred_deltas, axis=1)
+        att_sums = np.stack(att_sums, axis=1)
+
+        # Each list-element of self.evaluation_scores will be such a dictionary
+        # We will unpack that later in custom_postprocess().
+        return [{"att_sums": att_sums, "pred_deltas": pred_deltas}]
