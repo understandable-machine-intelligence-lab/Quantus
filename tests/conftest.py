@@ -254,7 +254,7 @@ def dummy_hf_tokenizer():
     """
     DISTILBERT_BASE = "distilbert-base-uncased"
     REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
-    tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
+    tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/", clean_up_tokenization_spaces=True)
     return tokenizer(REFERENCE_TEXT, return_tensors="pt")
 
 
