@@ -39,8 +39,13 @@ def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwar
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
         # Spearman correlation is not calculated row-wise like pearson. Instead it is calculated between each
         # pair from BOTH a and b
-        correlation = scipy.stats.spearmanr(a, b, axis=1)[0][: len(a), len(a) :]
-        return np.diag(correlation)
+        correlation = scipy.stats.spearmanr(a, b, axis=1)[0]
+        # if a and b batch size is 1, scipy returns a float instead of an array
+        if correlation.shape:
+            correlation = correlation[: len(a), len(a) :]
+            return np.diag(correlation)
+        else:
+            return np.array([correlation])
     return scipy.stats.spearmanr(a, b)[0]
 
 
