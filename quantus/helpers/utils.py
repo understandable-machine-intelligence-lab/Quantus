@@ -13,6 +13,8 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, TypeVar
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
+import skimage
+import math
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
@@ -44,13 +46,10 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
     if img.ndim != 3:
         raise ValueError(
-            "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
-            f" shape: {img.shape}"
+            "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels." f" shape: {img.shape}"
         )
     if segmentation_method not in ["slic", "felzenszwalb"]:
-        raise ValueError(
-            "'segmentation_method' must be either 'slic' or 'felzenszwalb'."
-        )
+        raise ValueError("'segmentation_method' must be either 'slic' or 'felzenszwalb'.")
 
     if segmentation_method == "slic":
         return slic(img, start_label=0)
@@ -65,6 +64,7 @@ def get_baseline_value(
     arr: np.ndarray,
     return_shape: Tuple,
     patch: Optional[np.ndarray] = None,
+    batched: bool = False,
     **kwargs,
 ) -> np.array:
     """
@@ -83,6 +83,8 @@ def get_baseline_value(
     patch: np.ndarray, optional
         CxWxH patch array to calculate baseline values.
         Necessary for "neighbourhood_mean" and "neighbourhood_random_min_max" methods.
+    batched: bool,
+        If True, the arr and patch are assumed to be of shape B x <single_array_shape>. The aggregations are done over the individual batch elements.
     kwargs: optional
             Keyword arguments.
 
@@ -108,7 +110,7 @@ def get_baseline_value(
                 )
             )
     elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch, **kwargs)
+        fill_dict = get_baseline_dict(arr, patch, batched, **kwargs)
         if value.lower() == "random":
             raise ValueError(
                 "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
@@ -117,17 +119,18 @@ def get_baseline_value(
                 "which will replicate the results of 'random').\n"
             )
         if value.lower() not in fill_dict:
-            raise ValueError(
-                f"Ensure that 'value'(string) is in {list(fill_dict.keys())}"
-            )
-        return np.full(return_shape, fill_dict[value.lower()])
+            raise ValueError(f"Ensure that 'value'(string) is in {list(fill_dict.keys())}")
+        fill_value = fill_dict[value.lower()]
+        # Expand the second dimension if batched to enable broadcasting
+        if batched:
+            fill_value = fill_value[:, None]
+        return np.full(return_shape, fill_value)
+
     else:
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")
 
 
-def get_baseline_dict(
-    arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
-) -> dict:
+def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None, batched: bool = False, **kwargs) -> dict:
     """
     Make a dictionary of baseline approaches depending on the input x (or patch of input).
 
@@ -138,6 +141,8 @@ def get_baseline_dict(
     patch: np.ndarray, optional
         CxWxH patch array to calculate baseline values, necessary for "neighbourhood_mean" and
         "neighbourhood_random_min_max" methods.
+    batched: bool
+        If True, the arr and patch are assumed to be of shape B x <single_array_shape>. The aggregations are done over the individual batch elements.
     kwargs: optional
             Keyword arguments..
 
@@ -146,20 +151,29 @@ def get_baseline_dict(
         fill_dict: dict
             Maps all available baseline methods to baseline values.
     """
+
+    # Aggregate over elements of batch
+    aggregation_axes = (
+        tuple(range(1 if batched else 0, len(arr.shape)))
+        if not patch
+        else tuple(range(1 if batched else 0, len(patch.shape)))
+    )
     fill_dict = {
-        "mean": float(arr.mean()),
+        "mean": arr.mean(axis=aggregation_axes),
         "uniform": np.random.uniform(
             low=kwargs.get("uniform_low", 0.0),
             high=kwargs.get("uniform_high", 1.0),
-            size=kwargs["return_shape"],
+            # Return only (batch_size, ) if batched to align with other fill_dict values
+            size=kwargs["return_shape"][0] if batched else kwargs["return_shape"],
         ),
-        "black": float(arr.min()),
-        "white": float(arr.max()),
+        "black": arr.min(axis=aggregation_axes),
+        "white": arr.max(axis=aggregation_axes),
     }
     if patch is not None:
-        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
-        fill_dict["neighbourhood_random_min_max"] = float(
-            np.random.uniform(low=patch.min(), high=patch.max())
+        fill_dict["neighbourhood_mean"] = patch.mean(axis=aggregation_axes)
+        fill_dict["neighbourhood_random_min_max"] = np.random.uniform(
+            low=patch.min(axis=aggregation_axes),
+            high=patch.max(axis=aggregation_axes),
         )
     return fill_dict
 
@@ -286,9 +300,7 @@ def infer_channel_first(x: np.array) -> bool:
         raise ValueError(err_msg)
 
     else:
-        raise ValueError(
-            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
-        )
+        raise ValueError("Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels).")
 
 
 def make_channel_first(x: np.array, channel_first: bool = False):
@@ -318,9 +330,7 @@ def make_channel_first(x: np.array, channel_first: bool = False):
         return np.moveaxis(x, -1, -3)
 
     else:
-        raise ValueError(
-            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
-        )
+        raise ValueError("Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels).")
 
 
 def make_channel_last(x: np.array, channel_first: bool = True):
@@ -349,9 +359,7 @@ def make_channel_last(x: np.array, channel_first: bool = True):
     elif len(np.shape(x)) == 4:
         return np.moveaxis(x, -3, -1)
     else:
-        raise ValueError(
-            "Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels)."
-        )
+        raise ValueError("Only batched 1D and 2D multi-channel input dimensions supported (excluding the channels).")
 
 
 def get_wrapped_model(
@@ -429,9 +437,7 @@ def blur_at_indices(
         A version of arr that is blurred at indices.
     """
 
-    assert kernel.ndim == len(
-        indexed_axes
-    ), "kernel should have as many dimensions as indexed_axes has elements."
+    assert kernel.ndim == len(indexed_axes), "kernel should have as many dimensions as indexed_axes has elements."
 
     # Pad array
     pad_width = [(0, 0) for _ in indexed_axes]
@@ -456,9 +462,7 @@ def blur_at_indices(
     array_indices = np.array(array_indices)
 
     # Expand kernel dimensions
-    expanded_kernel = np.expand_dims(
-        kernel, tuple([i for i in range(arr.ndim) if i not in indexed_axes])
-    )
+    expanded_kernel = np.expand_dims(kernel, tuple([i for i in range(arr.ndim) if i not in indexed_axes]))
 
     # Iterate over indices, applying expanded kernel
     x_blur = copy.copy(x)
@@ -470,9 +474,7 @@ def blur_at_indices(
         for ax, idx_ax in enumerate(expanded_idx):
             s = kernel.shape[ax]
             idx_ax = np.squeeze(idx_ax)
-            expanded_idx[ax] = slice(
-                idx_ax - (s // 2), idx_ax + s // 2 + 1 - (s % 2 == 0)
-            )
+            expanded_idx[ax] = slice(idx_ax - (s // 2), idx_ax + s // 2 + 1 - (s % 2 == 0))
 
         for dim in range(array_indices.ndim - 2):
             idx = [np.expand_dims(index, axis=index.ndim) for index in idx]
@@ -493,9 +495,7 @@ def blur_at_indices(
     return _unpad_array(x_blur, pad_width, padded_axes=indexed_axes)
 
 
-def create_patch_slice(
-    patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[slice, ...]:
+def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[int]) -> Tuple[slice, ...]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -526,24 +526,48 @@ def create_patch_slice(
     elif patch_size.ndim != 1:
         raise ValueError("patch_size has to be either a scalar or a 1D-sequence")
     elif len(patch_size) != len(coords):
-        raise ValueError(
-            "patch_size sequence length does not match coords length"
-            f" (len(patch_size) != len(coords))"
-        )
+        raise ValueError("patch_size sequence length does not match coords length" f" (len(patch_size) != len(coords))")
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    patch_slice = [
-        slice(coord, coord + patch_size_dim)
-        for coord, patch_size_dim in zip(coords, patch_size)
-    ]
+    patch_slice = [slice(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
 
     return tuple(patch_slice)
 
 
-def get_nr_patches(
-    patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
-) -> int:
+def get_block_indices(x_batch: np.array, patch_size: int) -> np.array:
+    """
+    Get blocks for a batch of images using a certain patch_size.
+
+    Parameters
+    ----------
+    x_batch: np.array
+        Batch of images, shape B x C x H x W
+    patch_size: int
+        Size of the patch.
+
+    Yields
+    -------
+    np.array
+        Yields blocks of image of a certain patch_size.
+    """
+    batch_size = x_batch.shape[0]
+    x_indices = np.stack(
+        [np.arange(x.size) for x in x_batch],
+        axis=0,
+    ).reshape(*x_batch.shape)
+    blocks = skimage.util.view_as_blocks(x_indices, (*x_batch.shape[:2], patch_size, patch_size))
+    blocks_h, blocks_w = blocks.shape[2:4]
+    block_indices = np.stack(
+        np.unravel_index(list(range(blocks_h * blocks_w)), shape=(blocks_h, blocks_w)),
+        axis=1,
+    )
+
+    for block_index in block_indices:
+        yield blocks[0, 0, block_index[0], block_index[1]].reshape(batch_size, -1)
+
+
+def get_nr_patches(patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False) -> int:
     """
     Get number of patches for given shape.
 
@@ -571,10 +595,7 @@ def get_nr_patches(
     elif patch_size.ndim != 1:
         raise ValueError("patch_size has to be either a scalar or a 1D-sequence")
     elif len(patch_size) != len(shape):
-        raise ValueError(
-            "patch_size sequence length does not match shape length"
-            f" (len(patch_size) != len(shape))"
-        )
+        raise ValueError("patch_size sequence length does not match shape length" f" (len(patch_size) != len(shape))")
     patch_size = tuple(patch_size)
 
     return np.prod(shape) // np.prod(patch_size)
@@ -606,14 +627,10 @@ def _pad_array(
         Padded array.
     """
 
-    assert (
-        len(padded_axes) <= arr.ndim
-    ), "Cannot pad more axes than array has dimensions"
+    assert len(padded_axes) <= arr.ndim, "Cannot pad more axes than array has dimensions"
 
     if isinstance(pad_width, Sequence):
-        assert len(pad_width) == len(
-            padded_axes
-        ), "pad_width and padded_axes have different lengths"
+        assert len(pad_width) == len(padded_axes), "pad_width and padded_axes have different lengths"
         for p in pad_width:
             if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
@@ -634,7 +651,6 @@ def _pad_array(
             )
         else:
             pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])
-
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
 
     return arr_pad
@@ -664,14 +680,10 @@ def _unpad_array(
 
     """
 
-    assert (
-        len(padded_axes) <= arr.ndim
-    ), "Cannot unpad more axes than array has dimensions"
+    assert len(padded_axes) <= arr.ndim, "Cannot unpad more axes than array has dimensions"
 
     if isinstance(pad_width, Sequence):
-        assert len(pad_width) == len(
-            padded_axes
-        ), "pad_width and padded_axes have different lengths"
+        assert len(pad_width) == len(padded_axes), "pad_width and padded_axes have different lengths"
         for p in pad_width:
             if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
@@ -702,6 +714,30 @@ def _unpad_array(
     return unpadded_arr
 
 
+def get_padding_size(dim: int, patch_size: int) -> Tuple[int, int]:
+    """
+    Calculate the padding size (optionally) needed for a patch_size.
+
+    Parameters
+    ----------
+    dim: int
+        Input dimension to pad (for example width or height of the image).
+    patch_size: int
+        Size of the patch for this dimension of input.
+
+    Returns
+    -------
+    Tuple[int, int]
+        A tuple of values passed to the utils._pad_array method for a particular dimension.
+    """
+    modulo = dim % patch_size
+    if modulo == 0:
+        return (0, 0)
+    total_padding = patch_size - modulo
+    half_padding = total_padding / 2
+    return (math.floor(half_padding), math.ceil(half_padding))
+
+
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
     """
     Expand additional channel dimension(s) for attributions if needed.
@@ -723,9 +759,7 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
         )
     if a_batch.ndim > x_batch.ndim:
-        raise ValueError(
-            f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})"
-        )
+        raise ValueError(f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})")
 
     if a_batch.ndim == x_batch.ndim:
         return a_batch
@@ -764,9 +798,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
     if a_batch.ndim > x_batch.ndim:
         raise ValueError(
-            "Attributions need to have <= dimensions than inputs, but {} > {}".format(
-                a_batch.ndim, x_batch.ndim
-            )
+            "Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim)
         )
 
     # TODO: We currently assume here that the batch axis is not carried into the perturbation functions.
@@ -781,17 +813,14 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         return np.array([])
 
     x_subshapes = [
-        [x_shape[i] for i in range(start, start + len(a_shape))]
-        for start in range(0, len(x_shape) - len(a_shape) + 1)
+        [x_shape[i] for i in range(start, start + len(a_shape))] for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
 
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
-            "inputs were of shape {} and attributions of shape {}".format(
-                x_batch.shape, a_batch.shape
-            )
+            "inputs were of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
         )
     elif x_subshapes.count(a_shape) > 1:
 
@@ -814,17 +843,13 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
             raise ValueError(
                 "Attribution axes could not be inferred for inputs of "
-                "shape {} and attributions of shape {}".format(
-                    x_batch.shape, a_batch.shape
-                )
+                "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
             )
 
         raise ValueError(
             "Attribution dimensions are not unique subdimensions of inputs:  "
             "inputs were of shape {} and attributions of shape {}."
-            "Please expand attribution dimensions for a unique solution".format(
-                x_batch.shape, a_batch.shape
-            )
+            "Please expand attribution dimensions for a unique solution".format(x_batch.shape, a_batch.shape)
         )
     else:
         # Infer attribution axes.
@@ -898,20 +923,10 @@ def expand_indices(
 
     # Check if unraveling is needed.
     if np.all([isinstance(idx, int) for idx in expanded_indices]):
-        expanded_indices = np.unravel_index(
-            expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
-        )
-    elif not np.all(
-        [
-            isinstance(idx, np.ndarray) and idx.ndim == len(expanded_indices)
-            for idx in expanded_indices
-        ]
-    ):
+        expanded_indices = np.unravel_index(expanded_indices, tuple([arr.shape[i] for i in indexed_axes]))
+    elif not np.all([isinstance(idx, np.ndarray) and idx.ndim == len(expanded_indices) for idx in expanded_indices]):
         # Meshgrid sliced axes to account for correct slicing. Correct switched first two axes by meshgrid
-        expanded_indices = [
-            np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx
-            for idx in np.meshgrid(*expanded_indices)
-        ]
+        expanded_indices = [np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx for idx in np.meshgrid(*expanded_indices)]
 
     # Handle case of 1D indices.
     if np.all([isinstance(idx, int) for idx in expanded_indices]):
@@ -966,9 +981,7 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     return leftover_shape
 
 
-def offset_coordinates(
-    indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple
-):
+def offset_coordinates(indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple):
     """
     Checks if offset coordinates are within the image frame.
         Adapted from: https://github.com/tleemann/road_evaluation.
@@ -999,7 +1012,7 @@ def offset_coordinates(
     return off_coords[valid], valid
 
 
-def calculate_auc(values: np.array, dx: int = 1):
+def calculate_auc(values: np.array, dx: int = 1, batched: bool = False):
     """
     Calculate area under the curve using the composite trapezoidal rule.
 
@@ -1015,7 +1028,8 @@ def calculate_auc(values: np.array, dx: int = 1):
     np.ndarray
         Definite integral of values.
     """
-    return np.trapz(np.array(values), dx=dx)
+    axis = 1 if batched else -1
+    return np.trapz(np.array(values), dx=dx, axis=axis)
 
 
 T = TypeVar("T")

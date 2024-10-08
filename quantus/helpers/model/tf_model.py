@@ -82,9 +82,7 @@ class TensorFlowModel(ModelInterface[Model]):
         Filter out those, which are supported by Keras API.
         """
         all_kwargs = {**self.model_predict_kwargs, **kwargs}
-        predict_kwargs = {
-            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
-        }
+        predict_kwargs = {k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs}
         return predict_kwargs
 
     @property
@@ -214,6 +212,11 @@ class TensorFlowModel(ModelInterface[Model]):
         # Expand first dimension if this is just a single instance.
         if not batched:
             x = x.reshape(1, *shape)
+            shape = (1, *shape)
+
+        # If shape not the same, reshape the input
+        if shape != x.shape:
+            x = x.reshape(*shape)
 
         # Set channel order according to expected input of model.
         if self.channel_first:
@@ -259,11 +262,7 @@ class TensorFlowModel(ModelInterface[Model]):
         original_parameters = self.state_dict()
         random_layer_model = clone_model(self.model)
 
-        layers = [
-            _layer
-            for _layer in random_layer_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
+        layers = [_layer for _layer in random_layer_model.layers if len(_layer.get_weights()) > 0]
 
         if order == "top_down":
             layers = layers[::-1]
@@ -277,9 +276,7 @@ class TensorFlowModel(ModelInterface[Model]):
             yield layer.name, random_layer_model
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_hidden_representation_model(
-        self, layer_names: Tuple, layer_indices: Tuple
-    ) -> Model:
+    def _build_hidden_representation_model(self, layer_names: Tuple, layer_indices: Tuple) -> Model:
         """
         Build a keras model, which outputs the internal representation of layers,
         specified in layer_names or layer_indices, default all.
@@ -337,9 +334,7 @@ class TensorFlowModel(ModelInterface[Model]):
         new_model.set_weights(original_parameters)
 
         module = new_model.layers[0]
-        tmp_model = Model(
-            inputs=[new_model.input], outputs=[new_model.layers[0].output]
-        )
+        tmp_model = Model(inputs=[new_model.input], outputs=[new_model.layers[0].output])
 
         delta = np.zeros(shape=shape)
         delta.fill(input_shift)
@@ -395,9 +390,7 @@ class TensorFlowModel(ModelInterface[Model]):
 
         # E.g., user can provide index -1, in order to get only representations of the last layer.
         # E.g., for 7 layers in total, this would correspond to positive index 6.
-        positive_layer_indices = [
-            i if i >= 0 else num_layers + i for i in layer_indices
-        ]
+        positive_layer_indices = [i if i >= 0 else num_layers + i for i in layer_indices]
         if layer_names is None:
             layer_names = []
 
@@ -406,9 +399,7 @@ class TensorFlowModel(ModelInterface[Model]):
             tuple(layer_names), tuple(positive_layer_indices)
         )
         predict_kwargs = self._get_predict_kwargs(**kwargs)
-        internal_representation = hidden_representation_model.predict(
-            x, **predict_kwargs
-        )
+        internal_representation = hidden_representation_model.predict(x, **predict_kwargs)
         input_batch_size = x.shape[0]
 
         # If we requested outputs only of 1 layer, keras will already return np.ndarray.
@@ -416,9 +407,7 @@ class TensorFlowModel(ModelInterface[Model]):
         if isinstance(internal_representation, np.ndarray):
             return internal_representation.reshape((input_batch_size, -1))
 
-        internal_representation = [
-            i.reshape((input_batch_size, -1)) for i in internal_representation
-        ]
+        internal_representation = [i.reshape((input_batch_size, -1)) for i in internal_representation]
         return np.hstack(internal_representation)
 
     @property

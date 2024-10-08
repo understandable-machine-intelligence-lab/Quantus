@@ -273,6 +273,11 @@ class PyTorchModel(ModelInterface[nn.Module]):
         # Expand first dimension if this is just a single instance.
         if not batched:
             x = x.reshape(1, *shape)
+            shape = (1, *shape)
+
+        # If shape not the same, reshape the input
+        if shape != x.shape:
+            x = x.reshape(*shape)
 
         # Set channel order according to expected input of model.
         if self.channel_first:
@@ -314,11 +319,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         original_parameters = self.state_dict()
         random_layer_model = deepcopy(self.model)
 
-        modules = [
-            layer
-            for layer in random_layer_model.named_modules()
-            if (hasattr(layer[1], "reset_parameters"))
-        ]
+        modules = [layer for layer in random_layer_model.named_modules() if (hasattr(layer[1], "reset_parameters"))]
 
         if order == "top_down":
             modules = modules[::-1]
@@ -408,13 +409,9 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
             for i in range(module[1].out_channels):
                 if self.channel_first:
-                    module[1].bias[i] = torch.nn.Parameter(
-                        2 * module[1].bias[i] - torch.unique(fw[i])[0]
-                    )
+                    module[1].bias[i] = torch.nn.Parameter(2 * module[1].bias[i] - torch.unique(fw[i])[0])
                 else:
-                    module[1].bias[i] = torch.nn.Parameter(
-                        2 * module[1].bias[i] - torch.unique(fw[..., i])[0]
-                    )
+                    module[1].bias[i] = torch.nn.Parameter(2 * module[1].bias[i] - torch.unique(fw[..., i])[0])
 
         return new_model
 
@@ -457,9 +454,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
         # E.g., user can provide index -1, in order to get only representations of the last layer.
         # E.g., for 7 layers in total, this would correspond to positive index 6.
-        positive_layer_indices = [
-            i if i >= 0 else num_layers + i for i in layer_indices
-        ]
+        positive_layer_indices = [i if i >= 0 else num_layers + i for i in layer_indices]
 
         if layer_names is None:
             layer_names = []
@@ -472,9 +467,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
         # skip modules defined by subclassing API.
         hidden_layers = list(  # type: ignore
             filter(
-                lambda layer: not isinstance(
-                    layer[1], (self.model.__class__, torch.nn.Sequential)
-                ),
+                lambda layer: not isinstance(layer[1], (self.model.__class__, torch.nn.Sequential)),
                 all_layers,
             )
         )
@@ -509,13 +502,7 @@ class PyTorchModel(ModelInterface[nn.Module]):
 
     @property
     def random_layer_generator_length(self) -> int:
-        return len(
-            [
-                i
-                for i in self.model.named_modules()
-                if (hasattr(i[1], "reset_parameters"))
-            ]
-        )
+        return len([i for i in self.model.named_modules() if (hasattr(i[1], "reset_parameters"))])
 
 
 def safe_isinstance(obj: Any, class_path_str: Union[Iterable[str], str]) -> bool:

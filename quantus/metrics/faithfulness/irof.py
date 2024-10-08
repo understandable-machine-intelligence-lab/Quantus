@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import baseline_replacement_by_mask
 from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
     DataType,
@@ -126,14 +126,12 @@ class IROF(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = baseline_replacement_by_mask
 
         # Save metric-specific attributes.
         self.segmentation_method = segmentation_method
         self.nr_channels = None
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -259,79 +257,6 @@ class IROF(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Predict on x.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        # Segment image.
-        segments = utils.get_superpixel_segments(
-            img=np.moveaxis(x, 0, -1).astype("double"),
-            segmentation_method=self.segmentation_method,
-        )
-        nr_segments = len(np.unique(segments))
-        asserts.assert_nr_segments(nr_segments=nr_segments)
-
-        # Calculate average attribution of each segment.
-        att_segs = np.zeros(nr_segments)
-        for i, s in enumerate(range(nr_segments)):
-            att_segs[i] = np.mean(a[:, segments == s])
-
-        # Sort segments based on the mean attribution (descending order).
-        s_indices = np.argsort(-att_segs)
-
-        preds = []
-        x_prev_perturbed = x
-
-        for i_ix, s_ix in enumerate(s_indices):
-            # Perturb input by indices of attributions.
-            a_ix = np.nonzero((segments == s_ix).flatten())[0]
-
-            x_perturbed = self.perturb_func(
-                arr=x_prev_perturbed,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-            )
-            warn.warn_perturbation_caused_no_change(
-                x=x_prev_perturbed, x_perturbed=x_perturbed
-            )
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-
-            # Normalise the scores to be within range [0, 1].
-            preds.append(float(y_pred_perturb / y_pred))
-            x_prev_perturbed = x_perturbed
-
-        # Calculate the area over the curve (AOC) score.
-        aoc = len(preds) - utils.calculate_auc(np.array(preds))
-        return aoc
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -397,7 +322,68 @@ class IROF(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        # Segment image.
+        segments_batch = []
+        s_indices_batch_list = []
+        for x, a in zip(x_batch, a_batch):
+            segments = utils.get_superpixel_segments(
+                img=np.moveaxis(x, 0, -1).astype("double"),
+                segmentation_method=self.segmentation_method,
+            )
+            nr_segments = len(np.unique(segments))
+            asserts.assert_nr_segments(nr_segments=nr_segments)
+            segments_batch.append(segments)
+
+            # Calculate average attribution of each segment.
+            att_segs = np.zeros(nr_segments)
+            for i, s in enumerate(range(nr_segments)):
+                att_segs[i] = np.mean(a[:, segments == s])
+
+            # Sort segments based on the mean attribution (descending order).
+            s_indices = np.argsort(-att_segs)
+            s_indices_batch_list.append(s_indices)
+        segments_batch = np.stack(segments_batch, axis=0)
+        max_segments_len = max([len(s_indices) for s_indices in s_indices_batch_list])
+        mask_preds_batch = np.array(
+            [[1.0] * len(s_indices) + [0] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
+        )
+        s_indices_batch = np.array(
+            [s_indices.tolist() + [-1] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
+        )
+
+        preds = []
+        x_perturbed = x_batch.copy()
+        for s_indices_segment in s_indices_batch.T:
+            # Perturb input by indices of attributions.
+            mask = (segments_batch == s_indices_segment[:, None, None])[:, None]
+
+            x_new_perturbed = self.perturb_func(
+                arr=x_perturbed,
+                mask=mask,
+            )
+            # Check if the perturbation caused change
+            for x_element, x_perturbed_element in zip(x_new_perturbed, x_perturbed):
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_new_perturbed, x_new_perturbed.shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+            # Normalise the scores to be within range [0, 1].
+            preds.append(y_pred_perturb / y_pred)
+            x_perturbed = x_new_perturbed
+        preds = np.stack(preds, axis=1) * mask_preds_batch
+        # Calculate the area over the curve (AOC) score.
+        aoc = mask_preds_batch.sum(-1) - utils.calculate_auc(preds, batched=True)
+        return aoc
