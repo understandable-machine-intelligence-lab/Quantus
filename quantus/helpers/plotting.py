@@ -151,7 +151,13 @@ def plot_region_perturbation_experiment(
                 label=f"{str(method.capitalize())}",
             )
     else:
-        plt.plot(np.arange(0, len(results)), np.mean(results, axis=0))
+        # Check if results is one-dimensional
+        if np.ndim(results) == 1:
+            # If one-dimensional, plot it directly
+            plt.plot(np.arange(0, len(results)), results)
+        else:
+            # If multi-dimensional, calculate x_values and mean over the batch dimension
+            plt.plot(np.arange(0, np.shape(results)[1]), np.mean(results, axis=0))
     plt.xlabel("Perturbation steps")
     plt.ylabel("AOPC relative to random")
     plt.gca().set_yticklabels(
