@@ -267,16 +267,11 @@ class RandomLogit(Metric[List[float]]):
         """
         # Randomly select off-class labels.
         np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
+        y_off = np.array([np.random.choice([y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y])])
         # Explain against a random class.
         a_perturbed = self.explain_batch(model, np.expand_dims(x, axis=0), y_off)
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
+        similarity = float(self.similarity_func(a.flatten(), a_perturbed.flatten()))
+        return similarity
 
     def custom_preprocess(
         self,
@@ -328,7 +323,4 @@ class RandomLogit(Metric[List[float]]):
         scores_batch:
             Evaluation results.
         """
-        return [
-            self.evaluate_instance(model, x, y, a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        return [self.evaluate_instance(model, x, y, a) for x, y, a in zip(x_batch, y_batch, a_batch)]
