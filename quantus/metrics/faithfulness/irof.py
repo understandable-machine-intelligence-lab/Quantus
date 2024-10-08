@@ -335,7 +335,7 @@ class IROF(Metric[List[float]]):
 
         # Segment image.
         segments_batch = []
-        s_indices_batch = []
+        s_indices_batch_list = []
         for x, a in zip(x_batch, a_batch):
             segments = utils.get_superpixel_segments(
                 img=np.moveaxis(x, 0, -1).astype("double"),
@@ -352,14 +352,14 @@ class IROF(Metric[List[float]]):
 
             # Sort segments based on the mean attribution (descending order).
             s_indices = np.argsort(-att_segs)
-            s_indices_batch.append(s_indices)
+            s_indices_batch_list.append(s_indices)
         segments_batch = np.stack(segments_batch, axis=0)
-        max_segments_len = max([len(s_indices) for s_indices in s_indices_batch])
+        max_segments_len = max([len(s_indices) for s_indices in s_indices_batch_list])
         mask_preds_batch = np.array(
-            [[1.0] * len(s_indices) + [0] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch]
+            [[1.0] * len(s_indices) + [0] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
         )
         s_indices_batch = np.array(
-            [s_indices.tolist() + [-1] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch]
+            [s_indices.tolist() + [-1] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
         )
 
         preds = []

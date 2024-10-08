@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import List, TYPE_CHECKING, Callable, Mapping
+from typing import List, TYPE_CHECKING, Callable, Mapping, Optional
 import numpy as np
 import functools
 
@@ -18,11 +18,8 @@ if TYPE_CHECKING:
         def __call__(
             self,
             arr: np.ndarray,
-            indices: np.ndarray,
-            indexed_axes: np.ndarray,
             **kwargs,
-        ) -> np.ndarray:
-            ...
+        ) -> np.ndarray: ...
 
 
 def make_perturb_func(

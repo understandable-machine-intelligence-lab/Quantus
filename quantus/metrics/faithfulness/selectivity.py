@@ -306,7 +306,6 @@ class Selectivity(Metric[List[float]]):
 
         batch_size = a_batch.shape[0]
 
-        patches = []
         x_perturbed = x_batch.copy()
 
         # Pad input and attributions. This is needed to allow for any patch_size.
@@ -329,17 +328,17 @@ class Selectivity(Metric[List[float]]):
         )
 
         # Get patch indices of sorted attributions (descending).
-        att_sums = []
-        patches = []
+        att_sums_list = []
+        patches_list = []
         for block_indices in utils.get_block_indices(x_pad, self.patch_size):
             # Create slice for patch.
             a_sum = a_pad.reshape(batch_size, -1)[np.arange(batch_size)[:, None], block_indices].sum(axis=-1)
 
             # Sum attributions for patch.
-            att_sums.append(a_sum)
-            patches.append(block_indices)
-        att_sums = np.stack(att_sums, -1)
-        patches = np.stack(patches, 1)
+            att_sums_list.append(a_sum)
+            patches_list.append(block_indices)
+        att_sums = np.stack(att_sums_list, -1)
+        patches = np.stack(patches_list, 1)
 
         # Create ordered list of patches.
         order = np.argsort(-att_sums, -1)

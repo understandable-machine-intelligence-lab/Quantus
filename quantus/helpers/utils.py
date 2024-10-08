@@ -714,7 +714,7 @@ def _unpad_array(
     return unpadded_arr
 
 
-def get_padding_size(dim: int, patch_size: int) -> Tuple[int]:
+def get_padding_size(dim: int, patch_size: int) -> Tuple[int, int]:
     """
     Calculate the padding size (optionally) needed for a patch_size.
 
@@ -727,7 +727,7 @@ def get_padding_size(dim: int, patch_size: int) -> Tuple[int]:
 
     Returns
     -------
-    Tuple[int]
+    Tuple[int, int]
         A tuple of values passed to the utils._pad_array method for a particular dimension.
     """
     modulo = dim % patch_size

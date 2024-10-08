@@ -357,7 +357,7 @@ def gaussian_noise(
 
 def batch_gaussian_noise(
     arr: np.array,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: np.array,
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
     **kwargs,
@@ -459,7 +459,7 @@ def uniform_noise(
 
 def batch_uniform_noise(
     arr: np.array,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: np.array,
     lower_bound: float = 0.02,
     upper_bound: Union[None, float] = None,
     **kwargs,

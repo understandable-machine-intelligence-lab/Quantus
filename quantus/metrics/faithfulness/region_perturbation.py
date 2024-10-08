@@ -324,7 +324,7 @@ class RegionPerturbation(Metric[List[float]]):
         # Predict on input.
         x_input = model.shape_input(x_batch, x_batch_shape, channel_first=True, batched=True)
         y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
-        patches = []
+
         x_perturbed = x_batch.copy()
 
         # Pad input and attributions. This is needed to allow for any patch_size.
@@ -347,17 +347,17 @@ class RegionPerturbation(Metric[List[float]]):
         )
 
         # Create patches across whole input shape and aggregate attributions.
-        att_sums = []
-        patches = []
+        att_sums_list = []
+        patches_list = []
         for block_indices in utils.get_block_indices(x_pad, self.patch_size):
             # Create slice for patch.
             a_sum = a_pad.reshape(batch_size, -1)[np.arange(batch_size)[:, None], block_indices].sum(axis=-1)
 
             # Sum attributions for patch.
-            att_sums.append(a_sum)
-            patches.append(block_indices)
-        att_sums = np.stack(att_sums, -1)
-        patches = np.stack(patches, 1)
+            att_sums_list.append(a_sum)
+            patches_list.append(block_indices)
+        att_sums = np.stack(att_sums_list, -1)
+        patches = np.stack(patches_list, 1)
 
         if self.order == "random":
             # Order attributions randomly.

@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 import scipy
@@ -105,7 +105,7 @@ def correlation_kendall_tau(a: np.array, b: np.array, batched: bool = False, **k
     return scipy.stats.kendalltau(a, b)[0]
 
 
-def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
+def distance_euclidean(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Euclidean distance of two images (or explanations).
 
@@ -120,13 +120,13 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     return ((a - b) ** 2).sum(axis=-1) ** 0.5
 
 
-def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
+def distance_manhattan(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Manhattan distance of two images (or explanations).
 
@@ -141,8 +141,8 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     return abs(a - b).sum(-1)
 
@@ -272,7 +272,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
+def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, List[float]]:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -289,8 +289,8 @@ def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, List[float]]
+        The similarity score, returns a list if batched.
     """
 
     def inner(aa: np.array, bb: np.array) -> float:
