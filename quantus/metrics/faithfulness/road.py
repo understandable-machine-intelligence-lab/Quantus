@@ -65,6 +65,7 @@ class ROAD(Metric[List[float]]):
         self,
         percentages: Optional[List[float]] = None,
         noise: float = 0.01,
+        return_only_values: Optional[bool] = None,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -81,8 +82,12 @@ class ROAD(Metric[List[float]]):
         """
         Parameters
         ----------
-        percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
-            noise (noise): Noise added, default=0.01.
+        percentages: list of ints
+            The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+        noise: float
+            Noise added, default=0.01.
+        return_only_values: bool
+            Indicates whether only evaluation scores (list of floats) should be returned and not the dictionary that also includes the percentages, default=None.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -131,9 +136,11 @@ class ROAD(Metric[List[float]]):
             perturb_func = noisy_linear_imputation
 
         self.percentages = percentages
+        self.noise = noise
+        self.return_values = return_only_values
         self.a_size = None
         self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, noise=noise
+            perturb_func, perturb_func_kwargs, noise=self.noise
         )
 
         # Asserts and warnings.
@@ -212,32 +219,32 @@ class ROAD(Metric[List[float]]):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -334,6 +341,10 @@ class ROAD(Metric[List[float]]):
             percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
+
+        # Return only the evaluation scores (and not percentages).
+        if self.return_values:
+            self.evaluation_scores = list(self.evaluation_scores.values())
 
     def evaluate_batch(
         self,
