@@ -8,7 +8,7 @@
 
 import itertools
 import sys
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -58,7 +58,7 @@ class RegionPerturbation(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Region-Perturbation"
+    name = "Region Perturbation"
     data_applicability = {DataType.IMAGE}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -69,6 +69,7 @@ class RegionPerturbation(Metric[List[float]]):
         patch_size: int = 8,
         order: str = "morf",
         regions_evaluation: int = 100,
+        return_auc_per_sample: bool = False,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -92,7 +93,9 @@ class RegionPerturbation(Metric[List[float]]):
             The number of regions to evaluate, default=100.
         order: string
             Indicates whether attributions are ordered randomly ("random"),
-                according to the most relevant first ("morf"), or least relevant first ("lerf"), default="morf".
+            according to the most relevant first ("morf"), or least relevant first ("lerf"), default="morf".
+        return_auc_per_sample: boolean
+            Indicates if an AUC score should be computed over the curve and returned.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -146,12 +149,14 @@ class RegionPerturbation(Metric[List[float]]):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
+        self.return_auc_per_sample = return_auc_per_sample
         self.perturb_func = make_perturb_func(
             perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
         )
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
+
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -185,7 +190,7 @@ class RegionPerturbation(Metric[List[float]]):
         device: Optional[str] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[float]:
+    ) -> Union[List[float], float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -232,32 +237,32 @@ class RegionPerturbation(Metric[List[float]]):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -282,7 +287,7 @@ class RegionPerturbation(Metric[List[float]]):
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
-    ) -> List[float]:
+    ) -> Union[List[float], float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -408,6 +413,9 @@ class RegionPerturbation(Metric[List[float]]):
 
             results[patch_id] = y_pred - y_pred_perturb
 
+        if self.return_auc_per_sample:
+            return float(utils.calculate_auc(results))
+
         return results
 
     @property
@@ -424,7 +432,7 @@ class RegionPerturbation(Metric[List[float]]):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         **kwargs,
-    ) -> List[List[float]]:
+    ) -> List[Union[List[float], float]]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.

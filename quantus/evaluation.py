@@ -12,9 +12,7 @@ from typing import Union, Callable, Dict, Optional, Any
 import numpy as np
 import pandas as pd
 
-from quantus.helpers import asserts
-from quantus.helpers import utils
-from quantus.helpers import warn
+from quantus.helpers import asserts, utils, warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.explanation_func import explain
 
@@ -162,6 +160,8 @@ def evaluate(
 
     if call_kwargs is None:
         call_kwargs = {"call_kwargs_empty": {}}
+    elif not isinstance(call_kwargs, Dict):
+        raise TypeError("call_kwargs type should be of Dict[str, Dict] (if not None).")
 
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("call_kwargs type should be of Dict[str, Dict] (if not None).")
@@ -205,7 +205,7 @@ def evaluate(
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
             # Asserts.
-            asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
+            warn.warn_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, Dict):
 
@@ -226,7 +226,7 @@ def evaluate(
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
             # Asserts.
-            asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
+            warn.warn_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, np.ndarray):
             explain_funcs[method] = explain
@@ -241,11 +241,11 @@ def evaluate(
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
 
-        for (metric, metric_func) in metrics.items():
+        for metric, metric_func in metrics.items():
 
             results[method][metric] = {}
 
-            for (call_kwarg_str, call_kwarg) in call_kwargs.items():
+            for call_kwarg_str, call_kwarg in call_kwargs.items():
 
                 if verbose:
                     print(
@@ -287,8 +287,8 @@ def evaluate(
         # Clean up the results if there is only one call_kwarg.
         for method, value in xai_methods.items():
             results_ordered[method] = {}
-            for (metric, metric_func) in metrics.items():
-                for (call_kwarg_str, call_kwarg) in call_kwargs.items():
+            for metric, metric_func in metrics.items():
+                for call_kwarg_str, call_kwarg in call_kwargs.items():
                     results_ordered[method][metric] = results[method][metric][
                         call_kwarg_str
                     ]

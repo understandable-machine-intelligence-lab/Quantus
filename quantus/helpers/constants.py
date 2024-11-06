@@ -27,7 +27,7 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
         "Faithfulness Correlation": FaithfulnessCorrelation,
         "Faithfulness Estimate": FaithfulnessEstimate,
         "Pixel-Flipping": PixelFlipping,
-        "Region Segmentation": RegionPerturbation,
+        "Region Perturbation": RegionPerturbation,
         "Monotonicity-Arya": Monotonicity,
         "Monotonicity-Nguyen": MonotonicityCorrelation,
         "Selectivity": Selectivity,
@@ -74,6 +74,15 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
     },
 }
 
+# Quantus metrics that include a step-wise 'masking'/ perturbation that is
+# based on attribution order/ ranking (and not magnitude).
+AVAILABLE_INVERSE_ESTIMATION_METRICS = {
+    "Pixel-Flipping": PixelFlipping,
+    "Region Perturbation": RegionPerturbation,  # order = 'morf'
+    "ROAD": ROAD,  # return_only_values = True
+    "Selectivity": Selectivity,
+}
+#
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
     "baseline_replacement_by_indices": baseline_replacement_by_indices,

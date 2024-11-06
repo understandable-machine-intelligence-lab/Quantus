@@ -6,13 +6,17 @@ import pandas as pd
 import pytest
 import torch
 from keras.datasets import cifar10
-from quantus.helpers.model.models import (CifarCNNModel, ConvNet1D,
-                                          ConvNet1DTF, LeNet, LeNetTF,
-                                          TitanicSimpleTFModel,
-                                          TitanicSimpleTorchModel)
+from quantus.helpers.model.models import (
+    CifarCNNModel,
+    ConvNet1D,
+    ConvNet1DTF,
+    LeNet,
+    LeNetTF,
+    TitanicSimpleTFModel,
+    TitanicSimpleTorchModel,
+)
 from sklearn.model_selection import train_test_split
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          set_seed)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, set_seed
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
@@ -20,7 +24,8 @@ BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
 RANDOM_SEED = 42
 
-@pytest.fixture(scope='function', autouse=True)
+
+@pytest.fixture(scope="function", autouse=True)
 def reset_prngs():
     set_seed(42)
 
@@ -208,7 +213,10 @@ def titanic_dataset():
     X = df_enc.drop(["survived"], axis=1).values.astype(float)
     Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
-    return {"x_batch": test_features, "y_batch": test_labels}
+    return {
+        "x_batch": test_features[:MINI_BATCH_SIZE],
+        "y_batch": test_labels[:BATCH_SIZE].reshape(-1).astype(int)[:MINI_BATCH_SIZE],
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)

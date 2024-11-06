@@ -1,4 +1,5 @@
 """This module implements the base class for creating evaluation metrics."""
+
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
@@ -233,32 +234,32 @@ class Metric(Generic[R]):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
@@ -419,20 +420,24 @@ class Metric(Generic[R]):
             A general preprocess.
 
         """
+        self.channel_first = channel_first
+        self.model_predict_kwargs = model_predict_kwargs or {}
+        self.softmax = softmax
+        self.device = device
 
         # Reshape input batch to channel first order:
-        if not isinstance(channel_first, bool):  # None is not a boolean instance.
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch = utils.make_channel_first(x_batch, channel_first)
+        if not isinstance(self.channel_first, bool):  # None is not a boolean instance.
+            self.channel_first = utils.infer_channel_first(x_batch)
+        x_batch = utils.make_channel_first(x_batch, self.channel_first)
 
         if model is not None:
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
                 model=model,
-                channel_first=channel_first,
-                softmax=softmax,
-                device=device,
-                model_predict_kwargs=model_predict_kwargs,
+                channel_first=self.channel_first,
+                softmax=self.softmax,
+                device=self.device,
+                model_predict_kwargs=self.model_predict_kwargs,
             )
 
         # Save as attribute, some metrics need it during processing.
@@ -445,7 +450,7 @@ class Metric(Generic[R]):
 
         if a_batch is not None:
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-            asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+            warn.warn_attributions(x_batch=x_batch, a_batch=a_batch)
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
             # Normalise with specified keyword arguments if requested.
@@ -928,7 +933,7 @@ class Metric(Generic[R]):
             model=model, inputs=x_batch, targets=y_batch, **self.explain_func_kwargs
         )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        warn.warn_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:
