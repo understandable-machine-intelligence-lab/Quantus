@@ -9,7 +9,7 @@
 import numpy as np
 
 
-def mse(a: np.array, b: np.array, **kwargs) -> float:
+def mse(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
     """
     Calculate Mean Squared Error between two images (or explanations).
 
@@ -19,6 +19,8 @@ def mse(a: np.array, b: np.array, **kwargs) -> float:
              Array to calculate MSE with.
     b: np.ndarray
              Array to calculate MSE with.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
             Keyword arguments.
         normalise_mse: boolean
@@ -31,10 +33,10 @@ def mse(a: np.array, b: np.array, **kwargs) -> float:
     """
 
     normalise = kwargs.get("normalise_mse", False)
-
+    axis = -1 if batched else 0
     if normalise:
         # Calculate MSE in its polynomial expansion (a-b)^2 = a^2 - 2ab + b^2.
-        return np.average(((a ** 2) - (2 * (a * b)) + (b ** 2)), axis=0)
+        return np.average(((a**2) - (2 * (a * b)) + (b**2)), axis=axis)
     # If no need to normalise, return (a-b)^2.
 
-    return np.average(((a - b) ** 2), axis=0)
+    return np.average(((a - b) ** 2), axis=axis)

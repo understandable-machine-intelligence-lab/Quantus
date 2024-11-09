@@ -12,7 +12,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import (
+    batch_baseline_replacement_by_indices,
+)
 from quantus.helpers import asserts, plotting, utils, warn
 from quantus.helpers.enums import (
     DataType,
@@ -140,15 +142,13 @@ class RegionPerturbation(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -276,146 +276,10 @@ class RegionPerturbation(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> List[float]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-           : list
-            The evaluation results.
-        """
-
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        patches = []
-        x_perturbed = x.copy()
-
-        # Pad input and attributions. This is needed to allow for any patch_size.
-        pad_width = self.patch_size - 1
-        x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=self.a_axes)
-        a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=self.a_axes)
-
-        # Create patches across whole input shape and aggregate attributions.
-        att_sums = []
-        axis_iterators = [
-            range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
-        ]
-        for top_left_coords in itertools.product(*axis_iterators):
-            # Create slice for patch.
-            patch_slice = utils.create_patch_slice(
-                patch_size=self.patch_size,
-                coords=top_left_coords,
-            )
-
-            # Sum attributions for patch.
-            att_sums.append(
-                a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
-            )
-            patches.append(patch_slice)
-
-        if self.order == "random":
-            # Order attributions randomly.
-            order = np.arange(len(patches))
-            np.random.shuffle(order)
-
-        elif self.order == "morf":
-            # Order attributions according to the most relevant first.
-            order = np.argsort(att_sums)[::-1]
-
-        elif self.order == "lerf":
-            # Order attributions according to the least relevant first.
-            order = np.argsort(att_sums)
-
-        else:
-            raise ValueError(
-                "Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}."
-            )
-
-        # Create ordered list of patches.
-        ordered_patches = [patches[p] for p in order]
-
-        # Remove overlapping patches
-        blocked_mask = np.zeros(x_pad.shape, dtype=bool)
-        ordered_patches_no_overlap = []
-        for patch_slice in ordered_patches:
-            patch_mask = np.zeros(x_pad.shape, dtype=bool)
-            patch_mask[
-                utils.expand_indices(patch_mask, patch_slice, self.a_axes)
-            ] = True
-            # patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
-            # patch_mask[patch_mask_exp] = True
-            intersected = blocked_mask & patch_mask
-
-            if not intersected.any():
-                ordered_patches_no_overlap.append(patch_slice)
-                blocked_mask = blocked_mask | patch_mask
-
-            if len(ordered_patches_no_overlap) >= self.regions_evaluation:
-                break
-
-        # Warn
-        warn.warn_iterations_exceed_patch_number(
-            self.regions_evaluation, len(ordered_patches_no_overlap)
-        )
-
-        # Increasingly perturb the input and store the decrease in function value.
-        results = [None for _ in range(len(ordered_patches_no_overlap))]
-        for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
-            # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-            x_perturbed_pad = utils._pad_array(
-                x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
-            )
-
-            # Perturb.
-            x_perturbed_pad = self.perturb_func(
-                arr=x_perturbed_pad,
-                indices=patch_slice,
-                indexed_axes=self.a_axes,
-            )
-
-            # Remove padding.
-            x_perturbed = utils._unpad_array(
-                x_perturbed_pad, pad_width, padded_axes=self.a_axes
-            )
-
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-
-            results[patch_id] = y_pred - y_pred_perturb
-
-        return results
-
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
+        return np.mean([utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores])
 
     def evaluate_batch(
         self,
@@ -447,7 +311,102 @@ class RegionPerturbation(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+        x_batch_shape = x_batch.shape
+        if len(x_batch.shape) == 3:
+            x_batch = x_batch[:, :, None]
+            a_batch = a_batch[:, :, None]
+
+        batch_size = a_batch.shape[0]
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch_shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        x_perturbed = x_batch.copy()
+
+        # Pad input and attributions. This is needed to allow for any patch_size.
+        x_perturbed_h, x_perturbed_w = x_perturbed.shape[-2:]
+        padding_h, padding_w = utils.get_padding_size(x_perturbed_h, self.patch_size), utils.get_padding_size(
+            x_perturbed_w, self.patch_size
+        )
+        padding = ((0, 0), (0, 0), padding_h, padding_w)
+        x_pad = utils._pad_array(
+            x_batch,
+            padding,
+            mode="constant",
+            padded_axes=np.arange(len(x_perturbed.shape)),
+        )
+        a_pad = utils._pad_array(
+            a_batch,
+            padding,
+            mode="constant",
+            padded_axes=np.arange(len(x_perturbed.shape)),
+        )
+
+        # Create patches across whole input shape and aggregate attributions.
+        att_sums_list = []
+        patches_list = []
+        for block_indices in utils.get_block_indices(x_pad, self.patch_size):
+            # Create slice for patch.
+            a_sum = a_pad.reshape(batch_size, -1)[np.arange(batch_size)[:, None], block_indices].sum(axis=-1)
+
+            # Sum attributions for patch.
+            att_sums_list.append(a_sum)
+            patches_list.append(block_indices)
+        att_sums = np.stack(att_sums_list, -1)
+        patches = np.stack(patches_list, 1)
+
+        if self.order == "random":
+            # Order attributions randomly.
+            order = np.array([np.random.permutation(patches.shape[1]) for _ in range(batch_size)])
+
+        elif self.order == "morf":
+            # Order attributions according to the most relevant first.
+            order = np.argsort(-att_sums, -1)
+
+        elif self.order == "lerf":
+            # Order attributions according to the least relevant first.
+            order = np.argsort(att_sums, -1)
+
+        else:
+            raise ValueError("Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}.")
+
+        # Create ordered list of patches.
+        ordered_patches = patches[np.arange(batch_size)[:, None], order].transpose(1, 0, 2)
+
+        # Increasingly perturb the input and store the decrease in function value.
+        results = []
+        x_perturbed_pad = utils._pad_array(
+            x_perturbed,
+            padding,
+            mode="edge",
+            padded_axes=np.arange(len(x_perturbed.shape)),
+        )
+        x_perturbed_pad_shape = x_perturbed_pad.shape
+        for patch_slice in ordered_patches[: self.regions_evaluation]:
+            # Perturb.
+            x_perturbed_pad = self.perturb_func(arr=x_perturbed_pad.reshape(batch_size, -1), indices=patch_slice)
+
+            # Remove padding.
+            x_perturbed_pad = x_perturbed_pad.reshape(*x_perturbed_pad_shape)
+            x_perturbed = x_perturbed_pad[
+                :,
+                :,
+                padding_h[0] : x_perturbed_pad.shape[2] - padding_h[1],
+                padding_w[0] : x_perturbed_pad.shape[3] - padding_w[1],
+            ]
+
+            # Check if the perturbation caused change
+            for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x_batch_shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+            results.append(y_pred - y_pred_perturb)
+        results = np.stack(results, 1)
+        return results

@@ -31,6 +31,11 @@ def input_zeros_2d_3ch_flattened():
 
 
 @pytest.fixture
+def input_batch_zeros_2d_3ch_flattened():
+    return np.zeros(shape=(2, 3, 224, 224)).reshape(2, -1)
+
+
+@pytest.fixture
 def input_uniform_2d_3ch_flattened():
     return np.random.uniform(0, 0.1, size=(3, 224, 224)).flatten()
 
@@ -158,6 +163,36 @@ def test_baseline_replacement_by_indices(
     if isinstance(expected, (int, float)):
         assert np.all(
             [i == expected for i in out[indices].flatten()]
+        ), f"Test failed.{out}"
+
+
+@pytest.mark.perturb_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_batch_zeros_2d_3ch_flattened"),
+            {
+                "indices": np.array([[0, 2], [2, 5]]),
+                "perturb_baseline": 1.0,
+            },
+            1,
+        ),
+    ],
+)
+def test_batch_baseline_replacement_by_indices(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
+    batch_size = data.shape[0]
+    # Output
+    out = batch_baseline_replacement_by_indices(arr=data, **params)
+
+    # Indices
+    indices = params["indices"]
+
+    if isinstance(expected, (int, float)):
+        assert np.all(
+            out[np.arange(batch_size)[:, None], indices] == expected
         ), f"Test failed.{out}"
 
 

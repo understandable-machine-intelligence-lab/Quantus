@@ -20,6 +20,8 @@
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
 [📑 Shortcut to paper!](https://jmlr.org/papers/volume24/22-0142/22-0142.pdf)
+
+🐼 For **training data attribution** evaluation, check out [quanda](https://github.com/dilyabareeva/quanda)!
         
 ## News and Highlights! :rocket:
 

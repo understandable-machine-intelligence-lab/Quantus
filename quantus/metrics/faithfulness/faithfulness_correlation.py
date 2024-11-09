@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
@@ -139,7 +139,7 @@ class FaithfulnessCorrelation(Metric[List[float]]):
 
         # Save metric-specific attributes.
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         if similarity_func is None:
             similarity_func = correlation_pearson
@@ -147,9 +147,7 @@ class FaithfulnessCorrelation(Metric[List[float]]):
         self.similarity_func = similarity_func
         self.nr_runs = nr_runs
         self.subset_size = subset_size
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -276,65 +274,6 @@ class FaithfulnessCorrelation(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Flatten the attributions.
-        a = a.flatten()
-
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        pred_deltas = []
-        att_sums = []
-
-        # For each test data point, execute a couple of runs.
-        for i_ix in range(self.nr_runs):
-            # Randomly mask by subset size.
-            a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-            )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
-
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            pred_deltas.append(float(y_pred - y_pred_perturb))
-
-            # Sum attributions of the random subset.
-            att_sums.append(np.sum(a[a_ix]))
-
-        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-
-        return similarity
-
     def custom_preprocess(self, x_batch: np.ndarray, **kwargs) -> None:
         """
         Implementation of custom_preprocess_batch.
@@ -353,9 +292,7 @@ class FaithfulnessCorrelation(Metric[List[float]]):
             returning a custom preprocess batch (custom_preprocess_batch).
         """
         # Asserts.
-        asserts.assert_value_smaller_than_input_size(
-            x=x_batch, value=self.subset_size, value_name="subset_size"
-        )
+        asserts.assert_value_smaller_than_input_size(x=x_batch, value=self.subset_size, value_name="subset_size")
 
     def evaluate_batch(
         self,
@@ -387,7 +324,50 @@ class FaithfulnessCorrelation(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        pred_deltas = []
+        att_sums = []
+
+        x_batch_shape = x_batch.shape
+        # For each test data point, execute a couple of runs.
+        for i_ix in range(self.nr_runs):
+            # Randomly mask by subset size.
+            a_ix = np.stack(
+                [np.random.choice(n_features, self.subset_size, replace=False) for _ in range(batch_size)],
+                axis=0,
+            )
+            x_perturbed = self.perturb_func(
+                arr=x_batch.reshape(batch_size, -1),
+                indices=a_ix,
+            )
+            x_perturbed = x_perturbed.reshape(*x_batch_shape)
+
+            # Check if the perturbation caused change
+            for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+            pred_deltas.append(y_pred - y_pred_perturb)
+
+            # Sum attributions of the random subset.
+            att_sums.append(a_batch[np.arange(batch_size)[:, None], a_ix].sum(axis=-1))
+        pred_deltas = np.stack(pred_deltas, axis=1)
+        att_sums = np.stack(att_sums, axis=1)
+
+        similarity: np.array = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
+
+        return similarity.tolist()
