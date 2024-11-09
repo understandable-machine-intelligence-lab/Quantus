@@ -324,9 +324,7 @@ def load_artificial_attribution():
 def load_mnist_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(1, 28, 28))
-    model.load_state_dict(
-        torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
-    )
+    model.load_state_dict(torch.load("tests/assets/mnist", map_location="cpu", weights_only=True))
     return model
 
 
@@ -349,9 +347,7 @@ def load_mnist_mosaics(load_mnist_images):
 def load_cifar10_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(3, 32, 32))
-    model.load_state_dict(
-        torch.load("tests/assets/cifar10", map_location="cpu", pickle_module=pickle)
-    )
+    model.load_state_dict(torch.load("tests/assets/cifar10", map_location="cpu", weights_only=True))
     return model
 
 
@@ -917,9 +913,7 @@ def test_relevance_mass_accuracy(
     print(scores)
 
     if isinstance(expected, float):
-        assert (
-            all(round(s, 2) == round(expected, 2) for s in scores) == True
-        ), "Test failed."
+        assert all(round(s, 2) == round(expected, 2) for s in scores) == True, "Test failed."
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
     else:

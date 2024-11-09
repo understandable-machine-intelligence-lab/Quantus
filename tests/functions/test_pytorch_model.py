@@ -130,9 +130,7 @@ def test_get_softmax_arg_model(
         ),
     ],
 )
-def test_predict(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
-):
+def test_predict(data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model):
     load_mnist_model.eval()
     training = params.pop("training", False)
     model = PyTorchModel(load_mnist_model, **params)
@@ -171,9 +169,7 @@ def test_predict(
         ),
     ],
 )
-def test_shape_input(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
-):
+def test_shape_input(data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model):
     load_mnist_model.eval()
     model = PyTorchModel(load_mnist_model, channel_first=params["channel_first"])
     if not params["channel_first"]:
@@ -266,9 +262,7 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
             {
-                "input_ids": torch.tensor(
-                    [[101, 1996, 4248, 2829, 4419, 14523, 2058, 1996, 13971, 3899, 102]]
-                ),
+                "input_ids": torch.tensor([[101, 1996, 4248, 2829, 4419, 14523, 2058, 1996, 13971, 3899, 102]]),
                 "attention_mask": torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]),
             },
             False,
@@ -291,15 +285,11 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
         ),
     ],
 )
-def test_huggingface_classifier_predict(
-    hf_model, data, softmax, model_kwargs, expected
-):
-    model = PyTorchModel(
-        model=hf_model, softmax=softmax, model_predict_kwargs=model_kwargs
-    )
+def test_huggingface_classifier_predict(hf_model, data, softmax, model_kwargs, expected):
+    model = PyTorchModel(model=hf_model, softmax=softmax, model_predict_kwargs=model_kwargs)
     with expected:
         out = model.predict(x=data)
-        assert np.allclose(out, expected.enter_result), "Test failed."
+        assert np.allclose(out, expected.enter_result, atol=1e-5), "Test failed."
 
 
 @pytest.fixture

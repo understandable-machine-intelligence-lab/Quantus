@@ -7,14 +7,15 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 import scipy
 import skimage
+import sys
 
 
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -24,18 +25,31 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
         Keyword arguments.
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
+    if batched:
+        assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
+        # Spearman correlation is not calculated row-wise like pearson. Instead it is calculated between each
+        # pair from BOTH a and b
+        correlation = scipy.stats.spearmanr(a, b, axis=1)[0]
+        # if a and b batch size is 1, scipy returns a float instead of an array
+        if correlation.shape:
+            correlation = correlation[: len(a), len(a) :]
+            return np.diag(correlation)
+        else:
+            return np.array([correlation])
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_pearson(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -45,18 +59,26 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
         Keyword arguments.
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
+    if batched:
+        assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
+        # No axis parameter in older versions
+        if sys.version_info >= (3, 10):
+            return scipy.stats.pearsonr(a, b, axis=1)[0]
+        return np.array([scipy.stats.pearsonr(aa, bb)[0] for aa, bb in zip(a, b)])
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_kendall_tau(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -66,18 +88,24 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         True if arrays are batched. Arrays are expected to be 2D (B x F), where B is batch size and F is the number of features
     kwargs: optional
         Keyword arguments.
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
+    if batched:
+        assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
+        # No support for axis currently, so just iterating over the batch
+        return np.array([scipy.stats.kendalltau(a_i, b_i)[0] for a_i, b_i in zip(a, b)])
     return scipy.stats.kendalltau(a, b)[0]
 
 
-def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
+def distance_euclidean(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Euclidean distance of two images (or explanations).
 
@@ -92,13 +120,13 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
-    return scipy.spatial.distance.euclidean(u=a, v=b)
+    return ((a - b) ** 2).sum(axis=-1) ** 0.5
 
 
-def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
+def distance_manhattan(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Manhattan distance of two images (or explanations).
 
@@ -113,10 +141,10 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
-    return scipy.spatial.distance.cityblock(u=a, v=b)
+    return abs(a - b).sum(-1)
 
 
 def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
@@ -145,7 +173,7 @@ def lipschitz_constant(
     b: np.array,
     c: Union[np.array, None],
     d: Union[np.array, None],
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.
@@ -176,9 +204,9 @@ def lipschitz_constant(
     d2 = kwargs.get("norm_denominator", distance_euclidean)
 
     if np.shape(a) == ():
-        return float(abs(a - b) / (d2(c, d) + eps))
+        return abs(a - b) / (d2(c, d) + eps)
     else:
-        return float(d1(a, b) / (d2(a=c, b=d) + eps))
+        return d1(a, b) / (d2(a=c, b=d) + eps)
 
 
 def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
@@ -244,7 +272,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, **kwargs) -> float:
+def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, List[float]]:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -254,21 +282,27 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
          The first array to use for similarity scoring.
     b: np.ndarray
          The second array to use for similarity scoring.
+    batched: bool
+         Whether the arrays are batched.
     kwargs: optional
         Keyword arguments.
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, List[float]]
+        The similarity score, returns a list if batched.
     """
-    max_point, min_point = np.max(np.concatenate([a, b])), np.min(
-        np.concatenate([a, b])
-    )
-    data_range = float(np.abs(max_point - min_point))
-    return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range
-    )
+
+    def inner(aa: np.array, bb: np.array) -> float:
+        max_point, min_point = np.max(np.concatenate([aa, bb])), np.min(np.concatenate([aa, bb]))
+        data_range = float(np.abs(max_point - min_point))
+        return skimage.metrics.structural_similarity(
+            im1=aa, im2=bb, win_size=kwargs.get("win_size", None), data_range=data_range
+        )
+
+    if batched:
+        return [inner(aa, bb) for aa, bb in zip(a, b)]
+    return inner(a, b)
 
 
 def difference(a: np.array, b: np.array, **kwargs) -> np.array:
