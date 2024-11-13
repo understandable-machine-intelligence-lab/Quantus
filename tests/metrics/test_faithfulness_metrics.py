@@ -292,9 +292,7 @@ def test_faithfulness_correlation(
         **call_params,
     )[0]
 
-    assert np.all(
-        ((scores >= expected["min"]) & (scores <= expected["max"]))
-    ), "Test failed."
+    assert np.all(((scores >= expected["min"]) & (scores <= expected["max"]))), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -462,9 +460,7 @@ def test_faithfulness_estimate(
         **call_params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-    ), "Test failed."
+    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -598,9 +594,7 @@ def test_iterative_removal_of_features(
         **call_params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-    ), "Test failed."
+    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1066,13 +1060,7 @@ def test_pixel_flipping(
         **call_params,
     )
 
-    assert all(
-        [
-            (s >= expected["min"] and s <= expected["max"])
-            for s_list in scores
-            for s in s_list
-        ]
-    ), "Test failed."
+    assert all([(s >= expected["min"] and s <= expected["max"]) for s_list in scores for s in s_list]), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1134,7 +1122,7 @@ def test_pixel_flipping(
                     "normalise": True,
                     "order": "morf",
                     "disable_warnings": True,
-                    "perturb_func": baseline_replacement_by_indices,
+                    "perturb_func": batch_baseline_replacement_by_indices,
                 },
                 "call": {
                     "explain_func": explain,
@@ -1240,13 +1228,7 @@ def test_region_perturbation(
         **call_params,
     )
 
-    assert all(
-        [
-            (s >= expected["min"] and s <= expected["max"])
-            for s_list in scores
-            for s in s_list
-        ]
-    ), "Test failed."
+    assert all([(s >= expected["min"] and s <= expected["max"]) for s_list in scores for s in s_list]), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1615,9 +1597,7 @@ def test_sensitivity_n(
         **call_params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-    ), "Test failed."
+    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1629,7 +1609,7 @@ def test_sensitivity_n(
             lazy_fixture("load_mnist_images"),
             {
                 "init": {
-                    "perturb_func": baseline_replacement_by_indices,
+                    "perturb_func": batch_baseline_replacement_by_indices,
                     "return_aggregate": False,
                     "normalise": True,
                     "abs": True,
@@ -1652,7 +1632,7 @@ def test_sensitivity_n(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_func": baseline_replacement_by_indices,
+                    "perturb_func": batch_baseline_replacement_by_indices,
                     "return_aggregate": False,
                     "normalise": True,
                     "abs": True,

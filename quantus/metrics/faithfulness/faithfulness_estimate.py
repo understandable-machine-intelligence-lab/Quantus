@@ -132,18 +132,13 @@ class FaithfulnessEstimate(Metric[List[float]]):
             perturb_func = batch_baseline_replacement_by_indices
         self.similarity_func = similarity_func
         self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline' and similarity function "
-                    "'similarity_func'"
-                ),
+                sensitive_params=("baseline value 'perturb_baseline' and similarity function " "'similarity_func'"),
                 citation=(
                     "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
                     " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
@@ -326,9 +321,7 @@ class FaithfulnessEstimate(Metric[List[float]]):
         a_indices = np.argsort(-a_batch, axis=1)
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch.shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
 
         n_perturbations = math.ceil(n_features / self.features_in_step)
@@ -339,9 +332,7 @@ class FaithfulnessEstimate(Metric[List[float]]):
             # Perturb input by indices of attributions.
             a_ix = a_indices[
                 :,
-                perturbation_step_index
-                * self.features_in_step : (perturbation_step_index + 1)
-                * self.features_in_step,
+                perturbation_step_index * self.features_in_step : (perturbation_step_index + 1) * self.features_in_step,
             ]
             x_perturbed = self.perturb_func(
                 arr=x_batch.reshape(batch_size, -1),
@@ -351,14 +342,10 @@ class FaithfulnessEstimate(Metric[List[float]]):
 
             # Check if the perturbation caused change
             for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
-                warn.warn_perturbation_caused_no_change(
-                    x=x_element, x_perturbed=x_perturbed_element
-                )
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
 
             # Predict on perturbed input x.
-            x_input = model.shape_input(
-                x_perturbed, x_batch.shape, channel_first=True, batched=True
-            )
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
             y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
             pred_deltas.append(y_pred - y_pred_perturb)
 
@@ -367,6 +354,6 @@ class FaithfulnessEstimate(Metric[List[float]]):
         pred_deltas = np.stack(pred_deltas, axis=1)
         att_sums = np.stack(att_sums, axis=1)
 
-        similarity = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
+        similarity: np.array = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
 
         return similarity.tolist()

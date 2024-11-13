@@ -546,7 +546,8 @@ class RandomLogit(Metric[List[float]]):
         y_off = np.array([np.random.choice([y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y])])
         # Explain against a random class.
         a_perturbed = self.explain_batch(model, np.expand_dims(x, axis=0), y_off)
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
+        similarity = float(self.similarity_func(a.flatten(), a_perturbed.flatten()))
+        return similarity
 
     def custom_preprocess(
         self,

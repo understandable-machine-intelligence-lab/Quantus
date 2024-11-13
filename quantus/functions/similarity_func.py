@@ -7,11 +7,12 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 import scipy
 import skimage
+import sys
 
 
 def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
@@ -38,8 +39,13 @@ def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwar
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
         # Spearman correlation is not calculated row-wise like pearson. Instead it is calculated between each
         # pair from BOTH a and b
-        correlation = scipy.stats.spearmanr(a, b, axis=1)[0][: len(a), len(a) :]
-        return np.diag(correlation)
+        correlation = scipy.stats.spearmanr(a, b, axis=1)[0]
+        # if a and b batch size is 1, scipy returns a float instead of an array
+        if correlation.shape:
+            correlation = correlation[: len(a), len(a) :]
+            return np.diag(correlation)
+        else:
+            return np.array([correlation])
     return scipy.stats.spearmanr(a, b)[0]
 
 
@@ -65,7 +71,10 @@ def correlation_pearson(a: np.array, b: np.array, batched: bool = False, **kwarg
     """
     if batched:
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
-        return scipy.stats.pearsonr(a, b, axis=1)[0]
+        # No axis parameter in older versions
+        if sys.version_info >= (3, 10):
+            return scipy.stats.pearsonr(a, b, axis=1)[0]
+        return np.array([scipy.stats.pearsonr(aa, bb)[0] for aa, bb in zip(a, b)])
     return scipy.stats.pearsonr(a, b)[0]
 
 
@@ -96,7 +105,7 @@ def correlation_kendall_tau(a: np.array, b: np.array, batched: bool = False, **k
     return scipy.stats.kendalltau(a, b)[0]
 
 
-def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
+def distance_euclidean(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Euclidean distance of two images (or explanations).
 
@@ -111,13 +120,13 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     return ((a - b) ** 2).sum(axis=-1) ** 0.5
 
 
-def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
+def distance_manhattan(a: np.array, b: np.array, **kwargs) -> Union[float, np.array]:
     """
     Calculate Manhattan distance of two images (or explanations).
 
@@ -132,8 +141,8 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, np.array]
+        The similarity score or a batch of similarity scores.
     """
     return abs(a - b).sum(-1)
 
@@ -263,7 +272,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
+def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, List[float]]:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -280,8 +289,8 @@ def ssim(a: np.array, b: np.array, batched: bool = False, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    Union[float, List[float]]
+        The similarity score, returns a list if batched.
     """
 
     def inner(aa: np.array, bb: np.array) -> float:

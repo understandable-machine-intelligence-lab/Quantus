@@ -149,9 +149,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
         self.eps = eps
         self.nr_samples = nr_samples
         self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -334,9 +332,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
         """
 
         # Predict on input x.
-        x_input = model.shape_input(
-            x_batch, x_batch.shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         batch_size = x_batch.shape[0]
         y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
 
@@ -363,9 +359,7 @@ class MonotonicityCorrelation(Metric[List[float]]):
             # Perturb input by indices of attributions.
             a_ix = a_indices[
                 :,
-                perturbation_step_index
-                * self.features_in_step : (perturbation_step_index + 1)
-                * self.features_in_step,
+                perturbation_step_index * self.features_in_step : (perturbation_step_index + 1) * self.features_in_step,
             ]
 
             y_pred_perturbs = []
@@ -378,23 +372,18 @@ class MonotonicityCorrelation(Metric[List[float]]):
 
                 # Check if the perturbation caused change
                 for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
-                    warn.warn_perturbation_caused_no_change(
-                        x=x_element, x_perturbed=x_perturbed_element
-                    )
+                    warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, x_batch.shape, channel_first=True, batched=True
-                )
+                x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
                 y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
                 y_pred_perturbs.append(y_pred_perturb)
             y_pred_perturbs = np.stack(y_pred_perturbs, axis=1)
 
-            vars.append(
-                np.mean((y_pred_perturbs - y_pred[:, None]) ** 2, axis=1) * inv_pred
-            )
+            vars.append(np.mean((y_pred_perturbs - y_pred[:, None]) ** 2, axis=1) * inv_pred)
             atts.append(a_batch[np.arange(batch_size)[:, None], a_ix].sum(axis=1))
         vars = np.stack(vars, axis=1)
         atts = np.stack(atts, axis=1)
 
-        return self.similarity_func(a=atts, b=vars, batched=True).tolist()
+        similarities: np.array = self.similarity_func(a=atts, b=vars, batched=True)
+        return similarities.tolist()
