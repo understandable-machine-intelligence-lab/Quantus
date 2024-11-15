@@ -449,55 +449,6 @@ class BatchSmoothMPRT(Metric):
         corr_coeffs = [float(c) for c in corr_coeffs]
         return corr_coeffs
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Flatten the arrays for comparison and check constancy.
-        a_flat = a.flatten()
-        a_perturbed_flat = a_perturbed.flatten()
-
-        try:
-            return self.similarity_func(a_perturbed_flat, a_flat)
-        except Exception as e:
-            print(f"Encountered exception: {e} in similarity measure calculation")
-            warnings.warn(
-                "Setting similarity output to 1.",
-                UserWarning,
-            )
-            return 1.0
-
-        # Compute similarity measure.
-        return self.similarity_func(a_perturbed_flat, a_flat)
-
     def custom_preprocess(
         self,
         model: ModelInterface,
