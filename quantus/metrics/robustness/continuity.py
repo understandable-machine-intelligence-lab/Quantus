@@ -11,8 +11,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import translation_x_direction
-from quantus.functions.similarity_func import lipschitz_constant
+from quantus.functions.perturb_func import translation_x_direction, batched_translation
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean, distance_manhattan
 from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
     DataType,
@@ -31,7 +31,7 @@ else:
 
 
 @final
-class Continuity(Metric[List[float]]):
+class BatchContinuity(Metric[List[float]]):
     """
     Implementation of the Continuity test by Montavon et al., 2018.
 
@@ -140,7 +140,7 @@ class Continuity(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = translation_x_direction
+            perturb_func = batched_translation
 
         # Save metric-specific attributes.
         if similarity_func is None:
@@ -279,83 +279,6 @@ class Continuity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(self, model: ModelInterface, x: np.ndarray, y: np.ndarray) -> Dict[int, List[Any]]:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        dict
-            The evaluation results.
-        """
-        results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
-
-        for step in range(self.nr_steps):
-            # Generate explanation based on perturbed input x.
-            dx_step = (step + 1) * self.dx
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
-                perturb_dx=dx_step,
-            )
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-
-            prediction_changed = (
-                self.return_nan_when_prediction_changes
-                and model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0] != model.predict(x_input).argmax(axis=-1)[0]
-            )
-            # Taking the first element, since a_perturbed will be expanded to a batch dimension
-            # not expected by the current index management functions.
-            a_perturbed = self.explain_batch(model, x_input, np.expand_dims(y, 0))[0]
-
-            # Store the prediction score as the last element of the sub_self.evaluation_scores dictionary.
-            y_pred = float(model.predict(x_input)[:, y])
-
-            results[self.nr_patches].append(y_pred)
-
-            # Create patches by splitting input into grid. Take x_input[0] to avoid batch axis,
-            # which a_axes is not tuned for
-            axis_iterators = [range(0, x_input[0].shape[axis], self.patch_size) for axis in self.a_axes]
-
-            for ix_patch, top_left_coords in enumerate(itertools.product(*axis_iterators)):
-                if prediction_changed:
-                    results[ix_patch].append(np.nan)
-                    continue
-
-                # Create slice for patch.
-                patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                )
-
-                a_perturbed_patch = a_perturbed[utils.expand_indices(a_perturbed, patch_slice, self.a_axes)]
-
-                # Taking the first element, since a_perturbed will be expanded to a batch dimension
-                # not expected by the current index management functions.
-                # a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
-
-                if self.normalise:
-                    a_perturbed_patch = self.normalise_func(a_perturbed_patch.flatten())
-
-                if self.abs:
-                    a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
-
-                # Sum attributions for patch.
-                patch_sum = float(sum(a_perturbed_patch))
-                results[ix_patch].append(patch_sum)
-
-        return results
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -375,38 +298,14 @@ class Continuity(Metric[List[float]]):
         None.
         """
 
-        # Get number of patches for input shape (ignore batch and channel dim).
-        self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size,
-            shape=x_batch.shape[2:],
-            overlap=True,
-        )
-
-        self.dx = np.prod(x_batch.shape[2:]) // self.nr_steps
+        total_steps_possible = x_batch.shape[3] * 2 + 1
+        self.dx = total_steps_possible // self.nr_steps
 
         # Asserts.
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch.shape[2:])
-
-    @property
-    def aggregated_score(self):
-        """
-        Implements a continuity correlation score (an addition to the original method) to evaluate the
-        relationship between change in explanation and change in function output. It can be seen as an
-        quantitative interpretation of visually determining how similar f(x) and R(x1) curves are.
-        """
-        return np.mean(
-            [
-                self.similarity_func(
-                    self.evaluation_scores[sample][self.nr_patches],
-                    self.evaluation_scores[sample][ix_patch],
-                )  # noqa
-                for ix_patch in range(self.nr_patches)
-                for sample in self.evaluation_scores.keys()
-            ]
-        )
 
     def evaluate_batch(
         self,
@@ -435,7 +334,45 @@ class Continuity(Metric[List[float]]):
         scores_batch:
             Evaluation results.
         """
-        return [self.evaluate_instance(model=model, x=x, y=y) for x, y in zip(x_batch, y_batch)]
+        batch_size = x_batch.shape[0]
+        current_translation = -x_batch.shape[3]
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+
+        # Retrieve the original attibutions and preprocess (if needed)
+        a_batch = self.explain_batch(model, x_input, y_batch)
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+        a_batch = a_batch.reshape(batch_size, -1)
+
+        # Translate the image step by step
+        results = []
+        for step in range(self.nr_steps):
+            current_translation += self.dx
+            x_batch_perturbed = batched_translation(x_batch, "black", current_translation, direction="x")
+            x_input = model.shape_input(x_batch_perturbed, x_batch.shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)
+
+            prediction_changed = y_pred_perturb.argmax(-1) != y_batch
+            y_pred_perturb_value = y_pred_perturb[np.arange(batch_size), y_batch]
+            a_perturbed = self.explain_batch(model, x_input, y_batch)
+
+            if self.normalise:
+                a_perturbed = self.normalise_func(a_perturbed)
+            if self.abs:
+                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = a_perturbed.reshape(batch_size, -1)
+
+            # Calculate continuity, as per the original definition
+            result = distance_manhattan(a_batch, a_perturbed) / (
+                distance_euclidean(x_batch.reshape(batch_size, -1), x_batch_perturbed.reshape(batch_size, -1)) + 1e-9
+            )
+            results.append(result)
+        results = np.stack(results, axis=1)
+        results = np.max(results, axis=1)
+
+        return results
 
 
 @final
