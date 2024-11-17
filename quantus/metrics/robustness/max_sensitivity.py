@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 from quantus.functions import norm_func
-from quantus.functions.perturb_func import pbatch_uniform_noise
+from quantus.functions.perturb_func import batch_uniform_noise
 from quantus.functions.similarity_func import difference
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (

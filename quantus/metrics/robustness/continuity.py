@@ -368,6 +368,9 @@ class Continuity(Metric[List[float]]):
             result = distance_manhattan(a_batch, a_perturbed) / (
                 distance_euclidean(x_batch.reshape(batch_size, -1), x_batch_perturbed.reshape(batch_size, -1)) + 1e-9
             )
+            # Set NaN to positions where prediction changed
+            result[prediction_changed] = np.NaN
+            # Save result
             results.append(result)
         results = np.stack(results, axis=1)
         results = np.max(results, axis=1)
