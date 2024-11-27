@@ -360,7 +360,8 @@ class Continuity(Metric[List[float]]):
                 distance_euclidean(x_batch.reshape(batch_size, -1), x_batch_perturbed.reshape(batch_size, -1)) + 1e-9
             )
             # Set NaN to positions where prediction changed
-            result[prediction_changed] = np.NaN
+            if self.return_nan_when_prediction_changes:
+                result[prediction_changed] = np.NaN
             # Save result
             results.append(result)
         results = np.stack(results, axis=1)
