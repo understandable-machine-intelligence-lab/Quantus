@@ -64,9 +64,7 @@ class Continuity(Metric[List[float]]):
 
     def __init__(
         self,
-        similarity_func: Optional[Callable] = None,
         nr_steps: int = 28,
-        patch_size: int = 7,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -85,9 +83,6 @@ class Continuity(Metric[List[float]]):
         """
         Parameters
             ----------
-        similarity_func: callable
-            Similarity function applied to compare input and perturbed input.
-            If None, the default value is used, default=difference.
         patch_size: integer
             The patch size for masking, default=7.
         nr_steps: integer
@@ -143,13 +138,8 @@ class Continuity(Metric[List[float]]):
             perturb_func = batched_translation
 
         # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = lipschitz_constant
-        self.similarity_func = similarity_func
-        self.patch_size = patch_size
         self.nr_steps = nr_steps
         self.nr_patches: Optional[int] = None
-        self.dx = None
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
         self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
@@ -298,14 +288,10 @@ class Continuity(Metric[List[float]]):
         None.
         """
 
-        total_steps_possible = x_batch.shape[3] * 2 + 1
-        self.dx = total_steps_possible // self.nr_steps
-
         # Asserts.
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-        asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch.shape[2:])
 
     def evaluate_batch(
         self,
@@ -334,6 +320,11 @@ class Continuity(Metric[List[float]]):
         scores_batch:
             Evaluation results.
         """
+        # Expand height dimension if not present
+        if len(x_batch.shape) == 3:
+            x_batch = x_batch[:, :, None, :]
+        total_steps_possible = x_batch.shape[3] * 2 + 1
+        dx = total_steps_possible // self.nr_steps
         batch_size = x_batch.shape[0]
         current_translation = -x_batch.shape[3]
         x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
@@ -349,7 +340,7 @@ class Continuity(Metric[List[float]]):
         # Translate the image step by step
         results = []
         for step in range(self.nr_steps):
-            current_translation += self.dx
+            current_translation += dx
             x_batch_perturbed = batched_translation(x_batch, "black", current_translation, direction="x")
             x_input = model.shape_input(x_batch_perturbed, x_batch.shape, channel_first=True, batched=True)
             y_pred_perturb = model.predict(x_input)
