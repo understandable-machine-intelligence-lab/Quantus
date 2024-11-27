@@ -365,7 +365,9 @@ class SmoothMPRT(Metric):
                     self.evaluation_scores["original"] = []
                     for a_batch, a_batch_original in zip(self.generate_a_batches(a_full_dataset), a_original_generator):
                         scores = self.similarity_func(
-                            a_batch.reshape(batch_size, -1), a_batch_original.reshape(batch_size, -1), batched=True
+                            a_batch.reshape(a_batch.shape[0], -1),
+                            a_batch_original.reshape(a_batch.shape[0], -1),
+                            batched=True,
                         ).tolist()
                         # Save similarity scores in a result dictionary.
                         self.evaluation_scores["original"] += scores
@@ -388,7 +390,9 @@ class SmoothMPRT(Metric):
                 # Compute the similarity of explanations of the perturbed model.
                 for a_batch, a_batch_perturbed in zip(self.generate_a_batches(a_full_dataset), a_perturbed_generator):
                     scores = self.similarity_func(
-                        a_batch.reshape(batch_size, -1), a_batch_perturbed.reshape(batch_size, -1), batched=True
+                        a_batch.reshape(a_batch.shape[0], -1),
+                        a_batch_perturbed.reshape(a_batch.shape[0], -1),
+                        batched=True,
                     ).tolist()
                     self.evaluation_scores[layer_name] += scores
                     pbar.update(1)

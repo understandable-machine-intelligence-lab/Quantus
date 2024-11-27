@@ -41,42 +41,28 @@ def test_mosaic_func(
         target_list,
     ) = return_params
 
-    _, _, width, height = x_batch.shape
+    _, _, height, width = x_batch.shape
     for mosaic in all_mosaics:
-        _, width_mosaic, height_mosaic = mosaic.shape
+        _, height_mosaic, width_mosaic = mosaic.shape
         assert width_mosaic / width == 2, "Test failed."
         assert height_mosaic / height == 2, "Test failed."
 
     for mosaic, mosaic_indices in zip(all_mosaics, mosaic_indices_list):
         assert len(mosaic_indices) == 4
-        assert np.all(
-            np.equal(mosaic[:, :width, :height], x_batch[mosaic_indices[0]])
-        ), "Test failed."
-        assert np.all(
-            np.equal(mosaic[:, width:, :height], x_batch[mosaic_indices[1]])
-        ), "Test failed."
-        assert np.all(
-            np.equal(mosaic[:, :width, height:], x_batch[mosaic_indices[2]])
-        ), "Test failed."
-        assert np.all(
-            np.equal(mosaic[:, width:, height:], x_batch[mosaic_indices[3]])
-        ), "Test failed."
+        assert np.all(np.equal(mosaic[:, :height, :width], x_batch[mosaic_indices[0]])), "Test failed."
+        assert np.all(np.equal(mosaic[:, :height, width:], x_batch[mosaic_indices[1]])), "Test failed."
+        assert np.all(np.equal(mosaic[:, height:, :width], x_batch[mosaic_indices[2]])), "Test failed."
+        assert np.all(np.equal(mosaic[:, height:, width:], x_batch[mosaic_indices[3]])), "Test failed."
 
     for mosaic_labels in mosaic_labels_list:
         assert len(mosaic_labels) == 4, "Test failed."
-        assert (
-            len(set([x for x in mosaic_labels if mosaic_labels.count(x) == 2])) > 0
-        ), "Test failed."
+        assert len(set([x for x in mosaic_labels if mosaic_labels.count(x) == 2])) > 0, "Test failed."
 
     for p_batch in p_batch_list:
         assert len(p_batch) == 4, "Test failed."
-        assert (
-            len(set([x for x in p_batch if p_batch.count(x) == 2])) == 2
-        ), "Test failed."
+        assert len(set([x for x in p_batch if p_batch.count(x) == 2])) == 2, "Test failed."
 
-    for mosaic_labels, p_batch, target in zip(
-        mosaic_labels_list, p_batch_list, target_list
-    ):
+    for mosaic_labels, p_batch, target in zip(mosaic_labels_list, p_batch_list, target_list):
         mosaic_labels = np.array(mosaic_labels)
         p_batch = np.array(p_batch)
         assert np.unique(mosaic_labels[p_batch == 1]) == target, "Test failed."
