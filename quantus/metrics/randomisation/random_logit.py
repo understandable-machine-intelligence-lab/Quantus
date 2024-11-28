@@ -300,5 +300,7 @@ class RandomLogit(Metric[List[float]]):
         y_off = y_filtered_classes[np.arange(batch_size)[None, :], y_off_indices].flatten()
         # Explain against a random class.
         a_perturbed = self.explain_batch(model, x_batch, y_off)
-        score = self.similarity_func(a_batch.reshape(batch_size, -1), a_perturbed.reshape(batch_size, -1), batched=True)
+        score: np.array = self.similarity_func(
+            a_batch.reshape(batch_size, -1), a_perturbed.reshape(batch_size, -1), batched=True
+        )
         return score

@@ -299,7 +299,7 @@ class Continuity(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         **kwargs,
-    ) -> List[Dict[str, int]]:
+    ) -> np.ndarray:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
