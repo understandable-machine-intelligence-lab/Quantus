@@ -356,7 +356,6 @@ class Infidelity(Metric[List[float]]):
                 a_sums = []
                 x_perturbed = x_batch.copy()
                 x_perturbed_h, x_perturbed_w = x_perturbed.shape[-2:]
-                # Pad the input
                 padding_h, padding_w = utils.get_padding_size(x_perturbed_h, patch_size), utils.get_padding_size(
                     x_perturbed_w, patch_size
                 )
@@ -370,7 +369,7 @@ class Infidelity(Metric[List[float]]):
                 for x_indices in utils.get_block_indices(x_perturbed_pad, patch_size):
                     # Perturb input by block indices of certain patch size
                     x_perturbed_pad = self.perturb_func(
-                        arr=x_perturbed_pad.reshape(batch_size, -1),
+                        arr=x_perturbed.reshape(batch_size, -1),
                         indices=x_indices,
                     )
                     x_perturbed_pad = x_perturbed_pad.reshape(*x_perturbed_pad_shape)
@@ -400,5 +399,4 @@ class Infidelity(Metric[List[float]]):
                 assert callable(self.loss_func)
                 sub_results.append(self.loss_func(a=pred_deltas, b=a_sums, batched=True))
             results.append(np.mean(np.stack(sub_results, axis=1), axis=-1))
-        results = np.stack(results, axis=1)
-        return np.mean(results, axis=-1)
+        return np.mean(np.stack(results, axis=1), axis=-1)

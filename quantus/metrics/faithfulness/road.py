@@ -345,5 +345,6 @@ class ROAD(Metric[List[float]]):
             # Write a boolean into the percentage results.
             results.append(y_batch == class_pred_perturb)
         results = np.stack(results, axis=1).astype(int)
+        # print(results_instance)
         # Return list of booleans for each percentage.
         return [results]

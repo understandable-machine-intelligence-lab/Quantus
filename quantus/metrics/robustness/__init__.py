@@ -5,6 +5,4 @@ from quantus.metrics.robustness.local_lipschitz_estimate import LocalLipschitzEs
 from quantus.metrics.robustness.max_sensitivity import MaxSensitivity
 from quantus.metrics.robustness.relative_input_stability import RelativeInputStability
 from quantus.metrics.robustness.relative_output_stability import RelativeOutputStability
-from quantus.metrics.robustness.relative_representation_stability import (
-    RelativeRepresentationStability,
-)
+from quantus.metrics.robustness.relative_representation_stability import RelativeRepresentationStability

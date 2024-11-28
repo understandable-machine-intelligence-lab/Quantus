@@ -269,52 +269,6 @@ class Focus(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        a: np.ndarray,
-        c: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        # Prepare shapes for mosaics.
-        self.mosaic_shape = a.shape
-
-        total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
-        target_positive_relevance = 0
-
-        quadrant_functions_list = [
-            self.quadrant_top_left,
-            self.quadrant_top_right,
-            self.quadrant_bottom_left,
-            self.quadrant_bottom_right,
-        ]
-
-        for quadrant_p, quadrant_func in zip(c, quadrant_functions_list):
-            if not bool(quadrant_p):
-                continue
-            quadrant_relevance = quadrant_func(a=a)
-            target_positive_relevance += np.sum(
-                quadrant_relevance[quadrant_relevance > 0]
-            )
-
-        focus_score = target_positive_relevance / total_positive_relevance
-
-        return focus_score
-
     def custom_preprocess(
         self,
         model: ModelInterface,
@@ -362,33 +316,7 @@ class Focus(Metric[List[float]]):
         # Overwrite custom_batch to have only 'c' as instance input.
         return {"c_batch": custom_batch, "custom_batch": None}
 
-    def quadrant_top_left(self, a: np.ndarray) -> np.ndarray:
-        quandrant_a = a[
-            :, : int(self.mosaic_shape[1] / 2), : int(self.mosaic_shape[2] / 2)
-        ]
-        return quandrant_a
-
-    def quadrant_top_right(self, a: np.ndarray) -> np.ndarray:
-        quandrant_a = a[
-            :, int(self.mosaic_shape[1] / 2) :, : int(self.mosaic_shape[2] / 2)
-        ]
-        return quandrant_a
-
-    def quadrant_bottom_left(self, a: np.ndarray) -> np.ndarray:
-        quandrant_a = a[
-            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2) :
-        ]
-        return quandrant_a
-
-    def quadrant_bottom_right(self, a: np.ndarray) -> np.ndarray:
-        quandrant_a = a[
-            :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2) :
-        ]
-        return quandrant_a
-
-    def evaluate_batch(
-        self, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, a_batch: np.ndarray, c_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -407,4 +335,21 @@ class Focus(Metric[List[float]]):
         score_batch:
             Evaluation result for batch.
         """
-        return [self.evaluate_instance(a=a, c=c) for a, c in zip(a_batch, c_batch)]
+        batch_size = a_batch.shape[0]
+        half_h, half_w = a_batch.shape[2] // 2, a_batch.shape[3] // 2
+        # Prepare scoring masks
+        scoring_masks = np.zeros_like(a_batch)
+        for i, c in enumerate(c_batch):
+            scoring_masks[i, :, :half_h, :half_w] = c[0]
+            scoring_masks[i, :, :half_h, half_w:] = c[1]
+            scoring_masks[i, :, half_h:, :half_w] = c[2]
+            scoring_masks[i, :, half_h:, half_w:] = c[3]
+        # Use only positive attributions
+        a_batch = np.clip(a_batch, a_min=0, a_max=None)
+
+        # Calculate the final score
+        total_positive_relevance = a_batch.reshape(batch_size, -1).sum(-1)
+        target_positive_relevance = (scoring_masks * a_batch).reshape(batch_size, -1).sum(-1)
+        focus_score = target_positive_relevance / (total_positive_relevance + 1e-9)
+
+        return focus_score

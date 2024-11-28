@@ -229,51 +229,6 @@ class RelevanceRankAccuracy(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = np.where(s.flatten().astype(bool))[0]
-
-        # Size of the ground truth mask.
-        k = len(s)
-
-        # Sort in descending order.
-        a_sorted = np.argsort(a)[-int(k) :]
-
-        # Calculate hits.
-        hits = len(np.intersect1d(s, a_sorted))
-
-        if hits != 0:
-            rank_accuracy = hits / float(k)
-        else:
-            rank_accuracy = 0.0
-
-        return rank_accuracy
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -298,9 +253,7 @@ class RelevanceRankAccuracy(Metric[List[float]]):
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-    def evaluate_batch(
-        self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -319,4 +272,27 @@ class RelevanceRankAccuracy(Metric[List[float]]):
         scores_batch:
             Evaluation result for batch.
         """
-        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]
+        # Prepare shapes.
+        batch_size = a_batch.shape[0]
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        s_sums = s_batch.sum(-1)
+        sum_zero = s_sums == 0
+
+        # Sort in descending order and calculate hits mask.
+        a_sorted = np.argsort(-a_batch, axis=-1)
+        s_mask = np.array([[True] * s_sum + [False] * (n_features - s_sum) for s_sum in s_sums])
+
+        # Calculate rank accuracy.
+        choice_s_batch = s_batch[np.arange(batch_size)[:, None], a_sorted]
+        rank_accuracy = (choice_s_batch * s_mask).sum(-1) / s_mask.sum(-1)
+
+        # Return np.nan as result if segmentation map is empty.
+        rank_accuracy[sum_zero] = np.nan
+
+        if np.any(sum_zero):
+            warn.warn_empty_segmentation()
+
+        return rank_accuracy

@@ -220,37 +220,6 @@ class AUC(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(a: np.ndarray, s: np.ndarray) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        : float
-         The evaluation results.
-        """
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = s.flatten().astype(bool)
-
-        fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
-        score = auc(x=fpr, y=tpr)
-
-        return score
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -276,9 +245,7 @@ class AUC(Metric[List[float]]):
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-    def evaluate_batch(
-        self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -297,4 +264,19 @@ class AUC(Metric[List[float]]):
         scores_batch:
             Evaluation result for batch.
         """
-        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]
+        # Prepare shapes.
+        batch_size = a_batch.shape[0]
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+
+        scores = []
+        for s, a in zip(s_batch, a_batch):
+            fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
+            score = auc(x=fpr, y=tpr)
+            scores.append(score)
+        scores = np.array(scores)
+
+        # Return np.nan as result if segmentation map is empty.
+        scores[s_batch.sum(axis=-1) == 0] = np.nan
+
+        return scores
