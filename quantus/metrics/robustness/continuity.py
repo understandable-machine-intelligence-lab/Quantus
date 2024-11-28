@@ -11,8 +11,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import translation_x_direction, batched_translation
-from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean, distance_manhattan
+from quantus.functions.perturb_func import batched_translation
+from quantus.functions.similarity_func import distance_euclidean, distance_manhattan
 from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
     DataType,
