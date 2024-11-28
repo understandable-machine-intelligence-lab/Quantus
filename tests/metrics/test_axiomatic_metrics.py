@@ -228,7 +228,6 @@ def test_completeness(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_samples": 1,
                     "normalise": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -248,7 +247,6 @@ def test_completeness(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_samples": 1,
                     "normalise": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -268,7 +266,6 @@ def test_completeness(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_samples": 1,
                     "eps": 1e-2,
                     "normalise": True,
                     "disable_warnings": True,
@@ -289,7 +286,6 @@ def test_completeness(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_samples": 1,
                     "eps": 1e-2,
                     "normalise": True,
                     "disable_warnings": True,
@@ -310,7 +306,6 @@ def test_completeness(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_samples": 2,
                     "normalise": False,
                     "disable_warnings": True,
                     "display_progressbar": False,
@@ -330,7 +325,6 @@ def test_completeness(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_samples": 2,
                     "normalise": False,
                     "disable_warnings": True,
                     "display_progressbar": False,
@@ -350,7 +344,6 @@ def test_completeness(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_samples": 1,
                     "eps": 1e-10,
                     "normalise": True,
                     "disable_warnings": True,
@@ -371,7 +364,6 @@ def test_completeness(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_samples": 1,
                     "eps": 1e-10,
                     "normalise": True,
                     "disable_warnings": True,

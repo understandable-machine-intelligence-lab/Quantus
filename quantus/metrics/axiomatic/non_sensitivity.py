@@ -63,7 +63,6 @@ class NonSensitivity(Metric[List[float]]):
     def __init__(
         self,
         eps: float = 1e-5,
-        n_samples: int = 100,
         features_in_step: int = 1,
         abs: bool = True,
         normalise: bool = True,
@@ -84,8 +83,6 @@ class NonSensitivity(Metric[List[float]]):
         ----------
         eps: float
             Attributions threshold, default=1e-5.
-        n_samples: integer
-            The number of samples to iterate over, default=100.
         features_in_step: integer
             The step size, default=1.
         abs: boolean
@@ -137,7 +134,6 @@ class NonSensitivity(Metric[List[float]]):
 
         # Save metric-specific attributes.
         self.eps = eps
-        self.n_samples = n_samples
         self.features_in_step = features_in_step
         self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
