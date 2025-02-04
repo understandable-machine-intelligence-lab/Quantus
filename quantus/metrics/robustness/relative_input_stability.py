@@ -58,7 +58,7 @@ class RelativeInputStability(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Relative Output Stability"
+    name = "Relative Input Stability"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
