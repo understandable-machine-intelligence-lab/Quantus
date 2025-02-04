@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
 from quantus.helpers import warn
 from quantus.helpers.enums import (
     DataType,
@@ -133,23 +133,20 @@ class Completeness(Metric[List[float]]):
             **kwargs,
         )
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         if output_func is None:
             output_func = identity
         self.output_func = output_func
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "baseline value 'perturb_baseline' and the function to modify the "
-                    "model response 'output_func'"
+                    "baseline value 'perturb_baseline' and the function to modify the " "model response 'output_func'"
                 ),
                 citation=(
                     "Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
@@ -263,49 +260,6 @@ class Completeness(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> bool:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        score: boolean
-            The evaluation results.
-        """
-        x_baseline = self.perturb_func(
-            arr=x, indices=np.arange(0, x.size), indexed_axes=np.arange(0, x.ndim)
-        )
-
-        # Predict on input.
-        x_input = model.shape_input(x, x.shape, channel_first=True)
-        y_pred = float(model.predict(x_input)[:, y])
-
-        # Predict on baseline.
-        x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-        y_pred_baseline = float(model.predict(x_input)[:, y])
-
-        if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
-            return True
-        else:
-            return False
-
     def evaluate_batch(
         self,
         model: ModelInterface,
@@ -337,7 +291,21 @@ class Completeness(Metric[List[float]]):
             The evaluation results.
         """
 
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Flatten the attributions.
+        x_batch_shape = x_batch.shape
+        batch_size = x_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+        indices = np.stack([np.arange(n_features) for _ in x_batch])
+        x_baseline = self.perturb_func(arr=x_batch.reshape(batch_size, -1), indices=indices)
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch_shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        # Predict on baseline.
+        x_baseline = x_baseline.reshape(*x_batch_shape)
+        x_input = model.shape_input(x_baseline, x_batch_shape, channel_first=True, batched=True)
+        y_pred_baseline = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        return a_batch.sum(axis=-1) == self.output_func(y_pred - y_pred_baseline)

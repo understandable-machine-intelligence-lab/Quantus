@@ -233,47 +233,6 @@ class PointingGame(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        boolean
-            The evaluation results.
-        """
-
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = s.flatten().astype(bool)
-
-        # Find indices with max value.
-        max_index = np.argwhere(a == np.max(a))
-
-        # Check if maximum of explanation is on target object class.
-        hit = np.any(s[max_index])
-
-        if self.weighted and hit:
-            hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
-
-        return hit
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -298,9 +257,7 @@ class PointingGame(Metric[List[float]]):
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-    def evaluate_batch(
-        self, *args, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, *args, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -321,4 +278,21 @@ class PointingGame(Metric[List[float]]):
         scores_batch:
             Evaluation result for batch.
         """
-        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]
+        # Prepare shapes.
+        batch_size = a_batch.shape[0]
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+
+        # Find indices with max value.
+        max_attribution = a_batch == a_batch.max(axis=-1, keepdims=True)
+
+        # Check if maximum of explanation is on target object class.
+        hit = np.any(s_batch * max_attribution, axis=-1)
+
+        if self.weighted:
+            hit[hit] = 1 - np.sum(s_batch[hit], axis=-1, keepdims=True) / s_batch[0].size
+
+        # Return NaN if segmentation is empty
+        hit[s_batch.sum(axis=-1) == 0] = np.nan
+
+        return hit

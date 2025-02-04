@@ -245,60 +245,6 @@ class AttributionLocalisation(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        x: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        if self.positive_attributions:
-            a = np.clip(a, 0, None)
-        s = s.flatten().astype(bool)
-
-        # Compute ratio.
-        size_bbox = float(np.sum(s))
-        size_data = np.prod(x.shape[1:])
-        ratio = size_bbox / size_data
-
-        # Compute inside/outside ratio.
-        inside_attribution = np.sum(a[s])
-        total_attribution = np.sum(a)
-        inside_attribution_ratio = float(inside_attribution / total_attribution)
-
-        if not ratio <= self.max_size:
-            warn.warn_max_size()
-        if inside_attribution_ratio > 1.0:
-            warn.warn_segmentation(inside_attribution, total_attribution)
-            return np.nan
-        if not self.weighted:
-            return inside_attribution_ratio
-        else:
-            return float(inside_attribution_ratio * ratio)
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -350,7 +296,37 @@ class AttributionLocalisation(Metric[List[float]]):
         scores_batch:
             Evaluation result for batch.
         """
-        return [
-            self.evaluate_instance(x=x, a=a, s=s)
-            for x, a, s in zip(x_batch, a_batch, s_batch)
-        ]
+        batch_size = x_batch.shape[0]
+
+        # Prepare shapes.
+        # a = a.flatten()
+        if self.positive_attributions:
+            a_batch = np.clip(a_batch, 0, None)
+        # s = s.flatten().astype(bool)
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+
+        # Compute ratio.
+        size_bbox = s_batch.reshape(batch_size, -1).sum(axis=-1)
+        size_data = x_batch[2:].size
+        ratio = size_bbox / size_data
+
+        # Compute inside/outside ratio.
+        inside_attribution = (a_batch * s_batch).sum(axis=-1)
+        total_attribution = a_batch.sum(axis=-1)
+        inside_attribution_ratio = inside_attribution / (total_attribution + 1e-9)
+
+        if np.any(ratio > self.max_size):
+            warn.warn_max_size()
+
+        inside_attribution_ratio[size_bbox == 0] = np.nan
+        ratio_larger_than_one = inside_attribution_ratio > 1
+        inside_attribution_ratio[ratio_larger_than_one] = np.nan
+        if np.any(ratio_larger_than_one):
+            for index in np.argwhere(ratio_larger_than_one):
+                warn.warn_segmentation(inside_attribution[index], total_attribution[index])
+
+        if self.weighted:
+            inside_attribution_ratio *= ratio
+
+        return inside_attribution_ratio

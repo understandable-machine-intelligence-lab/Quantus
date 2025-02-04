@@ -212,9 +212,7 @@ def test_max_sensitivity(
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert np.all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-        ), "Test failed."
+        assert np.all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
 
 
 @pytest.mark.robustness
@@ -410,7 +408,6 @@ def test_local_lipschitz_estimate(
                 "a_batch_generate": False,
                 "init": {
                     "nr_steps": 10,
-                    "patch_size": 10,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -430,7 +427,6 @@ def test_local_lipschitz_estimate(
                 "a_batch_generate": False,
                 "init": {
                     "nr_steps": 10,
-                    "patch_size": 7,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -450,7 +446,6 @@ def test_local_lipschitz_estimate(
                 "a_batch_generate": False,
                 "init": {
                     "nr_steps": 10,
-                    "patch_size": 10,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -470,7 +465,6 @@ def test_local_lipschitz_estimate(
                 "a_batch_generate": False,
                 "init": {
                     "nr_steps": 10,
-                    "patch_size": 7,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -490,7 +484,6 @@ def test_local_lipschitz_estimate(
                 "a_batch_generate": False,
                 "init": {
                     "nr_steps": 10,
-                    "patch_size": 10,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -737,9 +730,7 @@ def test_avg_sensitivity(
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert np.all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-        ), "Test failed."
+        assert np.all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
 
 
 @pytest.mark.robustness
@@ -952,9 +943,7 @@ def test_consistency(
         ),
     ],
 )
-def test_return_nan_when_prediction_changes(
-    metric, model, data, params, mock_prediction_changed
-):
+def test_return_nan_when_prediction_changes(metric, model, data, params, mock_prediction_changed):
     # This test case requires different set-up and assertions, so we have it in separate function.
     metric_instance = metric(
         **params,
@@ -975,15 +964,12 @@ def test_return_nan_when_prediction_changes(
 
 
 @pytest.mark.robustness
-def test_return_nan_when_prediction_changes_continuity(
-    load_mnist_model, load_mnist_images, mock_prediction_changed
-):
+def test_return_nan_when_prediction_changes_continuity(load_mnist_model, load_mnist_images, mock_prediction_changed):
     # Continuity returns dict, so we have it in separate function in order to keep assertions readable.
     metric_instance = Continuity(
         disable_warnings=True,
         return_nan_when_prediction_changes=True,
         nr_steps=10,
-        patch_size=7,
     )
     result = metric_instance(
         load_mnist_model,
@@ -994,8 +980,5 @@ def test_return_nan_when_prediction_changes_continuity(
             "method": "Saliency",
         },
     )
-    for i in result:
-        values = list(i.values())
-        # Last element of scores is output logits, obviously they're not nan.
-        for v in values[:-1]:
-            assert np.isnan(v).any()
+    for r in result:
+        assert np.isnan(r).any()

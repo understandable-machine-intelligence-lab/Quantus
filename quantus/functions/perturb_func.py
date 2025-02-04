@@ -592,11 +592,13 @@ def translation_x_direction(
         np.moveaxis(arr, 0, -1),
         matrix,
         (arr.shape[1], arr.shape[2]),
-        borderValue=get_baseline_value(
-            value=perturb_baseline,
-            arr=arr,
-            return_shape=(arr.shape[0]),
-            **kwargs,
+        borderValue=float(
+            get_baseline_value(
+                value=perturb_baseline,
+                arr=arr,
+                return_shape=(arr.shape[0]),
+                **kwargs,
+            )[0]
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
@@ -649,6 +651,60 @@ def translation_y_direction(
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
     return arr_perturbed
+
+
+def batched_translation(
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    direction: str = "x",
+    **kwargs,
+) -> np.array:
+    """
+     Translate array by some given value in the x or y direction, assumes image type data and channel first layout.
+
+     Parameters
+     ----------
+     arr: np.ndarray
+         Array to be perturbed.
+     perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+     perturb_dy: integer
+        The translation length in features, e.g., pixels.
+     kwargs: optional
+        Keyword arguments.
+
+    Returns
+     -------
+     arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+    assert direction in {"x", "y"}, "direction must be one of {'x', 'y'}"
+    assert len(arr.shape) == 4, "Input arr must be a batch of 3D images"
+
+    arr_shape = arr.shape
+    batch_size, _, height, width = arr_shape
+    translated_axis = 3 if direction == "x" else 2
+
+    arr = arr.reshape(batch_size, -1)
+    translation_padding = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(arr.shape),
+        batched=True,
+    )
+    arr = arr.reshape(*arr_shape)
+    translation_padding = translation_padding.reshape(*arr_shape)
+    translation_padding = np.take(translation_padding, np.arange(-abs(perturb_dx), 0), axis=translated_axis)
+
+    original_dims = width if direction == "x" else height
+    if perturb_dx < 0:
+        x_batch_padded = np.concatenate([arr, translation_padding], axis=translated_axis)
+        x_batch_perturbed = np.take(x_batch_padded, np.arange(-original_dims, 0), axis=translated_axis)
+    else:
+        x_batch_padded = np.concatenate([translation_padding, arr], axis=translated_axis)
+        x_batch_perturbed = np.take(x_batch_padded, np.arange(original_dims), axis=translated_axis)
+    return x_batch_perturbed
 
 
 def noisy_linear_imputation(

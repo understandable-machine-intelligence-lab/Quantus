@@ -231,24 +231,6 @@ class EffectiveComplexity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(self, a: np.ndarray) -> int:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        integer
-            The evaluation results.
-        """
-
-        a = a.flatten()
-        return int(np.sum(a > self.eps))
-
     def evaluate_batch(self, a_batch: np.ndarray, **kwargs) -> List[int]:
         """
         This method performs XAI evaluation on a single batch of explanations.
@@ -266,4 +248,7 @@ class EffectiveComplexity(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [self.evaluate_instance(a) for a in a_batch]
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        return np.sum(a_batch > self.eps, axis=1).astype(int)

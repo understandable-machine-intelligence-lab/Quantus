@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import sys
 
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import perturb_batch, uniform_noise
+from quantus.functions.perturb_func import batch_uniform_noise
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
@@ -134,16 +134,12 @@ class RelativeOutputStability(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = uniform_noise
+            perturb_func = batch_uniform_noise
 
         self._nr_samples = nr_samples
         self._eps_min = eps_min
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, upper_bound=0.2
-        )
-        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
-            return_nan_when_prediction_changes
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, upper_bound=0.2)
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(return_nan_when_prediction_changes)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -258,9 +254,7 @@ class RelativeOutputStability(Metric[List[float]]):
 
         num_dim = e_x.ndim
         if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
+            norm_function = lambda arr: np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)  # noqa
         elif num_dim == 3:
             norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
         elif num_dim == 2:
@@ -317,12 +311,11 @@ class RelativeOutputStability(Metric[List[float]]):
 
         for index in range(self._nr_samples):
             # Perturb input.
-            x_perturbed = perturb_batch(
-                perturb_func=self.perturb_func,
+            x_perturbed = self.perturb_func(
+                arr=x_batch.reshape(batch_size, -1),
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
-                indexed_axes=np.arange(0, x_batch[0].ndim),
-                arr=x_batch,
             )
+            x_perturbed = x_perturbed.reshape(*x_batch.shape)
 
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
@@ -330,15 +323,11 @@ class RelativeOutputStability(Metric[List[float]]):
             # Execute forward pass on perturbed inputs.
             logits_perturbed = model.predict(x_perturbed)
             # Compute maximization's objective.
-            ros = self.relative_output_stability_objective(
-                logits, logits_perturbed, a_batch, a_batch_perturbed
-            )
+            ros = self.relative_output_stability_objective(logits, logits_perturbed, a_batch, a_batch_perturbed)
             ros_batch[index] = ros
 
             # If perturbed input caused change in prediction, then it's ROS=nan.
-            changed_prediction_indices = self.changed_prediction_indices_func(
-                model, x_batch, x_perturbed
-            )
+            changed_prediction_indices = self.changed_prediction_indices_func(model, x_batch, x_perturbed)
 
             if len(changed_prediction_indices) != 0:
                 ros_batch[index, changed_prediction_indices] = np.nan
