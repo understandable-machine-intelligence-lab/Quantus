@@ -27,9 +27,9 @@ def build_single_mosaic(mosaic_images_list: List[np.ndarray]) -> np.ndarray:
     mosaic: np.ndarray
          The single 2x2 mosaic built from a list of images.
     """
-    first_row = np.concatenate((mosaic_images_list[0], mosaic_images_list[1]), axis=1)
-    second_row = np.concatenate((mosaic_images_list[2], mosaic_images_list[3]), axis=1)
-    mosaic = np.concatenate((first_row, second_row), axis=2)
+    first_row = np.concatenate((mosaic_images_list[0], mosaic_images_list[1]), axis=2)
+    second_row = np.concatenate((mosaic_images_list[2], mosaic_images_list[3]), axis=2)
+    mosaic = np.concatenate((first_row, second_row), axis=1)
     return mosaic
 
 
@@ -38,9 +38,7 @@ def mosaic_creation(
     labels: np.ndarray,
     mosaics_per_class: int,
     seed: Optional[int] = None,
-) -> Tuple[
-    Any, List[Tuple[Any, ...]], List[Tuple[Any, ...]], List[Tuple[int, ...]], List[Any]
-]:
+) -> Tuple[Any, List[Tuple[Any, ...]], List[Tuple[Any, ...]], List[Tuple[int, ...]], List[Any]]:
     """
     Build a mosaic dataset from an image dataset (images). Each mosaic corresponds to a 2x2 grid. Each one
     is composed by four images: two belonging to the target class and the other two are chosen randomly from
@@ -89,33 +87,21 @@ def mosaic_creation(
 
         target_class_images = images[labels == target_class]
         target_class_image_indices = np.where(labels == target_class)[0]
-        target_class_images_and_indices = list(
-            zip(target_class_images, target_class_image_indices)
-        )
+        target_class_images_and_indices = list(zip(target_class_images, target_class_image_indices))
 
-        no_repetitions = int(
-            math.ceil((2 * mosaics_per_class) / len(target_class_images))
-        )
-        total_target_class_images_and_indices = (
-            target_class_images_and_indices * no_repetitions
-        )
+        no_repetitions = int(math.ceil((2 * mosaics_per_class) / len(target_class_images)))
+        total_target_class_images_and_indices = target_class_images_and_indices * no_repetitions
         rng.shuffle(total_target_class_images_and_indices)
 
-        no_outer_images_per_class = int(
-            math.ceil((2 * mosaics_per_class) / len(outer_classes))
-        )
+        no_outer_images_per_class = int(math.ceil((2 * mosaics_per_class) / len(outer_classes)))
         total_outer_images_and_indices = []
         total_outer_labels = []
         for outer_class in outer_classes:
             outer_class_images = images[labels == outer_class]
             outer_class_images_indices = np.where(labels == outer_class)[0]
-            outer_class_images_and_indices = list(
-                zip(outer_class_images, outer_class_images_indices)
-            )
+            outer_class_images_and_indices = list(zip(outer_class_images, outer_class_images_indices))
 
-            current_outer_images_and_indices = rng.choices(
-                outer_class_images_and_indices, k=no_outer_images_per_class
-            )
+            current_outer_images_and_indices = rng.choices(outer_class_images_and_indices, k=no_outer_images_per_class)
             total_outer_images_and_indices += current_outer_images_and_indices
             total_outer_labels += [outer_class] * no_outer_images_per_class
 
@@ -142,9 +128,7 @@ def mosaic_creation(
             current_targets = tuple(elem[1] for elem in mosaic_elems)
             mosaic_labels_list.append(current_targets)
 
-            current_p_batch = tuple(
-                int(elem[1] == target_class) for elem in mosaic_elems
-            )
+            current_p_batch = tuple(int(elem[1] == target_class) for elem in mosaic_elems)
             p_batch_list.append(current_p_batch)
 
             target_list.append(target_class)

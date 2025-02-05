@@ -7,11 +7,12 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
+import math
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
     DataType,
@@ -32,7 +33,7 @@ else:
 @final
 class NonSensitivity(Metric[List[float]]):
     """
-    Implementation of NonSensitivity by Nguyen at el., 2020.
+    Implementation of NonSensitivity by Nguyen et al., 2020.
 
     Non-sensitivity measures if zero-importance is only assigned to features, that the model is not
     functionally dependent on.
@@ -62,7 +63,6 @@ class NonSensitivity(Metric[List[float]]):
     def __init__(
         self,
         eps: float = 1e-5,
-        n_samples: int = 100,
         features_in_step: int = 1,
         abs: bool = True,
         normalise: bool = True,
@@ -83,8 +83,6 @@ class NonSensitivity(Metric[List[float]]):
         ----------
         eps: float
             Attributions threshold, default=1e-5.
-        n_samples: integer
-            The number of samples to iterate over, default=100.
         features_in_step: integer
             The step size, default=1.
         abs: boolean
@@ -132,15 +130,12 @@ class NonSensitivity(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         self.eps = eps
-        self.n_samples = n_samples
         self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -263,64 +258,6 @@ class NonSensitivity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> int:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        integer:
-            The evaluation results.
-        """
-        a = a.flatten()
-
-        non_features = set(list(np.argwhere(a).flatten() < self.eps))
-
-        vars = []
-        for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
-            preds = []
-            a_ix = a[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ].astype(int)
-
-            for _ in range(self.n_samples):
-                # Perturb input by indices of attributions.
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                )
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturbed = float(model.predict(x_input)[:, y])
-
-                preds.append(y_pred_perturbed)
-                vars.append(np.var(preds))
-
-        non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
-
-        return len(non_features_vars.symmetric_difference(non_features))
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -377,7 +314,43 @@ class NonSensitivity(Metric[List[float]]):
              The evaluation results.
         """
 
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        non_features = a_batch < self.eps
+
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        # Prepare lists.
+        n_perturbations = math.ceil(n_features / self.features_in_step)
+        preds = []
+        x_perturbed = x_batch.copy()
+        x_batch_shape = x_batch.shape
+        a_indices = np.stack([np.arange(n_features) for _ in x_batch])
+        for perturbation_step_index in range(n_perturbations):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                :,
+                perturbation_step_index * self.features_in_step : (perturbation_step_index + 1) * self.features_in_step,
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x_batch.reshape(batch_size, -1),
+                indices=a_ix,
+            )
+            x_perturbed = x_perturbed.reshape(*x_batch_shape)
+
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+            preds.append(y_pred_perturb)
+        preds = np.stack(preds, axis=1)
+        preds_differences = abs(preds - y_pred[:, None]) < self.eps
+
+        return (preds_differences ^ non_features).sum(-1)

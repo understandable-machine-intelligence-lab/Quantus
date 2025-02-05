@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import sys
 
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import perturb_batch, uniform_noise
+from quantus.functions.perturb_func import batch_uniform_noise
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
@@ -140,22 +140,16 @@ class RelativeRepresentationStability(Metric[List[float]]):
             **kwargs,
         )
         if perturb_func is None:
-            perturb_func = uniform_noise
+            perturb_func = batch_uniform_noise
         self._nr_samples = nr_samples
         self._eps_min = eps_min
         if layer_names is not None and layer_indices is not None:
-            raise ValueError(
-                "Must provide either layer_names OR layer_indices, not both."
-            )
+            raise ValueError("Must provide either layer_names OR layer_indices, not both.")
 
         self._layer_names = layer_names
         self._layer_indices = layer_indices
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, upper_bound=0.2
-        )
-        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
-            return_nan_when_prediction_changes
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, upper_bound=0.2)
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(return_nan_when_prediction_changes)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -268,17 +262,13 @@ class RelativeRepresentationStability(Metric[List[float]]):
 
         num_dim = e_x.ndim
         if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
+            norm_function = lambda arr: np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)  # noqa
         elif num_dim == 3:
             norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
         elif num_dim == 2:
             norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
         else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
+            raise ValueError("Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive).")
 
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
@@ -321,21 +311,18 @@ class RelativeRepresentationStability(Metric[List[float]]):
         batch_size = x_batch.shape[0]
 
         # Retrieve internal representation for provided inputs.
-        internal_representations = model.get_hidden_representations(
-            x_batch, self._layer_names, self._layer_indices
-        )
+        internal_representations = model.get_hidden_representations(x_batch, self._layer_names, self._layer_indices)
 
         # Prepare output array.
         rrs_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
 
         for index in range(self._nr_samples):
             # Perturb input.
-            x_perturbed = perturb_batch(
-                perturb_func=self.perturb_func,
+            x_perturbed = self.perturb_func(
+                arr=x_batch.reshape(batch_size, -1),
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
-                indexed_axes=np.arange(0, x_batch[0].ndim),
-                arr=x_batch,
             )
+            x_perturbed = x_perturbed.reshape(*x_batch.shape)
 
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
@@ -354,9 +341,7 @@ class RelativeRepresentationStability(Metric[List[float]]):
             )
             rrs_batch[index] = rrs
             # If perturbed input caused change in prediction, then it's RRS=nan.
-            changed_prediction_indices = self.changed_prediction_indices_func(
-                model, x_batch, x_perturbed
-            )
+            changed_prediction_indices = self.changed_prediction_indices_func(model, x_batch, x_perturbed)
 
             if len(changed_prediction_indices) != 0:
                 rrs_batch[index, changed_prediction_indices] = np.nan

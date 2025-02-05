@@ -169,7 +169,7 @@ class SmoothMPRT(Metric):
 
         if normalise_func_kwargs is None:
             normalise_func_kwargs = {}
-            
+
         self.similarity_func = similarity_func
         self.normalise_func = normalise_func
         self.abs = abs
@@ -340,9 +340,7 @@ class SmoothMPRT(Metric):
 
         # Get number of iterations from number of layers.
         n_layers = model.random_layer_generator_length
-        pbar = tqdm(
-            total=n_layers * len(x_full_dataset), disable=not self.display_progressbar
-        )
+        pbar = tqdm(total=n_layers * len(x_full_dataset), disable=not self.display_progressbar)
         if self.display_progressbar:
             # Set property to False, so we display only 1 pbar.
             self._display_progressbar = False
@@ -365,23 +363,16 @@ class SmoothMPRT(Metric):
 
                     # Compute the similarity of explanations of the original model.
                     self.evaluation_scores["original"] = []
-                    for a_batch, a_batch_original in zip(
-                        self.generate_a_batches(a_full_dataset), a_original_generator
-                    ):
-                        for a_instance, a_instance_original in zip(
-                            a_batch, a_batch_original
-                        ):
-                            score = self.evaluate_instance(
-                                model=model,
-                                x=None,
-                                y=None,
-                                s=None,
-                                a=a_instance,
-                                a_perturbed=a_instance_original,
-                            )
-                            # Save similarity scores in a result dictionary.
-                            self.evaluation_scores["original"].append(score)
-                            pbar.update(1)
+                    for a_batch, a_batch_original in zip(self.generate_a_batches(a_full_dataset), a_original_generator):
+                        similarities: np.array = self.similarity_func(
+                            a_batch.reshape(a_batch.shape[0], -1),
+                            a_batch_original.reshape(a_batch.shape[0], -1),
+                            batched=True,
+                        )
+                        scores = similarities.tolist()
+                        # Save similarity scores in a result dictionary.
+                        self.evaluation_scores["original"] += scores
+                        pbar.update(1)
 
                 # Skip layers if computing delta.
                 if self.skip_layers and (l_ix + 1) < n_layers:
@@ -398,22 +389,15 @@ class SmoothMPRT(Metric):
                 )
 
                 # Compute the similarity of explanations of the perturbed model.
-                for a_batch, a_batch_perturbed in zip(
-                    self.generate_a_batches(a_full_dataset), a_perturbed_generator
-                ):
-                    for a_instance, a_instance_perturbed in zip(
-                        a_batch, a_batch_perturbed
-                    ):
-                        score = self.evaluate_instance(
-                            model=random_layer_model,
-                            x=None,
-                            y=None,
-                            s=None,
-                            a=a_instance,
-                            a_perturbed=a_instance_perturbed,
-                        )
-                        self.evaluation_scores[layer_name].append(score)
-                        pbar.update(1)
+                for a_batch, a_batch_perturbed in zip(self.generate_a_batches(a_full_dataset), a_perturbed_generator):
+                    perturbed_similarities: np.array = self.similarity_func(
+                        a_batch.reshape(a_batch.shape[0], -1),
+                        a_batch_perturbed.reshape(a_batch.shape[0], -1),
+                        batched=True,
+                    )
+                    scores = perturbed_similarities.tolist()
+                    self.evaluation_scores[layer_name] += scores
+                    pbar.update(1)
 
         if self.return_average_correlation:
             self.evaluation_scores = self.recompute_average_correlation_per_sample()
@@ -442,9 +426,7 @@ class SmoothMPRT(Metric):
             "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
             "must be of type dict."
         )
-        layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
-        )
+        layer_length = len(self.evaluation_scores[list(self.evaluation_scores.keys())[0]])
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
@@ -472,55 +454,6 @@ class SmoothMPRT(Metric):
         corr_coeffs = list(self.evaluation_scores.values())[-1]
         corr_coeffs = [float(c) for c in corr_coeffs]
         return corr_coeffs
-
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Flatten the arrays for comparison and check constancy.
-        a_flat = a.flatten()
-        a_perturbed_flat = a_perturbed.flatten()
-
-        try:
-            return self.similarity_func(a_perturbed_flat, a_flat)
-        except Exception as e:
-            print(f"Encountered exception: {e} in similarity measure calculation")
-            warnings.warn(
-                "Setting similarity output to 1.",
-                UserWarning,
-            )
-            return 1.0
-
-        # Compute similarity measure.
-        return self.similarity_func(a_perturbed_flat, a_flat)
 
     def custom_preprocess(
         self,
@@ -556,9 +489,7 @@ class SmoothMPRT(Metric):
             return None
 
         a_batch_chunks = []
-        for a_chunk in self.generate_explanations(
-            model, x_batch, y_batch, **{**kwargs, **self.explain_func_kwargs}
-        ):
+        for a_chunk in self.generate_explanations(model, x_batch, y_batch, **{**kwargs, **self.explain_func_kwargs}):
             a_batch_chunks.extend(a_chunk)
         return dict(a_batch=np.asarray(a_batch_chunks))
 
@@ -603,9 +534,7 @@ class SmoothMPRT(Metric):
             yield a_full_dataset[batch.start : batch.stop]
 
     def evaluate_batch(self, *args, **kwargs):
-        raise RuntimeError(
-            "`evaluate_batch` must never be called for `Model Parameter Randomisation Test`."
-        )
+        raise RuntimeError("`evaluate_batch` must never be called for `Model Parameter Randomisation Test`.")
 
     def explain_smooth_batch(
         self,
@@ -654,10 +583,7 @@ class SmoothMPRT(Metric):
 
         # Set noise.
         dims = tuple(range(1, x_batch.ndim))
-        std = self.noise_magnitude * (
-            x_batch.max(axis=dims, keepdims=True)
-            - x_batch.min(axis=dims, keepdims=True)
-        )
+        std = self.noise_magnitude * (x_batch.max(axis=dims, keepdims=True) - x_batch.min(axis=dims, keepdims=True))
         a_batch_smooth = self.explain_smooth_batch_numpy(
             model=model, x_batch=x_batch, y_batch=y_batch, std=std, **kwargs
         )
