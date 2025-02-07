@@ -11,9 +11,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.localisation.attribution_localisation import (
-    AttributionLocalisation,
-)
+from quantus.metrics.localisation.attribution_localisation import AttributionLocalisation
 from quantus.metrics.localisation.auc import AUC
 from quantus.metrics.localisation.focus import Focus
 from quantus.metrics.localisation.pointing_game import PointingGame

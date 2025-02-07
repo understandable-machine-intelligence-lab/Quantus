@@ -238,52 +238,7 @@ class TopKIntersection(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        a: np.ndarray,
-        s: np.ndarray,
-    ):
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        s = s.astype(bool)
-        top_k_binary_mask = np.zeros(a.shape)
-
-        # Sort and create masks.
-        sorted_indices = np.argsort(a, axis=None)
-        np.put_along_axis(top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None)
-        top_k_binary_mask = top_k_binary_mask.astype(bool)
-
-        # Top-k intersection.
-        tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
-
-        # Concept influence (with size of object normalised tki score).
-        if self.concept_influence:
-            tki = np.prod(s.shape) / np.sum(s) * tki
-
-        return tki
-
-    def custom_preprocess(
-        self, x_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> None:
+    def custom_preprocess(self, x_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> None:
         """
         Implementation of custom_preprocess_batch.
 
@@ -302,13 +257,9 @@ class TopKIntersection(Metric[List[float]]):
         """
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
-        asserts.assert_value_smaller_than_input_size(
-            x=x_batch, value=self.k, value_name="k"
-        )
+        asserts.assert_value_smaller_than_input_size(x=x_batch, value=self.k, value_name="k")
 
-    def evaluate_batch(
-        self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -327,4 +278,25 @@ class TopKIntersection(Metric[List[float]]):
         scores_batch:
             Evaluation result for batch.
         """
-        return [self.evaluate_instance(a, s) for a, s in zip(a_batch, s_batch)]
+        # Prepare shapes.
+        batch_size = a_batch.shape[0]
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        s_sums = s_batch.sum(-1)
+        sum_zero = s_sums == 0
+
+        # Sort in descending order and calculate hits mask.
+        a_sorted = np.argsort(-a_batch, axis=-1)
+        choice_s_batch = s_batch[np.arange(batch_size)[:, None], a_sorted[:, : self.k]]
+        tki = choice_s_batch.mean(-1)
+
+        # Concept influence (with size of object normalised tki score).
+        if self.concept_influence:
+            tki *= n_features / s_sums
+
+        # Return np.nan as result if segmentation map is empty.
+        tki[sum_zero] = np.nan
+
+        return tki
