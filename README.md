@@ -23,6 +23,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
 [📑 Shortcut to paper!](https://jmlr.org/papers/volume24/22-0142/22-0142.pdf)
 
 If you want to contribute/ improve/ extend Quantus, join our [Discord](https://discord.gg/HB77krUE)!
+
 ## News and Highlights! :rocket:
 
 - 🐼 For **training data attribution** evaluation, check out [quanda](https://github.com/dilyabareeva/quanda)!
