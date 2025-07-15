@@ -79,10 +79,10 @@ zennit = [
 ]
 transformers = [
     "quantus[torch]",
-    "transformers>=4.38.2",
+    "transformers>=4.38.2", #"transformers<4.38.0"
 ]
 full = [
-    "quantus[captum,tf-explain,zennit,transformers]"
+    "quantus[captum,tf-explain,zennit,transformers,torch]"
 ]
 tests = [
     "coverage>=7.2.3",
