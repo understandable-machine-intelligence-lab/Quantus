@@ -5,7 +5,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 # Set the correct version.
-__version__ = "0.5.3"
+__version__ = "0.6.0"
 
 # Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
