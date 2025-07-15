@@ -375,6 +375,6 @@ class Selectivity(Metric[List[float]]):
             y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
 
             results.append(y_pred_perturb)
-        results = np.stack(results, 1, dtype=np.float64)
+        results = np.stack(results, 1).astype(np.float64)
 
         return results
