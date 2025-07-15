@@ -238,7 +238,7 @@ test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, trans
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for XAI evaluation.
-x_batch, y_batch = iter(test_loader).next()
+x_batch, y_batch = next(iter(test_loader))
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 </details>
@@ -281,11 +281,8 @@ import captum
 from captum.attr import Saliency, IntegratedGradients
 
 # Generate Integrated Gradients attributions of the first batch of the test set.
-a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1).cpu().numpy()
-a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(x_batch)).sum(axis=1).cpu().numpy()
-
-# Save x_batch and y_batch as numpy arrays that will be used to call metric instances.
-x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+a_batch_saliency = Saliency(model).attribute(inputs=torch.tensor(x_batch, dtype=torch.float32), target=torch.tensor(y_batch, dtype=torch.int64), abs=True).sum(axis=1).cpu().cpu().numpy()
+a_batch_intgrad = IntegratedGradients(model).attribute(inputs=torch.tensor(x_batch, dtype=torch.float32), target=torch.tensor(y_batch, dtype=torch.int64)).sum(axis=1).cpu().numpy()
 
 # Quick assert.
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
@@ -318,9 +315,8 @@ it first needs to be instantiated:
 ```python
 metric = quantus.MaxSensitivity(nr_samples=10,
                                 lower_bound=0.2,
-                                norm_numerator=quantus.fro_norm,
-                                norm_denominator=quantus.fro_norm,
-                                perturb_func=quantus.uniform_noise,
+                                norm_numerator=quantus.norm_func.fro_norm,
+                                norm_denominator=quantus.norm_func.fro_norm,
                                 similarity_func=quantus.difference,
                                 abs=True,
                                 normalise=True)
