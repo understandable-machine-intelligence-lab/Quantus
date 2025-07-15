@@ -11,6 +11,12 @@ from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 from quantus.helpers.model.pytorch_model import PyTorchModel
 
+def torch_available():
+    try:
+        import torch
+        return True
+    except ImportError:
+        return False
 
 @pytest.fixture
 def mock_input_torch_array():
