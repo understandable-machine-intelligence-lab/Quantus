@@ -239,23 +239,36 @@ def load_mnist_model_softmax():
 
 @pytest.fixture(scope="session", autouse=False)
 def load_hf_distilbert_sequence_classifier():
-    """
-    TODO
-    """
-    DISTILBERT_BASE = "distilbert-base-uncased"
-    model = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
-    return model
+    try:
+        import torch
+    except ImportError:
+        pytest.skip("Skipping because torch is not available.")
+
+    try:
+        from transformers import AutoModelForSequenceClassification
+        DISTILBERT_BASE = "distilbert-base-uncased"
+        return AutoModelForSequenceClassification.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
+    except Exception as e:
+        pytest.skip(f"Skipping because model loading failed: {e}")
+
 
 
 @pytest.fixture(scope="session", autouse=False)
 def dummy_hf_tokenizer():
-    """
-    TODO
-    """
-    DISTILBERT_BASE = "distilbert-base-uncased"
-    REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
-    tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/", clean_up_tokenization_spaces=True)
-    return tokenizer(REFERENCE_TEXT, return_tensors="pt")
+    try:
+        import torch
+    except ImportError:
+        pytest.skip("Skipping because torch is not available.")
+
+    try:
+        from transformers import AutoTokenizer
+        DISTILBERT_BASE = "distilbert-base-uncased"
+        REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
+        tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/", clean_up_tokenization_spaces=True)
+        return tokenizer(REFERENCE_TEXT, return_tensors="pt")
+    except Exception as e:
+        pytest.skip(f"Skipping because tokenizer loading failed: {e}")
+
 
 
 @pytest.fixture(scope="session", autouse=True)
