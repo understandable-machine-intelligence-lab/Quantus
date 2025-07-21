@@ -51,10 +51,15 @@ dynamic = ["version"]
 #
 [project.optional-dependencies]
 torch = [
+    # Mac/Windows or unknown platform fallback
     "torch>=1.13.1; sys_platform != 'linux'",
     "torchvision>=0.15.1; sys_platform != 'linux'",
-    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version <= '3.10'",
-    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version <= '3.10'",
+
+    # Linux + Python 3.8–3.10 → use torch 1.x
+    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version < '3.11'",
+    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version < '3.11'",
+
+    # Linux + Python 3.11+ → use torch 2.x
     "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
     "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'",
 ]
@@ -62,7 +67,8 @@ tensorflow = [
     # 2.16 is shipped without keras
     "tensorflow<2.16.0",
     # keras V3 broke everything
-    "keras<3"
+    "keras<3",
+    "numpy<2"
 ]
 captum = [
     "quantus[torch]",
@@ -78,10 +84,10 @@ zennit = [
 ]
 transformers = [
     "quantus[torch]",
-    "transformers>=4.38.2",
+    "transformers>=4.38.2", #"transformers<4.38.0"
 ]
 full = [
-    "quantus[captum,tf-explain,zennit,transformers]"
+    "quantus[captum,tf-explain,zennit,transformers,torch]"
 ]
 tests = [
     "coverage>=7.2.3",
@@ -91,6 +97,7 @@ tests = [
     "pytest-lazy-fixture>=0.6.3",
     "pytest-mock==3.10.0",
     "pytest_xdist",
+    "numpy<2",
     "quantus[full]"
 ]
 
