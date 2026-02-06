@@ -108,7 +108,7 @@ def normalise_by_negative(
     # TODO: Temporary solution to catch an elusive bug causing a numpy RuntimeWarning below.
     #       Will be removed once bug is fixed.
     with warnings.catch_warnings():
-        warnings.filterwarnings("error")
+        warnings.filterwarnings("error", category=RuntimeWarning)
         try:
             return_array = np.where(
                 np.logical_and(a_min < 0.0, a_max > 0.0),
