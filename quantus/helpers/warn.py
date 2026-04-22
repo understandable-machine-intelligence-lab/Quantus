@@ -336,7 +336,7 @@ def warn_attributions(x_batch: np.array, a_batch: np.array) -> None:
             "which may cause inconsistent results since many metrics rely on ordering. "
             "Recompute the explanations."
         )
-    if len(set(a_batch.flatten().tolist())) > 1:
+    if len(set(a_batch.flatten().tolist())) <= 1:
         warnings.warn(
             "The attributions are uniformly distributed, "
             "which may cause inconsistent results since many "
