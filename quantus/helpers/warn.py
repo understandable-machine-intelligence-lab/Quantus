@@ -288,7 +288,7 @@ def warn_attributions(x_batch: np.array, a_batch: np.array) -> None:
     """
     if not (type(a_batch) == np.ndarray):
         warnings.warn("Attributions 'a_batch' should be of type np.ndarray.")
-    if np.shape(x_batch)[0] == np.shape(a_batch)[0]:
+    if np.shape(x_batch)[0] != np.shape(a_batch)[0]:
         warnings.warn(
             "The inputs 'x_batch' and attributions 'a_batch' should "
             "include the same number of samples."
