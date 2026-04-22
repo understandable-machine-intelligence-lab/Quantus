@@ -188,8 +188,7 @@ class MPRT(Metric):
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "similarity metric 'similarity_func' and the order of "
-                    "the layer randomisation 'layer_order'"
+                    "similarity metric 'similarity_func' and the order of " "the layer randomisation 'layer_order'"
                 ),
                 citation=(
                     "Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
@@ -320,9 +319,7 @@ class MPRT(Metric):
 
         # Get number of iterations from number of layers.
         n_layers = model.random_layer_generator_length
-        pbar = tqdm(
-            total=n_layers * len(x_full_dataset), disable=not self.display_progressbar
-        )
+        pbar = tqdm(total=n_layers * len(x_full_dataset), disable=not self.display_progressbar)
         if self.display_progressbar:
             # Set property to False, so we display only 1 pbar.
             self._display_progressbar = False
@@ -342,23 +339,16 @@ class MPRT(Metric):
 
                     # Compute the similarity of explanations of the original model.
                     self.evaluation_scores["original"] = []
-                    for a_batch, a_batch_original in zip(
-                        self.generate_a_batches(a_full_dataset), a_original_generator
-                    ):
-                        for a_instance, a_instance_original in zip(
-                            a_batch, a_batch_original
-                        ):
-                            score = self.evaluate_instance(
-                                model=model,
-                                x=None,
-                                y=None,
-                                s=None,
-                                a=a_instance,
-                                a_perturbed=a_instance_original,
-                            )
-                            # Save similarity scores in a result dictionary.
-                            self.evaluation_scores["original"].append(score)
-                            pbar.update(1)
+                    for a_batch, a_batch_original in zip(self.generate_a_batches(a_full_dataset), a_original_generator):
+                        similarities: np.array = self.similarity_func(
+                            a_batch.reshape(a_batch.shape[0], -1),
+                            a_batch_original.reshape(a_batch.shape[0], -1),
+                            batched=True,
+                        )
+                        scores = similarities.tolist()
+                        # Save similarity scores in a result dictionary.
+                        self.evaluation_scores["original"] += scores
+                        pbar.update(1)
 
                 # Skip layers if computing delta.
                 if self.skip_layers and (l_ix + 1) < n_layers:
@@ -372,22 +362,15 @@ class MPRT(Metric):
                 )
 
                 # Compute the similarity of explanations of the perturbed model.
-                for a_batch, a_batch_perturbed in zip(
-                    self.generate_a_batches(a_full_dataset), a_perturbed_generator
-                ):
-                    for a_instance, a_instance_perturbed in zip(
-                        a_batch, a_batch_perturbed
-                    ):
-                        score = self.evaluate_instance(
-                            model=random_layer_model,
-                            x=None,
-                            y=None,
-                            s=None,
-                            a=a_instance,
-                            a_perturbed=a_instance_perturbed,
-                        )
-                        self.evaluation_scores[layer_name].append(score)
-                        pbar.update(1)
+                for a_batch, a_batch_perturbed in zip(self.generate_a_batches(a_full_dataset), a_perturbed_generator):
+                    perturbed_similarities: np.array = self.similarity_func(
+                        a_batch.reshape(a_batch.shape[0], -1),
+                        a_batch_perturbed.reshape(a_batch.shape[0], -1),
+                        batched=True,
+                    )
+                    scores = perturbed_similarities.tolist()
+                    self.evaluation_scores[layer_name] += scores
+                    pbar.update(1)
 
         if self.return_average_correlation:
             self.evaluation_scores = self.recompute_average_correlation_per_sample()
@@ -416,9 +399,7 @@ class MPRT(Metric):
             "enhanced Model Parameter Randomisation Test, 'evaluation_scores' "
             "must be of type dict."
         )
-        layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
-        )
+        layer_length = len(self.evaluation_scores[list(self.evaluation_scores.keys())[0]])
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
@@ -446,41 +427,6 @@ class MPRT(Metric):
         corr_coeffs = list(self.evaluation_scores.values())[-1]
         corr_coeffs = [float(c) for c in corr_coeffs]
         return corr_coeffs
-
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Compute similarity measure.
-        return self.similarity_func(a_perturbed.flatten(), a.flatten())
 
     def custom_preprocess(
         self,
@@ -516,9 +462,7 @@ class MPRT(Metric):
             return None
 
         a_batch_chunks = []
-        for a_chunk in self.generate_explanations(
-            model, x_batch, y_batch, self.batch_size
-        ):
+        for a_chunk in self.generate_explanations(model, x_batch, y_batch, self.batch_size):
             a_batch_chunks.extend(a_chunk)
         return dict(a_batch=np.asarray(a_batch_chunks))
 
@@ -559,9 +503,7 @@ class MPRT(Metric):
             yield a_full_dataset[batch.start : batch.stop]
 
     def evaluate_batch(self, *args, **kwargs):
-        raise RuntimeError(
-            "`evaluate_batch` must never be called for `Model Parameter Randomisation Test`."
-        )
+        raise RuntimeError("`evaluate_batch` must never be called for `Model Parameter Randomisation Test`.")
 
 
 @final

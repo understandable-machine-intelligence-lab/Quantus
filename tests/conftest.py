@@ -34,9 +34,7 @@ def reset_prngs():
 def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNet()
-    model.load_state_dict(
-        torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
-    )
+    model.load_state_dict(torch.load("tests/assets/mnist", map_location="cpu", weights_only=True))
     return model
 
 
@@ -63,7 +61,7 @@ def load_1d_1ch_conv_model():
     model.eval()
     # TODO: add trained model weights
     # model.load_state_dict(
-    #    torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
+    #    torch.load("tests/assets/mnist", map_location="cpu", weights_only=True)
     # )
     return model
 
@@ -75,7 +73,7 @@ def load_1d_3ch_conv_model():
     model.eval()
     # TODO: add trained model weights
     # model.load_state_dict(
-    #    torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
+    #    torch.load("tests/assets/mnist", map_location="cpu", pweights_only=True)
     # )
     return model
 
@@ -94,9 +92,7 @@ def load_1d_3ch_conv_model_tf():
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = (
-        np.loadtxt("tests/assets/mnist_x")
-        .astype(float)
-        .reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE))
+        np.loadtxt("tests/assets/mnist_x").astype(float).reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE))
     )[:MINI_BATCH_SIZE]
     y_batch = np.loadtxt("tests/assets/mnist_y").astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
@@ -106,11 +102,9 @@ def load_mnist_images():
 def load_cifar10_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = cifar10.load_data()
-    x_batch = (
-        x_train[:BATCH_SIZE]
-        .reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE))
-        .astype(float)
-    )[:MINI_BATCH_SIZE]
+    x_batch = (x_train[:BATCH_SIZE].reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE)).astype(float))[
+        :MINI_BATCH_SIZE
+    ]
     y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
 
@@ -190,7 +184,7 @@ def flat_sequence_array():
 @pytest.fixture(scope="session", autouse=True)
 def titanic_model_torch():
     model = TitanicSimpleTorchModel()
-    model.load_state_dict(torch.load("tests/assets/titanic_model_torch.pickle"))
+    model.load_state_dict(torch.load("tests/assets/titanic_model_torch.pickle", weights_only=True))
     return model
 
 
@@ -248,25 +242,36 @@ def load_mnist_model_softmax():
 
 @pytest.fixture(scope="session", autouse=False)
 def load_hf_distilbert_sequence_classifier():
-    """
-    TODO
-    """
-    DISTILBERT_BASE = "distilbert-base-uncased"
-    model = AutoModelForSequenceClassification.from_pretrained(
-        DISTILBERT_BASE, cache_dir="/tmp/"
-    )
-    return model
+    try:
+        import torch
+    except ImportError:
+        pytest.skip("Skipping because torch is not available.")
+
+    try:
+        from transformers import AutoModelForSequenceClassification
+        DISTILBERT_BASE = "distilbert-base-uncased"
+        return AutoModelForSequenceClassification.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
+    except Exception as e:
+        pytest.skip(f"Skipping because model loading failed: {e}")
+
 
 
 @pytest.fixture(scope="session", autouse=False)
 def dummy_hf_tokenizer():
-    """
-    TODO
-    """
-    DISTILBERT_BASE = "distilbert-base-uncased"
-    REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
-    tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/")
-    return tokenizer(REFERENCE_TEXT, return_tensors="pt")
+    try:
+        import torch
+    except ImportError:
+        pytest.skip("Skipping because torch is not available.")
+
+    try:
+        from transformers import AutoTokenizer
+        DISTILBERT_BASE = "distilbert-base-uncased"
+        REFERENCE_TEXT = "The quick brown fox jumps over the lazy dog"
+        tokenizer = AutoTokenizer.from_pretrained(DISTILBERT_BASE, cache_dir="/tmp/", clean_up_tokenization_spaces=True)
+        return tokenizer(REFERENCE_TEXT, return_tensors="pt")
+    except Exception as e:
+        pytest.skip(f"Skipping because tokenizer loading failed: {e}")
+
 
 
 @pytest.fixture(scope="session", autouse=True)

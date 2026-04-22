@@ -239,45 +239,6 @@ class RandomLogit(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Randomly select off-class labels.
-        np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
-        # Explain against a random class.
-        a_perturbed = self.explain_batch(model, np.expand_dims(x, axis=0), y_off)
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
-
     def custom_preprocess(
         self,
         **kwargs,
@@ -328,7 +289,18 @@ class RandomLogit(Metric[List[float]]):
         scores_batch:
             Evaluation results.
         """
-        return [
-            self.evaluate_instance(model, x, y, a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Randomly select off-class labels.
+        np.random.seed(self.seed)
+        batch_size = x_batch.shape[0]
+        y_classes = np.stack([np.arange(self.num_classes) for _ in range(batch_size)])
+        y_mask = np.ones_like(y_classes)
+        y_mask[np.arange(y_batch.shape[0])[None, :], y_batch] = 0
+        y_off_indices = np.random.randint(0, self.num_classes - 1, batch_size)
+        y_filtered_classes = y_classes[y_mask.astype(bool)].reshape(batch_size, -1)
+        y_off = y_filtered_classes[np.arange(batch_size)[None, :], y_off_indices].flatten()
+        # Explain against a random class.
+        a_perturbed = self.explain_batch(model, x_batch, y_off)
+        score: np.array = self.similarity_func(
+            a_batch.reshape(batch_size, -1), a_perturbed.reshape(batch_size, -1), batched=True
+        )
+        return score

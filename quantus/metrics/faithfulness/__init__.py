@@ -19,4 +19,4 @@ from quantus.metrics.faithfulness.region_perturbation import RegionPerturbation
 from quantus.metrics.faithfulness.road import ROAD
 from quantus.metrics.faithfulness.selectivity import Selectivity
 from quantus.metrics.faithfulness.sensitivity_n import SensitivityN
-from quantus.metrics.faithfulness.sufficiency import Sufficiency
+from quantus.metrics.faithfulness.sufficiency import Sufficiency, BatchSufficiency

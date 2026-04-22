@@ -227,44 +227,6 @@ class RelevanceMassAccuracy(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Return np.nan as result if segmentation map is empty.
-        if np.sum(s) == 0:
-            warn.warn_empty_segmentation()
-            return np.nan
-
-        # Prepare shapes.
-        a = a.flatten()
-        s = s.flatten().astype(bool)
-
-        # Compute inside/outside ratio.
-        r_within = np.sum(a[s])
-        r_total = np.sum(a)
-
-        # Calculate mass accuracy.
-        mass_accuracy = r_within / r_total
-
-        return mass_accuracy
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -289,9 +251,7 @@ class RelevanceMassAccuracy(Metric[List[float]]):
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-    def evaluate_batch(
-        self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, a_batch: np.ndarray, s_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -310,4 +270,21 @@ class RelevanceMassAccuracy(Metric[List[float]]):
         scores_batch:
             A list of Any with the evaluation scores for the batch.
         """
-        return [self.evaluate_instance(a=a, s=s) for a, s in zip(a_batch, s_batch)]
+        # Prepare shapes.
+        batch_size = a_batch.shape[0]
+        s_batch = s_batch.astype(bool)
+        a_batch, s_batch = a_batch.reshape(batch_size, -1), s_batch.reshape(batch_size, -1)
+
+        # Compute inside/outside ratio.
+        r_within = (a_batch * s_batch).sum(-1)
+        r_total = a_batch.sum(-1)
+
+        # Calculate mass accuracy.
+        mass_accuracy = r_within / r_total
+        s_sums = s_batch.sum(-1) == 0
+        mass_accuracy[s_sums] = np.nan
+
+        if np.any(s_sums):
+            warn.warn_empty_segmentation()
+
+        return mass_accuracy

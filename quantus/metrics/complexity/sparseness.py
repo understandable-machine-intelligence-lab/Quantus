@@ -233,39 +233,7 @@ class Sparseness(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(x: np.ndarray, a: np.ndarray) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        if len(x.shape) == 1:
-            newshape = np.prod(x.shape)
-        else:
-            newshape = np.prod(x.shape[1:])
-
-        a = np.array(np.reshape(a, newshape), dtype=np.float64)
-        a += 0.0000001
-        a = np.sort(a)
-        score = (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)) / (
-            a.shape[0] * np.sum(a)
-        )
-        return score
-
-    def evaluate_batch(
-        self, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
-    ) -> List[float]:
+    def evaluate_batch(self, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs) -> List[float]:
         """
         This method performs XAI evaluation on a single batch of explanations.
         For more information on the specific logic, we refer the metric’s initialisation docstring.
@@ -284,4 +252,14 @@ class Sparseness(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [self.evaluate_instance(x=x, a=a) for x, a in zip(x_batch, a_batch)]
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        a_batch += 1e-7
+        a_batch = np.sort(a_batch, axis=-1)
+
+        a_arange = np.stack([np.arange(1, n_features + 1) for _ in a_batch])
+        score = ((2 * a_arange - n_features - 1) * a_batch).sum(axis=-1) / (n_features * a_batch.sum(axis=-1))
+        return score

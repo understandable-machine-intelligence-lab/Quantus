@@ -22,4 +22,4 @@ def mock_prediction_changed(mocker: MockerFixture):
     )
     yield
     # Restore original behaviour after test finished execution.
-    mocker.resetall()
+    mocker.resetall(side_effect=True, return_value=True)

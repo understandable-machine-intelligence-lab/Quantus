@@ -11,7 +11,9 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 from quantus.functions.loss_func import mse
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import (
+    batch_baseline_replacement_by_indices,
+)
 from quantus.helpers import utils, warn
 from quantus.helpers.enums import (
     DataType,
@@ -148,16 +150,14 @@ class Infidelity(Metric[List[float]]):
         self.loss_func = loss_func
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         if perturb_patch_sizes is None:
             perturb_patch_sizes = [4]
         self.perturb_patch_sizes = perturb_patch_sizes
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -430,8 +430,68 @@ class Infidelity(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
 
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        results = []
+        for _ in range(self.n_perturb_samples):
+            sub_results = []
+            for patch_size in self.perturb_patch_sizes:
+                pred_deltas = []
+                a_sums = []
+                x_perturbed = x_batch.copy()
+                x_perturbed_h, x_perturbed_w = x_perturbed.shape[-2:]
+                padding_h, padding_w = utils.get_padding_size(x_perturbed_h, patch_size), utils.get_padding_size(
+                    x_perturbed_w, patch_size
+                )
+                x_perturbed_pad = utils._pad_array(
+                    x_perturbed,
+                    ((0, 0), (0, 0), padding_h, padding_w),
+                    mode="edge",
+                    padded_axes=np.arange(len(x_perturbed.shape)),
+                )
+                x_perturbed_pad_shape = x_perturbed_pad.shape
+                for x_indices in utils.get_block_indices(x_perturbed_pad, patch_size):
+                    # Perturb input by block indices of certain patch size
+                    x_perturbed_pad = self.perturb_func(
+                        arr=x_perturbed.reshape(batch_size, -1),
+                        indices=x_indices,
+                    )
+                    x_perturbed_pad = x_perturbed_pad.reshape(*x_perturbed_pad_shape)
+                    x_perturbed = x_perturbed_pad[
+                        :,
+                        :,
+                        padding_h[0] : x_perturbed_pad.shape[2] - padding_h[1],
+                        padding_w[0] : x_perturbed_pad.shape[3] - padding_w[1],
+                    ]
+
+                    # Check if the perturbation caused change
+                    for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
+                        warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+
+                    # Predict on perturbed input x.
+                    x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+                    y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+                    x_diff = x_batch - x_perturbed
+                    a_diff = a_batch * x_diff.reshape(batch_size, -1)
+
+                    pred_deltas.append(y_pred - y_pred_perturb)
+                    a_sums.append(np.sum(a_diff, axis=-1))
+
+                pred_deltas = np.stack(pred_deltas, axis=1)
+                a_sums = np.stack(a_sums, axis=1)
+                assert callable(self.loss_func)
+                sub_results.append(self.loss_func(a=pred_deltas, b=a_sums, batched=True))
+            results.append(np.mean(np.stack(sub_results, axis=1), axis=-1))
+        return np.mean(np.stack(results, axis=1), axis=-1)

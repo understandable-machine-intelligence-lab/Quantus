@@ -8,28 +8,32 @@
 
 [![Getting started!](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb)
 [![Launch Tutorials](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/understandable-machine-intelligence-lab/Quantus/HEAD?labpath=tutorials)
-[![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
-[![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
 ![Python version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
 [![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
 [![Downloads](https://static.pepy.tech/badge/quantus)](https://pepy.tech/project/quantus)
+<!--[![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
+[![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
+-->
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
 [📑 Shortcut to paper!](https://jmlr.org/papers/volume24/22-0142/22-0142.pdf)
-        
+
+If you want to contribute/ improve/ extend Quantus, join our [Discord](https://discord.gg/HB77krUE)!
+
 ## News and Highlights! :rocket:
 
-- If you want to contribute/ improve/ extend Quantus, join our [Discord](https://discord.gg/HB77krUE)!
+- 🐼 For **training data attribution** evaluation, check out [quanda](https://github.com/dilyabareeva/quanda)!
+- New [batch implementation](https://github.com/understandable-machine-intelligence-lab/Quantus/pull/351) for 12X speedup of existing faithfulness metrics (!)
 - New metrics added: [EfficientMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/efficient_mprt.py) and [SmoothMPRT](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus/metrics/randomisation/smooth_mprt.py) by [Hedström et al., (2023)](https://openreview.net/pdf?id=vVpefYmnsG)
-- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) with [Python 3.7 discontinued](https://devguide.python.org/versions/)
 - Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
-- Offers more than **30+ metrics in 6 categories** for XAI evaluation
+- Offers more than **35+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/), [tf-explain](https://tf-explain.readthedocs.io/en/latest/) and [zennit](https://github.com/chr5tphr/zennit))
+<!--- Released a new version [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) with [Python 3.7 discontinued](https://devguide.python.org/versions/)-->
 
 ## Citation
 
@@ -234,7 +238,7 @@ test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, trans
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for XAI evaluation.
-x_batch, y_batch = iter(test_loader).next()
+x_batch, y_batch = next(iter(test_loader))
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 </details>
@@ -277,11 +281,8 @@ import captum
 from captum.attr import Saliency, IntegratedGradients
 
 # Generate Integrated Gradients attributions of the first batch of the test set.
-a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1).cpu().numpy()
-a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(x_batch)).sum(axis=1).cpu().numpy()
-
-# Save x_batch and y_batch as numpy arrays that will be used to call metric instances.
-x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+a_batch_saliency = Saliency(model).attribute(inputs=torch.tensor(x_batch, dtype=torch.float32), target=torch.tensor(y_batch, dtype=torch.int64), abs=True).sum(axis=1).cpu().cpu().numpy()
+a_batch_intgrad = IntegratedGradients(model).attribute(inputs=torch.tensor(x_batch, dtype=torch.float32), target=torch.tensor(y_batch, dtype=torch.int64)).sum(axis=1).cpu().numpy()
 
 # Quick assert.
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
@@ -314,9 +315,8 @@ it first needs to be instantiated:
 ```python
 metric = quantus.MaxSensitivity(nr_samples=10,
                                 lower_bound=0.2,
-                                norm_numerator=quantus.fro_norm,
-                                norm_denominator=quantus.fro_norm,
-                                perturb_func=quantus.uniform_noise,
+                                norm_numerator=quantus.norm_func.fro_norm,
+                                norm_denominator=quantus.norm_func.fro_norm,
                                 similarity_func=quantus.difference,
                                 abs=True,
                                 normalise=True)

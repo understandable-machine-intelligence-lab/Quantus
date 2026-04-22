@@ -9,8 +9,9 @@ import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
+import math
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
 from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
     DataType,
@@ -127,7 +128,7 @@ class Monotonicity(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         self.features_in_step = features_in_step
@@ -255,67 +256,6 @@ class Monotonicity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Prepare shapes.
-        a = a.flatten()
-
-        # Get indices of sorted attributions (ascending).
-        a_indices = np.argsort(a)
-
-        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
-        preds = [None for _ in range(n_perturbations)]
-
-        # Copy the input x but fill with baseline values.
-        baseline_value = utils.get_baseline_value(
-            value=self.perturb_func.keywords["perturb_baseline"],  # type: ignore
-            arr=x,
-            return_shape=x.shape,  # TODO. Double-check this over using = (1,).
-        )
-        x_baseline = np.full(x.shape, baseline_value)
-
-        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-            # Perturb input by indices of attributions.
-            a_ix = a_indices[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ]
-            x_baseline = self.perturb_func(
-                arr=x_baseline,
-                indices=a_ix,
-                indexed_axes=self.a_axes,
-            )
-
-            # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-            y_pred_perturb = float(model.predict(x_input)[:, y])
-            preds[i_ix] = y_pred_perturb
-
-        return np.all(np.diff(preds) >= 0)
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -371,7 +311,54 @@ class Monotonicity(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+
+        batch_size = a_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
+        n_features = a_batch.shape[-1]
+
+        # Get indices of sorted attributions (ascending).
+        a_indices = np.argsort(a_batch, axis=1)
+
+        n_perturbations = math.ceil(n_features / self.features_in_step)
+        preds = []
+
+        # Copy the input x but fill with baseline values.
+        baseline_value = utils.get_baseline_value(
+            value=self.perturb_func.keywords["perturb_baseline"],  # type: ignore
+            arr=x_batch.reshape(batch_size, -1),
+            return_shape=(
+                batch_size,
+                n_features,
+            ),
+            batched=True,
+        )
+        x_baseline = np.full((batch_size, n_features), baseline_value).reshape(
+            *x_batch.shape
+        )
+
+        for perturbation_step_index in range(n_perturbations):
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                :,
+                perturbation_step_index
+                * self.features_in_step : (perturbation_step_index + 1)
+                * self.features_in_step,
+            ]
+            x_baseline = self.perturb_func(
+                arr=x_baseline.reshape(batch_size, -1),
+                indices=a_ix,
+            )
+            x_baseline = x_baseline.reshape(*x_batch.shape)
+
+            # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
+            x_input = model.shape_input(
+                x_baseline, x_batch.shape, channel_first=True, batched=True
+            )
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+            preds.append(y_pred_perturb)
+        preds = np.stack(preds, axis=1)
+
+        return np.all(np.diff(preds) >= 0, axis=1).tolist()

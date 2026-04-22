@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import gaussian_noise, perturb_batch
+from quantus.functions.perturb_func import batch_gaussian_noise
 from quantus.functions.similarity_func import distance_euclidean, lipschitz_constant
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
@@ -147,7 +147,7 @@ class LocalLipschitzEstimate(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = gaussian_noise
+            perturb_func = batch_gaussian_noise
 
         # Save metric-specific attributes.
         self.nr_samples = nr_samples
@@ -169,9 +169,7 @@ class LocalLipschitzEstimate(Metric[List[float]]):
             perturb_mean=perturb_mean,
             perturb_std=perturb_std,
         )
-        self.changed_prediction_indices_func = make_changed_prediction_indices_func(
-            return_nan_when_prediction_changes
-        )
+        self.changed_prediction_indices_func = make_changed_prediction_indices_func(return_nan_when_prediction_changes)
         self.max_func = np.max if return_nan_when_prediction_changes else np.nanmax
 
         # Asserts and warnings.
@@ -332,20 +330,17 @@ class LocalLipschitzEstimate(Metric[List[float]]):
         """
 
         batch_size = x_batch.shape[0]
+        a_batch = a_batch.reshape(batch_size, -1)
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
-
         for step_id in range(self.nr_samples):
             # Perturb input.
-            x_perturbed = perturb_batch(
-                perturb_func=self.perturb_func,
+            x_perturbed = self.perturb_func(
+                arr=x_batch.reshape(batch_size, -1),
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
-                indexed_axes=np.arange(0, x_batch[0].ndim),
-                arr=x_batch,
             )
+            x_perturbed = x_perturbed.reshape(*x_batch.shape)
 
-            changed_prediction_indices = self.changed_prediction_indices_func(
-                model, x_batch, x_perturbed
-            )
+            changed_prediction_indices = self.changed_prediction_indices_func(model, x_batch, x_perturbed)
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(
@@ -355,21 +350,19 @@ class LocalLipschitzEstimate(Metric[List[float]]):
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-            # Measure similarity for each instance separately.
-            for instance_id in range(batch_size):
-                if instance_id in changed_prediction_indices:
-                    similarities[instance_id, step_id] = np.nan
-                    continue
+            a_perturbed = a_perturbed.reshape(batch_size, -1)
 
-                similarity = self.similarity_func(
-                    a=a_batch[instance_id].flatten(),
-                    b=a_perturbed[instance_id].flatten(),
-                    c=x_batch[instance_id].flatten(),
-                    d=x_perturbed[instance_id].flatten(),
-                    norm_numerator=self.norm_numerator,
-                    norm_denominator=self.norm_denominator,
-                )
-                similarities[instance_id, step_id] = similarity
+            # Measure similarity
+            similarity = self.similarity_func(
+                a=a_batch,
+                b=a_perturbed,
+                c=x_batch.reshape(batch_size, -1),
+                d=x_perturbed.reshape(batch_size, -1),
+                norm_numerator=self.norm_numerator,
+                norm_denominator=self.norm_denominator,
+            )
+            similarities[:, step_id] = similarity
+            similarities[changed_prediction_indices, step_id] = np.nan
 
         return self.max_func(similarities, axis=1)
 

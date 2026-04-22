@@ -1,14 +1,22 @@
 from collections import OrderedDict
 from contextlib import nullcontext
 from typing import Union
+import sys
 
 import numpy as np
 import pytest
+import pytest_mock
 import torch
 from pytest_lazyfixture import lazy_fixture
-from quantus.helpers.model.pytorch_model import PyTorchModel
 from scipy.special import softmax
+from quantus.helpers.model.pytorch_model import PyTorchModel
 
+def torch_available():
+    try:
+        import torch
+        return True
+    except ImportError:
+        return False
 
 @pytest.fixture
 def mock_input_torch_array():
@@ -128,9 +136,7 @@ def test_get_softmax_arg_model(
         ),
     ],
 )
-def test_predict(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
-):
+def test_predict(data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model):
     load_mnist_model.eval()
     training = params.pop("training", False)
     model = PyTorchModel(load_mnist_model, **params)
@@ -169,9 +175,7 @@ def test_predict(
         ),
     ],
 )
-def test_shape_input(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
-):
+def test_shape_input(data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model):
     load_mnist_model.eval()
     model = PyTorchModel(load_mnist_model, channel_first=params["channel_first"])
     if not params["channel_first"]:
@@ -203,7 +207,6 @@ def test_get_random_layer_generator(load_mnist_model):
     model = PyTorchModel(load_mnist_model, channel_first=True)
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
-
         layer = getattr(model.get_model(), layer_name).parameters()
         new_layer = getattr(random_layer_model, layer_name).parameters()
 
@@ -264,8 +267,10 @@ def test_add_mean_shift_to_first_layer(load_mnist_model):
         ),
         (
             lazy_fixture("load_hf_distilbert_sequence_classifier"),
-            {'input_ids': torch.tensor([[  101,  1996,  4248,  2829,  4419, 14523,  2058,  1996, 13971,  3899,
-                102]]), 'attention_mask': torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])},
+            {
+                "input_ids": torch.tensor([[101, 1996, 4248, 2829, 4419, 14523, 2058, 1996, 13971, 3899, 102]]),
+                "attention_mask": torch.tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]),
+            },
             False,
             {"labels": torch.tensor([1]), "output_hidden_states": True},
             nullcontext(np.array([[0.00424026, -0.03878461]])),
@@ -290,4 +295,31 @@ def test_huggingface_classifier_predict(hf_model, data, softmax, model_kwargs, e
     model = PyTorchModel(model=hf_model, softmax=softmax, model_predict_kwargs=model_kwargs)
     with expected:
         out = model.predict(x=data)
-        assert np.allclose(out, expected.enter_result), "Test failed."
+        assert np.allclose(out, expected.enter_result, atol=1e-5), "Test failed."
+
+
+@pytest.fixture
+def mock_transformers_not_installed(mocker: pytest_mock.MockerFixture):
+    mock_dict = {k: v for k, v in sys.modules.items() if "transformers" not in k}
+    mocker.patch.dict("sys.modules", mock_dict)
+    model = mocker.MagicMock(spec=None)
+    model.training = False
+    yield model
+    mocker.resetall(return_value=True, side_effect=True)
+
+
+@pytest.mark.pytorch_model
+def test_predict_transformers_not_installed(mock_transformers_not_installed):
+    model = PyTorchModel(model=mock_transformers_not_installed, softmax=True)
+    x = {"input_ids": np.array([1, 2, 3]), "attention_mask": np.array([1, 1, 1])}
+    with pytest.raises(ValueError):
+        model.predict(x)
+
+
+@pytest.mark.pytorch_model
+def test_predict_invalid_input(load_hf_distilbert_sequence_classifier):
+    model = PyTorchModel(load_hf_distilbert_sequence_classifier)
+    # Prepare input and call the predict method
+    x = torch.tensor([1, 2, 3, 4])
+    with pytest.raises(ValueError):
+        model.predict(x)

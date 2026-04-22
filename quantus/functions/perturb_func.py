@@ -53,9 +53,7 @@ def perturb_batch(
     None, array
     """
     if indices is not None:
-        assert arr.shape[0] == len(
-            indices
-        ), "arr and indices need same number of batches"
+        assert arr.shape[0] == len(indices), "arr and indices need same number of batches"
 
     if not inplace:
         arr = arr.copy()
@@ -108,12 +106,107 @@ def baseline_replacement_by_indices(
     arr_perturbed = copy.copy(arr)
 
     # Get the baseline value.
-    baseline_value = get_baseline_value(
-        value=perturb_baseline, arr=arr, return_shape=tuple(baseline_shape), **kwargs
-    )
+    baseline_value = get_baseline_value(value=perturb_baseline, arr=arr, return_shape=tuple(baseline_shape), **kwargs)
 
     # Perturb the array.
     arr_perturbed[indices] = np.expand_dims(baseline_value, axis=tuple(indexed_axes))
+
+    return arr_perturbed
+
+
+def batch_baseline_replacement_by_indices(
+    arr: np.array,
+    indices: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    **kwargs,
+) -> np.array:
+    """
+    Replace indices in an array by a given baseline.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+        Array to be perturbed. Shape N x F, where N is batch size and F is number of features.
+    indices: np.ndarray
+        Indices of the array to perturb. Shape N x I, where N is batch size and I is the number of indices to perturb.
+    perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+
+    # Assert dimensions
+    assert (
+        len(arr.shape) == 2
+    ), "The array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the features"
+    assert (
+        len(indices.shape) == 2
+    ), "The indices array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the indices to perturb"
+
+    batch_size = arr.shape[0]
+    arr_perturbed = copy.copy(arr)
+
+    # Get the baseline value.
+    baseline_value = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(indices.shape),
+        batched=True,
+        **kwargs,
+    )
+
+    # Perturb the array.
+    arr_perturbed[np.arange(batch_size)[:, None], indices] = baseline_value
+
+    return arr_perturbed
+
+
+def baseline_replacement_by_mask(
+    arr: np.array,
+    mask: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    **kwargs,
+) -> np.array:
+    """
+    Replace indices in an array by a given baseline.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+        Array to be perturbed. Shape is arbitrary.
+    mask: np.ndarray
+        Boolean mask of the array to perturb. Shape must be the same as the arr.
+    perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+
+    # Assert dimensions
+    assert arr.shape == mask.shape, "The shape of arr must be the same as the mask shape"
+
+    arr_perturbed = copy.copy(arr)
+
+    # Get the baseline value.
+    baseline_value = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(arr.shape),
+        **kwargs,
+    )
+
+    # Perturb the array.
+    arr_perturbed = np.where(mask, baseline_value, arr_perturbed)
 
     return arr_perturbed
 
@@ -154,9 +247,7 @@ def baseline_replacement_by_shift(
     arr_perturbed = copy.copy(arr)
 
     # Get the baseline value.
-    baseline_value = get_baseline_value(
-        value=input_shift, arr=arr, return_shape=tuple(baseline_shape), **kwargs
-    )
+    baseline_value = get_baseline_value(value=input_shift, arr=arr, return_shape=tuple(baseline_shape), **kwargs)
 
     # Shift the input.
     arr_shifted = copy.copy(arr_perturbed)
@@ -264,6 +355,56 @@ def gaussian_noise(
     return arr_perturbed
 
 
+def batch_gaussian_noise(
+    arr: np.array,
+    indices: np.array,
+    perturb_mean: float = 0.0,
+    perturb_std: float = 0.01,
+    **kwargs,
+) -> np.array:
+    """
+    Add gaussian noise to the input at indices.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    perturb_mean (float):
+        The mean for gaussian noise.
+    perturb_std (float):
+        The standard deviation for gaussian noise.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+    # Assert dimensions
+    assert (
+        len(arr.shape) == 2
+    ), "The array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the features"
+    assert (
+        len(indices.shape) == 2
+    ), "The indices array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the indices to perturb"
+
+    batch_size = arr.shape[0]
+    arr_perturbed = copy.copy(arr)
+
+    # Sample the noise.
+    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
+
+    # Perturb the array.
+    arr_perturbed[np.arange(batch_size)[:, None], indices] = (arr_perturbed + noise)[
+        np.arange(batch_size)[:, None], indices
+    ]
+
+    return arr_perturbed
+
+
 def uniform_noise(
     arr: np.array,
     indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
@@ -303,14 +444,75 @@ def uniform_noise(
     if upper_bound is None:
         noise = np.random.uniform(low=-lower_bound, high=lower_bound, size=arr.shape)
     else:
-        assert upper_bound > lower_bound, (
-            "Parameter 'upper_bound' needs to be larger than 'lower_bound', "
-            "but {} <= {}".format(upper_bound, lower_bound)
+        assert (
+            upper_bound > lower_bound
+        ), "Parameter 'upper_bound' needs to be larger than 'lower_bound', " "but {} <= {}".format(
+            upper_bound, lower_bound
         )
         noise = np.random.uniform(low=lower_bound, high=upper_bound, size=arr.shape)
 
     arr_perturbed = copy.copy(arr)
     arr_perturbed[indices] = (arr_perturbed + noise)[indices]
+
+    return arr_perturbed
+
+
+def batch_uniform_noise(
+    arr: np.array,
+    indices: np.array,
+    lower_bound: float = 0.02,
+    upper_bound: Union[None, float] = None,
+    **kwargs,
+) -> np.array:
+    """
+    Add noise to the input at indices as sampled uniformly random from [-lower_bound, lower_bound].
+    if upper_bound is None, and [lower_bound, upper_bound] otherwise.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    lower_bound: float
+            The lower bound for uniform sampling.
+    upper_bound: float, optional
+            The upper bound for uniform sampling.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+
+    # Assert dimensions
+    assert (
+        len(arr.shape) == 2
+    ), "The array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the features"
+    assert (
+        len(indices.shape) == 2
+    ), "The indices array must be 2-dimensional, first dimension corresponding to the batch size, and the second to the indices to perturb"
+
+    batch_size = arr.shape[0]
+    arr_perturbed = copy.copy(arr)
+
+    # Sample the noise.
+    if upper_bound is None:
+        noise = np.random.uniform(low=-lower_bound, high=lower_bound, size=arr.shape)
+    else:
+        assert (
+            upper_bound > lower_bound
+        ), "Parameter 'upper_bound' needs to be larger than 'lower_bound', " "but {} <= {}".format(
+            upper_bound, lower_bound
+        )
+        noise = np.random.uniform(low=lower_bound, high=upper_bound, size=arr.shape)
+
+    # Perturb the array.
+    arr_perturbed[np.arange(batch_size)[:, None], indices] = (arr_perturbed + noise)[
+        np.arange(batch_size)[:, None], indices
+    ]
 
     return arr_perturbed
 
@@ -336,8 +538,7 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
 
     if arr.ndim != 3:
         raise ValueError(
-            "perturb func 'rotation' requires image-type data."
-            "Check that this perturb_func receives a 3D array."
+            "perturb func 'rotation' requires image-type data." "Check that this perturb_func receives a 3D array."
         )
 
     matrix = cv2.getRotationMatrix2D(
@@ -391,11 +592,13 @@ def translation_x_direction(
         np.moveaxis(arr, 0, -1),
         matrix,
         (arr.shape[1], arr.shape[2]),
-        borderValue=get_baseline_value(
-            value=perturb_baseline,
-            arr=arr,
-            return_shape=(arr.shape[0]),
-            **kwargs,
+        borderValue=float(
+            get_baseline_value(
+                value=perturb_baseline,
+                arr=arr,
+                return_shape=(arr.shape[0]),
+                **kwargs,
+            )[0]
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
@@ -448,6 +651,60 @@ def translation_y_direction(
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
     return arr_perturbed
+
+
+def batched_translation(
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    direction: str = "x",
+    **kwargs,
+) -> np.array:
+    """
+     Translate array by some given value in the x or y direction, assumes image type data and channel first layout.
+
+     Parameters
+     ----------
+     arr: np.ndarray
+         Array to be perturbed.
+     perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+     perturb_dy: integer
+        The translation length in features, e.g., pixels.
+     kwargs: optional
+        Keyword arguments.
+
+    Returns
+     -------
+     arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
+    """
+    assert direction in {"x", "y"}, "direction must be one of {'x', 'y'}"
+    assert len(arr.shape) == 4, "Input arr must be a batch of 3D images"
+
+    arr_shape = arr.shape
+    batch_size, _, height, width = arr_shape
+    translated_axis = 3 if direction == "x" else 2
+
+    arr = arr.reshape(batch_size, -1)
+    translation_padding = get_baseline_value(
+        value=perturb_baseline,
+        arr=arr,
+        return_shape=tuple(arr.shape),
+        batched=True,
+    )
+    arr = arr.reshape(*arr_shape)
+    translation_padding = translation_padding.reshape(*arr_shape)
+    translation_padding = np.take(translation_padding, np.arange(-abs(perturb_dx), 0), axis=translated_axis)
+
+    original_dims = width if direction == "x" else height
+    if perturb_dx < 0:
+        x_batch_padded = np.concatenate([arr, translation_padding], axis=translated_axis)
+        x_batch_perturbed = np.take(x_batch_padded, np.arange(-original_dims, 0), axis=translated_axis)
+    else:
+        x_batch_padded = np.concatenate([translation_padding, arr], axis=translated_axis)
+        x_batch_perturbed = np.take(x_batch_padded, np.arange(original_dims), axis=translated_axis)
+    return x_batch_perturbed
 
 
 def noisy_linear_imputation(
@@ -523,9 +780,7 @@ def noisy_linear_imputation(
         a[out_off_coord_ids, variable_ids] = weight
 
         # Reduce weight for invalid coordinates.
-        sum_neighbors[np.argwhere(valid == 0).flatten()] = (
-            sum_neighbors[np.argwhere(valid == 0).flatten()] - weight
-        )
+        sum_neighbors[np.argwhere(valid == 0).flatten()] = sum_neighbors[np.argwhere(valid == 0).flatten()] - weight
 
     a[np.arange(len(indices)), np.arange(len(indices))] = -sum_neighbors
 

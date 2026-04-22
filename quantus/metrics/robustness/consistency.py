@@ -237,49 +237,11 @@ class Consistency(Metric[List[float]]):
             **kwargs,
         )
 
-    @staticmethod
-    def evaluate_instance(
-        a: np.ndarray,
-        i: int,
-        a_label: np.ndarray,
-        y_pred_classes: np.ndarray,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        i: int
-            The index of the current instance.
-        a_label: np.ndarray
-            The discretised attribution labels.
-        y_pred_classes: np,ndarray
-            The class predictions of the complete input dataset.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        # Metric logic.
-        pred_a = y_pred_classes[i]
-        same_a = np.argwhere(a == a_label).flatten()
-        diff_a = same_a[same_a != i]
-        pred_same_a = y_pred_classes[diff_a]
-
-        if len(same_a) == 0:
-            return 0
-        return np.sum(pred_same_a == pred_a) / len(diff_a)
-
     def custom_batch_preprocess(
         self, model: ModelInterface, x_batch: np.ndarray, a_batch: np.ndarray, **kwargs
     ) -> Dict[str, np.ndarray]:
         """Compute additional arguments required for Consistency on batch-level."""
-        x_input = model.shape_input(
-            x_batch, x_batch[0].shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
 
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
@@ -323,8 +285,11 @@ class Consistency(Metric[List[float]]):
         scores_batch:
             Evaluation results.
         """
+        # Metric logic.
+        batch_size = y_pred_classes.shape[0]
+        pred_classes_equality = y_pred_classes[None] == y_pred_classes[:, None]
+        pred_classes_equality *= (1 - np.eye(batch_size)).astype(bool)
+        a_labels_equality = a_label_batch[None] == a_label_batch[:, None]
+        a_labels_equality *= (1 - np.eye(batch_size)).astype(bool)
 
-        return [
-            self.evaluate_instance(a, i, a_label, y_pred_classes)
-            for a, i, a_label in zip(a_batch, i_batch, a_label_batch)
-        ]
+        return (pred_classes_equality * a_labels_equality).sum(axis=-1) / (a_labels_equality.sum(axis=-1) + 1e-9)

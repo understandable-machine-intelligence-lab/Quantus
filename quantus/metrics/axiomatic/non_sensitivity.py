@@ -7,11 +7,12 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import sys
+import math
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
 from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
     DataType,
@@ -32,7 +33,7 @@ else:
 @final
 class NonSensitivity(Metric[List[float]]):
     """
-    Implementation of NonSensitivity by Nguyen at el., 2020.
+    Implementation of NonSensitivity by Nguyen et al., 2020.
 
     Non-sensitivity measures if zero-importance is only assigned to features, that the model is not
     functionally dependent on.
@@ -62,7 +63,6 @@ class NonSensitivity(Metric[List[float]]):
     def __init__(
         self,
         eps: float = 1e-5,
-        n_samples: int = 100,
         features_in_step: int = 1,
         abs: bool = True,
         normalise: bool = True,
@@ -83,8 +83,6 @@ class NonSensitivity(Metric[List[float]]):
         ----------
         eps: float
             Attributions threshold, default=1e-5.
-        n_samples: integer
-            The number of samples to iterate over, default=100.
         features_in_step: integer
             The step size, default=1.
         abs: boolean
@@ -132,15 +130,12 @@ class NonSensitivity(Metric[List[float]]):
         )
 
         if perturb_func is None:
-            perturb_func = baseline_replacement_by_indices
+            perturb_func = batch_baseline_replacement_by_indices
 
         # Save metric-specific attributes.
         self.eps = eps
-        self.n_samples = n_samples
         self.features_in_step = features_in_step
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -263,64 +258,6 @@ class NonSensitivity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> int:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        integer:
-            The evaluation results.
-        """
-        a = a.flatten()
-
-        non_features = set(list(np.argwhere(a).flatten() < self.eps))
-
-        vars = []
-        for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
-            preds = []
-            a_ix = a[
-                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ].astype(int)
-
-            for _ in range(self.n_samples):
-                # Perturb input by indices of attributions.
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=self.a_axes,
-                )
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturbed = float(model.predict(x_input)[:, y])
-
-                preds.append(y_pred_perturbed)
-                vars.append(np.var(preds))
-
-        non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
-
-        return len(non_features_vars.symmetric_difference(non_features))
-
     def custom_preprocess(
         self,
         x_batch: np.ndarray,
@@ -345,6 +282,9 @@ class NonSensitivity(Metric[List[float]]):
             features_in_step=self.features_in_step,
             input_shape=x_batch.shape[2:],
         )
+   
+
+
 
     def evaluate_batch(
         self,
@@ -355,29 +295,103 @@ class NonSensitivity(Metric[List[float]]):
         **kwargs,
     ) -> List[int]:
         """
-        This method performs XAI evaluation on a single batch of explanations.
-        For more information on the specific logic, we refer the metric’s initialisation docstring.
+                This method performs XAI evaluation on a single batch of explanations.
+                For more information on the specific logic, we refer the metric’s initialisation docstring.
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInterface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        kwargs:
-            Unused.
+                Parameters
+                ----------
+                model: ModelInterface
+                    A ModelInterface that is subject to explanation.
+                x_batch: np.ndarray
+                    The input to be evaluated on a batch-basis.
+                y_batch: np.ndarray
+                    The output to be evaluated on a batch-basis.
+                a_batch: np.ndarray
+                    The explanation to be evaluated on a batch-basis.
+                kwargs:
+                    Unused.
 
-        Returns
-        -------
-        scores_batch:
-             The evaluation results.
-        """
+                Returns
+                -------
+                np.ndarray
+                    Array of shape (batch_size,), per sample score. 
+                    Lower values are better.
+                """
+        
+        # Prepare shapes. Expand a_batch if not the same shape
+        if x_batch.shape != a_batch.shape:
+            a_batch = np.broadcast_to(a_batch, x_batch.shape)
 
+        # Flatten the attributions.
+        batch_size = a_batch.shape[0]
+        x_shape = x_batch.shape
+        x_batch = x_batch.reshape(batch_size, -1)
+        a_batch = a_batch.reshape(batch_size, -1)
+
+        non_features = a_batch < self.eps
+        features = ~non_features
+
+        x_input = model.shape_input(x_batch, x_shape, channel_first=True, batched=True)
+        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
+
+        pixel_scores_non = self._process_mask(
+            model, x_batch, y_batch, non_features, x_shape
+        )
+        pixel_scores_feat = self._process_mask(
+            model, x_batch, y_batch, features, x_shape
+        )
+
+        preds_differences = np.abs(
+            y_pred[:, None] - (pixel_scores_non + pixel_scores_feat)
+        ) < self.eps
+
+        return (preds_differences ^ non_features).sum(-1)
+
+    def _create_index_groups(self, mask: np.ndarray) -> List[np.ndarray]:
+        """Divide mask indices into perturbation groups."""
+        indices = np.where(mask)[0]
         return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
+            indices[i:i + self.features_in_step]
+            for i in range(0, len(indices), self.features_in_step)
         ]
+
+    def _perturb_sample_batch(
+        self, x_batch: np.ndarray, b: int, indices: np.ndarray
+    ) -> np.ndarray:
+        """Perturb a single sample within the batch."""
+        perturbed_flat = x_batch.copy()
+        indices_2d = np.expand_dims(indices, axis=0)
+        perturbed_flat[b] = self.perturb_func(
+            arr=perturbed_flat[b:b + 1, :],
+            indices=indices_2d,
+        )
+        return perturbed_flat
+
+    def _predict_scores(
+        self, model, x_batch: np.ndarray, y_batch: np.ndarray, x_shape: tuple
+    ) -> np.ndarray:
+        """Predict scores for the true labels of the given batch."""
+        x_input = model.shape_input(
+            x_batch.reshape(x_shape), x_shape, channel_first=True, batched=True
+        )
+        return model.predict(x_input)[np.arange(x_batch.shape[0]), y_batch]
+
+    def _process_mask(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        mask: np.ndarray,
+        x_shape: tuple,
+    ) -> np.ndarray:
+        """Handle perturbation and prediction workflow for a single mask type."""
+        batch_size = x_batch.shape[0]
+        pixel_scores = np.zeros_like(x_batch, dtype=float)
+
+        for b in range(batch_size):
+            for indices in self._create_index_groups(mask[b]):
+                perturbed_batch = self._perturb_sample_batch(x_batch, b, indices)
+                preds = self._predict_scores(model, perturbed_batch, y_batch, x_shape)
+                pixel_scores[b, indices] = preds[b]
+
+        return pixel_scores
