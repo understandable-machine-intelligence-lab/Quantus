@@ -344,8 +344,8 @@ class InverseEstimation(Metric):
         return np.mean(np.array(scores), axis=1)
 
     def get_auc_score(self, scores):
-        """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean([utils.calculate_auc(np.array(curve)) for curve in scores])
+        """Calculate the area under the curve (AUC) score for each test sample."""
+        return np.array([utils.calculate_auc(np.array(curve)) for curve in scores])
 
     def aggregate_inverse_scores(self, inv_scores: np.array, nr_samples: int):
         """Compute the mean / AUC score for the inverse estimation, if passed as vectors (like pixel-flipping curves) per sample."""
