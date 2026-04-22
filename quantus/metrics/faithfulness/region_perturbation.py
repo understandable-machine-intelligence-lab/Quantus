@@ -414,44 +414,4 @@ class RegionPerturbation(Metric[List[float]]):
 
         return results
 
-    @property
-    def get_auc_score(self):
-        """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
 
-    def evaluate_batch(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        **kwargs,
-    ) -> List[Union[List[float], float]]:
-        """
-        This method performs XAI evaluation on a single batch of explanations.
-        For more information on the specific logic, we refer the metric’s initialisation docstring.
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        kwargs:
-            Unused.
-
-        Returns
-        -------
-        scores_batch:
-            The evaluation results.
-        """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
