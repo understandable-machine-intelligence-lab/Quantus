@@ -95,33 +95,23 @@ def test_inverse_estimation_with_relevance_rank_accuracy(
     metric_init = RelevanceRankAccuracy(**init_params)
     metric_init.softmax = True
 
-    try:
+    inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
+    scores = inv(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        s_batch=s_batch,
+        **call_params,
+    )
 
-        inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
-        scores = inv(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            **call_params,
-        )
-
-        if "exception" not in expected:
-            assert all(
-                [
-                    (s >= expected["min"] and s <= expected["max"])
-                    for s_list in scores
-                    for s in s_list
-                ]
-            ), "Test failed."
-
-    except Exception as e:
-        if "exception" in expected and isinstance(e, expected["exception"]):
-            print(f'Raised exception type {expected["exception"]}', e)
-        else:
-            print(f"Unexpected exception occurred:", e)
-        return
+    assert all(
+        [
+            (s >= expected["min"] and s <= expected["max"])
+            for s_list in scores
+            for s in s_list
+        ]
+    ), "Test failed."
 
 
 @pytest.mark.inverse_estimation
@@ -329,8 +319,17 @@ def test_inverse_estimation_with_pixel_flipping(
     metric_init = PixelFlipping(**init_params)
     metric_init.softmax = True
 
-    try:
-
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
+            scores = inv(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **call_params,
+            )
+    else:
         inv = InverseEstimation(metric_init=metric_init, return_aggregate=True)
         scores = inv(
             model=model,
@@ -339,26 +338,11 @@ def test_inverse_estimation_with_pixel_flipping(
             a_batch=a_batch,
             **call_params,
         )
-        # print("x_batch shape", np.shape(x_batch))
-        # print(f"\n\n\tscores_ori: {np.shape(inv.scores_ori)},\n{inv.scores_ori}")
-        # print(f"\n\n\tscores_inv: {np.shape(inv.scores_inv)},\n{inv.scores_inv}")
-        # print(
-        #     f"\n\n\tall_evaluation_scores: {np.shape(inv.all_evaluation_scores)},\n{inv.all_evaluation_scores}"
-        # )
-        # print(f"\n\n\tscores: {np.shape(scores)},\n{scores}")
 
-        if "exception" not in expected:
-            assert all(
-                [
-                    (s >= expected["min"] and s <= expected["max"])
-                    for s_list in scores
-                    for s in s_list
-                ]
-            ), "Test failed."
-
-    except Exception as e:
-        if "exception" in expected and isinstance(e, expected["exception"]):
-            print(f'Raised exception type {expected["exception"]}', e)
-        else:
-            print(f"Unexpected exception occurred:", e)
-        return
+        assert all(
+            [
+                (s >= expected["min"] and s <= expected["max"])
+                for s_list in scores
+                for s in s_list
+            ]
+        ), "Test failed."
