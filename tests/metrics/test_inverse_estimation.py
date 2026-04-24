@@ -303,10 +303,10 @@ def test_inverse_estimation_with_pixel_flipping(
 
     if "a_batch" in data:
         a_batch = data["a_batch"]
-    elif params.get("a_batch_generate", True):
-        explain = call_params["explain_func"]
+    elif params.get("a_batch_generate", True) and "explain_func" in call_params:
+        explain_fn = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
-        a_batch = explain(
+        a_batch = explain_fn(
             model=model,
             inputs=x_batch,
             targets=y_batch,
