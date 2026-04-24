@@ -1,50 +1,40 @@
-"""This module contains the implementation of the Iterative Removal of Features metric."""
+"""This module contains the implementation of the Inverse Estimation metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-import sys
-from typing import Any, Callable, Dict, List, Optional
+
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantus.functions.perturb_func import baseline_replacement_by_mask
-from quantus.helpers import asserts, utils, warn
-from quantus.helpers.enums import (
-    DataType,
-    EvaluationCategory,
-    ModelType,
-    ScoreDirection,
-)
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import utils
+from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.perturbation_utils import make_perturb_func
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import Metric
+import warnings
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
-if sys.version_info >= (3, 8):
-    from typing import final
-else:
-    from typing_extensions import final
 
-
-@final
-class IROF(Metric[List[float]]):
+class InverseEstimation(Metric):
     """
-    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
+    Implementation of Inverse Estimation experiment by Author et al., 2023.
 
-    The metric computes the area over the curve per class for sorted mean importances
-    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
-    averaged over several test samples.
-
-    Assumptions:
-        - The original metric definition relies on image-segmentation functionality. Therefore, only apply the
-        metric to 3-dimensional (image) data. To extend the applicablity to other data domains,
-        adjustments to the current implementation might be necessary.
+    The basic idea is to ..............
 
     References:
-        1) Laura Rieger and Lars Kai Hansen. "Irof: a low resource evaluation metric for
-        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
+        1) ..........
 
     Attributes:
         -  _name: The name of the metric.
@@ -54,34 +44,35 @@ class IROF(Metric[List[float]]):
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "IROF"
-    data_applicability = {DataType.IMAGE}
+    name = "Inverse-Estimation"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.FAITHFULNESS
+    # evaluation_category = EvaluationCategory.FAITHFULNESS
 
     def __init__(
         self,
-        segmentation_method: str = "slic",
+        metric_init: Metric,
+        inverse_method: str = "sign-flip",
+        area_between_curves: bool = False, 
+        return_mean_per_sample: bool = True,
+        return_auc_per_sample: bool = False,
         abs: bool = False,
-        normalise: bool = True,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Optional[Callable] = None,
-        perturb_baseline: str = "mean",
-        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: bool = True,
+        return_aggregate: Optional[bool] = True,
         aggregate_func: Optional[Callable] = None,
         default_plot_func: Optional[Callable] = None,
-        disable_warnings: bool = False,
-        display_progressbar: bool = False,
+        disable_warnings: Optional[bool] = None,
+        display_progressbar: Optional[bool] = None,
         **kwargs,
     ):
         """
         Parameters
         ----------
-        segmentation_method: string
-            Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+        metric_init: Metric
+            The metric to be used for the inverse estimation.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=False.
         normalise: boolean
@@ -96,13 +87,15 @@ class IROF(Metric[List[float]]):
             default=baseline_replacement_by_indices.
         perturb_baseline: string
             Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
+            default="black".
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
             Callable that aggregates the scores given an evaluation call.
+        return_auc_per_sample: boolean
+            Indicates if an AUC score should be computed over the curve and returned.
         default_plot_func: callable
             Callable that plots the metrics result.
         disable_warnings: boolean
@@ -112,12 +105,17 @@ class IROF(Metric[List[float]]):
         kwargs: optional
             Keyword arguments.
         """
+        if metric_init.default_plot_func is None:
+            default_plot_func = plotting.plot_inverse_curves
+
+        self.return_aggregate = return_aggregate
+
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
+            return_aggregate=self.return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
@@ -125,30 +123,37 @@ class IROF(Metric[List[float]]):
             **kwargs,
         )
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_mask
+        self.return_auc_per_sample = return_auc_per_sample
+        self.return_mean_per_sample = return_mean_per_sample
+        self.inverse_method = inverse_method
+        self.area_between_curves = area_between_curves
+        self.metric_init = metric_init
 
-        # Save metric-specific attributes.
-        self.segmentation_method = segmentation_method
-        self.nr_channels = None
-        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
+        # TODO. Update warnings.
+        assert not (
+            self.return_mean_per_sample and self.return_auc_per_sample
+        ), "Only one of 'return_mean_per_sample' and 'return_auc_per_sample' can be True."
+        if self.inverse_method not in ["sign-flip", "value-swap"]:
+            raise ValueError(
+                "The 'inverse_method' in init **kwargs, \
+                             must be either 'sign-flip' or 'value-swap'."
+            )
+        if self.metric_init.return_aggregate:
+            print(
+                "The metric is not designed to return an aggregate score, setting return_aggregate=False."
+            )
+            self.metric_init.return_aggregate = False
 
-        # Asserts and warnings.
+        assert self.metric_init.abs == False, (
+            "To run the inverse estimation, you cannot set 'a_batch' to "
+            "have positive attributions only. Set 'abs' param of the metric init to 'False'."
+        )
+
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline' and the method to segment "
-                    "the image 'segmentation_method' (including all its associated"
-                    " hyperparameters), also, IROF only works with image data"
-                ),
-                data_domain_applicability=(
-                    f"Also, the current implementation only works for 3-dimensional (image) data."
-                ),
-                citation=(
-                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
-                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
-                ),
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=("Update here."),
             )
 
     def __call__(
@@ -158,13 +163,14 @@ class IROF(Metric[List[float]]):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
+        channel_first: Optional[bool] = True,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -238,7 +244,7 @@ class IROF(Metric[List[float]]):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >>> metric = Metric(abs=True, normalise=False)
-            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         return super().__call__(
             model=model,
@@ -250,47 +256,12 @@ class IROF(Metric[List[float]]):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
-            model_predict_kwargs=model_predict_kwargs,
             batch_size=batch_size,
             **kwargs,
         )
-
-    def custom_preprocess(
-        self,
-        x_batch: np.ndarray,
-        **kwargs,
-    ) -> None:
-        """
-        Implementation of custom_preprocess_batch.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        None
-        """
-        # Infer number of input channels.
-        self.nr_channels = x_batch.shape[1]
-
-    @property
-    def get_aoc_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
-        return np.mean(self.evaluation_scores)
 
     def evaluate_batch(
         self,
@@ -298,92 +269,117 @@ class IROF(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        s_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> List[float]:
-        """
-        This method performs XAI evaluation on a single batch of explanations.
-        For more information on the specific logic, we refer the metric’s initialisation docstring.
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInterface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        kwargs:
-            Unused.
+        assert (
+            a_batch is not None
+        ), "'a_batch' must be provided to run the inverse estimation."
 
-        Returns
-        -------
-        scores_batch:
-            The evaluation results.
-        """
-        # Prepare shapes. Expand a_batch if not the same shape
-        if x_batch.shape != a_batch.shape:
-            a_batch = np.broadcast_to(a_batch, x_batch.shape)
+        # Metrics that depend on re-computing explanations need inverse wrapping.
+        self.explain_func_kwargs["explain_func"] = self.explain_func
+        self.explain_func_kwargs["inverse_method"] = self.inverse_method
 
-        # Flatten the attributions.
-        batch_size = a_batch.shape[0]
-
-        # Predict on input.
-        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
-        y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
-
-        # Segment image.
-        segments_batch = []
-        s_indices_batch_list = []
-        for x, a in zip(x_batch, a_batch):
-            segments = utils.get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                segmentation_method=self.segmentation_method,
-            )
-            nr_segments = len(np.unique(segments))
-            asserts.assert_nr_segments(nr_segments=nr_segments)
-            segments_batch.append(segments)
-
-            # Calculate average attribution of each segment.
-            att_segs = np.zeros(nr_segments)
-            for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[:, segments == s])
-
-            # Sort segments based on the mean attribution (descending order).
-            s_indices = np.argsort(-att_segs)
-            s_indices_batch_list.append(s_indices)
-        segments_batch = np.stack(segments_batch, axis=0)
-        max_segments_len = max([len(s_indices) for s_indices in s_indices_batch_list])
-        mask_preds_batch = np.array(
-            [[1.0] * len(s_indices) + [0] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
+        self.scores_ori = self.metric_init(
+            model=model.get_model(),
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=self.channel_first,
+            explain_func=self.explain_func,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
+            **kwargs,
         )
-        s_indices_batch = np.array(
-            [s_indices.tolist() + [-1] * (max_segments_len - len(s_indices)) for s_indices in s_indices_batch_list]
+        assert len(self.scores_ori) == len(x_batch), (
+            "To run the inverse estimation, the number of evaluation scores "
+            "must match the number of instances in the batch."
         )
 
-        preds = []
-        x_perturbed = x_batch.copy()
-        for s_indices_segment in s_indices_batch.T:
-            # Perturb input by indices of attributions.
-            mask = (segments_batch == s_indices_segment[:, None, None])[:, None]
+        # Empty the evaluation scores before re-scoring with the metric.
+        self.metric_init.evaluation_scores = []
 
-            x_new_perturbed = self.perturb_func(
-                arr=x_perturbed,
-                mask=mask,
+        # Get inverse attributions.
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
+
+        # Run inverse experiment.
+        self.scores_inv = self.metric_init(
+            model=model.get_model(),
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch_inv,
+            s_batch=s_batch,
+            channel_first=self.channel_first,
+            explain_func=self.inverse_explain_wrapper,
+            explain_func_kwargs=self.explain_func_kwargs,
+            softmax=self.softmax,
+            device=self.device,
+            model_predict_kwargs=self.model_predict_kwargs,
+            **kwargs,
+        )
+
+        # Compute the inverse scores.
+        if self.area_between_curves:
+            scores_ori = self.aggregate_inverse_scores(
+                inv_scores=self.scores_ori, nr_samples=len(x_batch)
             )
-            # Check if the perturbation caused change
-            for x_element, x_perturbed_element in zip(x_new_perturbed, x_perturbed):
-                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
+            scores_inv = self.aggregate_inverse_scores(
+                inv_scores=self.scores_inv, nr_samples=len(x_batch)
+            )
+            
+            return (np.array(scores_ori) - np.array(scores_inv)).tolist()
+        else:
+            inv_scores = np.array(self.scores_ori) - np.array(self.scores_inv)
+            inv_scores = self.aggregate_inverse_scores(
+                inv_scores=inv_scores, nr_samples=len(x_batch)
+            )
+            return inv_scores.tolist()
 
-            # Predict on perturbed input x.
-            x_input = model.shape_input(x_new_perturbed, x_new_perturbed.shape, channel_first=True, batched=True)
-            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+    def get_mean_score(self, scores):
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return np.mean(np.array(scores), axis=1)
 
-            # Normalise the scores to be within range [0, 1].
-            preds.append(y_pred_perturb / y_pred)
-            x_perturbed = x_new_perturbed
-        preds = np.stack(preds, axis=1) * mask_preds_batch
-        # Calculate the area over the curve (AOC) score.
-        aoc = mask_preds_batch.sum(-1) - utils.calculate_auc(preds, batched=True)
-        return aoc
+    def get_auc_score(self, scores):
+        """Calculate the area under the curve (AUC) score for each test sample."""
+        return np.array([utils.calculate_auc(np.array(curve)) for curve in scores])
+
+    def aggregate_inverse_scores(self, inv_scores: np.array, nr_samples: int):
+        """Compute the mean / AUC score for the inverse estimation, if passed as vectors (like pixel-flipping curves) per sample."""
+        if inv_scores.size == nr_samples:
+            warnings.warn(
+                f"Cannot compute mean score for scores with shape {inv_scores.shape}. Set 'return_mean_per_sample' and 'return_auc_per_sample' to False to return the raw scores."
+            )
+            return inv_scores
+        else:
+            if self.return_mean_per_sample:
+                inv_scores = self.get_mean_score(scores=inv_scores)
+            elif self.return_auc_per_sample:
+                inv_scores = self.get_auc_score(scores=inv_scores)
+            return inv_scores
+
+    def get_inverse_attributions(self, a_batch: np.array):
+        """Get the inverse attributions of the input attributions."""
+
+        # Attributions need to have only one axis, else flatten and reshape back.
+        shape_ori = a_batch.shape
+        a_batch = a_batch.reshape((shape_ori[0], -1))
+        if self.inverse_method == "sign-flip":
+            a_batch_inv = -np.array(a_batch)
+        elif self.inverse_method == "value-swap":
+            indices = np.argsort(a_batch, axis=1)
+            a_batch_inv = np.empty_like(a_batch)
+            a_batch_inv[np.arange(a_batch_inv.shape[0])[:, None], indices] = a_batch[
+                np.arange(a_batch_inv.shape[0])[:, None], indices[:, ::-1]
+            ]
+        a_batch_inv = a_batch_inv.reshape(shape_ori)
+        return a_batch_inv
+
+    def inverse_explain_wrapper(self, model, inputs, targets, **kwargs):
+        """Wrapper for the explanation function that computes the inverse attributions."""
+        a_batch = self.explain_func(model, inputs, targets, **self.explain_func_kwargs)
+        a_batch_inv = self.get_inverse_attributions(a_batch=a_batch)
+        return a_batch_inv
