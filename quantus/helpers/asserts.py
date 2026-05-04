@@ -8,6 +8,7 @@
 
 
 from typing import Callable, Tuple, Sequence, Union
+import warnings
 import numpy as np
 
 
@@ -126,74 +127,6 @@ def assert_layer_order(layer_order: str) -> None:
     None
     """
     assert layer_order in ["top_down", "bottom_up", "independent"]
-
-
-def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
-    """
-    Asserts on attributions, assumes channel first layout.
-
-    Parameters
-    ----------
-    x_batch: np.ndarray
-         The batch of input to compare the shape of the attributions with.
-    a_batch: np.ndarray
-         The batch of attributions.
-
-    Returns
-    -------
-    None
-    """
-    assert (
-        type(a_batch) == np.ndarray
-    ), "Attributions 'a_batch' should be of type np.ndarray."
-    assert np.shape(x_batch)[0] == np.shape(a_batch)[0], (
-        "The inputs 'x_batch' and attributions 'a_batch' should "
-        "include the same number of samples."
-        "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
-    )
-    assert np.ndim(x_batch) == np.ndim(a_batch), (
-        "The inputs 'x_batch' and attributions 'a_batch' should "
-        "have the same number of dimensions."
-        "{} != {}".format(np.ndim(x_batch), np.ndim(a_batch))
-    )
-    a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
-    x_shape = [s for s in np.shape(x_batch)[1:]]
-    assert a_shape[0] == x_shape[0] or a_shape[-1] == x_shape[-1], (
-        "The dimensions of attribution and input per sample should correspond in either "
-        "the first or last dimensions, but got shapes "
-        "{} and {}".format(a_shape, x_shape)
-    )
-    assert all([a in x_shape for a in a_shape]), (
-        "All attribution dimensions should be included in the input dimensions, "
-        "but got shapes {} and {}".format(a_shape, x_shape)
-    )
-    assert all(
-        [
-            x_shape.index(a) > x_shape.index(a_shape[i])
-            for a in a_shape
-            for i in range(a_shape.index(a))
-        ]
-    ), (
-        "The dimensions of the attribution must correspond to dimensions of the input in the same order, "
-        "but got shapes {} and {}".format(a_shape, x_shape)
-    )
-    assert not np.all((a_batch == 0)), (
-        "The elements in the attribution vector are all equal to zero, "
-        "which may cause inconsistent results since many metrics rely on ordering. "
-        "Recompute the explanations."
-    )
-    assert not np.all((a_batch == 1.0)), (
-        "The elements in the attribution vector are all equal to one, "
-        "which may cause inconsistent results since many metrics rely on ordering. "
-        "Recompute the explanations."
-    )
-    assert len(set(a_batch.flatten().tolist())) > 1, (
-        "The attributions are uniformly distributed, "
-        "which may cause inconsistent results since many "
-        "metrics rely on ordering."
-        "Recompute the explanations."
-    )
-    assert not np.all((a_batch < 0.0)), "Attributions should not all be less than zero."
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:

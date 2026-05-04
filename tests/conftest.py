@@ -207,7 +207,10 @@ def titanic_dataset():
     X = df_enc.drop(["survived"], axis=1).values.astype(float)
     Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
-    return {"x_batch": test_features, "y_batch": test_labels}
+    return {
+        "x_batch": test_features[:MINI_BATCH_SIZE],
+        "y_batch": test_labels[:BATCH_SIZE].reshape(-1).astype(int)[:MINI_BATCH_SIZE],
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)

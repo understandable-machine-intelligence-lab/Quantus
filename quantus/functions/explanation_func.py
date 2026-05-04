@@ -671,7 +671,7 @@ def generate_captum_explanation(
             inputs = inputs.cpu()
 
         inputs_numpy = inputs.detach().numpy()
-                
+
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
                 np.clip(scipy.ndimage.sobel(inputs_numpy[i]), 0, 1)

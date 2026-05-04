@@ -25,7 +25,23 @@ if TYPE_CHECKING:
 def make_perturb_func(
     perturb_func: PerturbFunc, perturb_func_kwargs: Mapping[str, ...] | None, **kwargs
 ) -> PerturbFunc | functools.partial:
-    """A utility function to save few lines of code during perturbation metric initialization."""
+    """
+    A utility function to save few lines of code during perturbation metric initialization.
+
+    Parameters
+    ----------
+    perturb_func: callable
+        Perturbation function.
+    perturb_func_kwargs: dict
+        Perturbation function kwargs.
+    kwargs: dict
+        Perturbation metric kwargs.
+
+    Returns
+    -------
+    perturb_func: callable
+        Perturbation function.
+    """
     if perturb_func_kwargs is not None:
         func_kwargs = kwargs.copy()
         func_kwargs.update(perturb_func_kwargs)
@@ -38,7 +54,19 @@ def make_perturb_func(
 def make_changed_prediction_indices_func(
     return_nan_when_prediction_changes: bool,
 ) -> Callable[[ModelInterface, np.ndarray, np.ndarray], List[int]]:
-    """A utility function to improve static analysis."""
+    """
+    A utility function to improve static analysis.
+
+    Parameters
+    ----------
+    return_nan_when_prediction_changes: boolean
+        Indicates if metric should return NaN when model prediction changes due to perturbation.
+
+    Returns
+    -------
+    changed_prediction_indices: callable
+        Function that returns indices in batch, for which predicted label has changed after applying perturbation.
+    """
     return functools.partial(
         changed_prediction_indices,
         return_nan_when_prediction_changes=return_nan_when_prediction_changes,
@@ -59,7 +87,8 @@ def changed_prediction_indices(
     ----------
     return_nan_when_prediction_changes:
         Instance attribute of perturbation metrics.
-    model:
+    model: ModelInterface
+        Model to be used for prediction.
     x_batch:
         Batch of original inputs provided by user.
     x_perturbed:
@@ -67,7 +96,6 @@ def changed_prediction_indices(
 
     Returns
     -------
-
     changed_idx:
         List of indices in batch, for which predicted label has changed afer.
 

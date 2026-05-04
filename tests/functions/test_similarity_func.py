@@ -1,5 +1,6 @@
 import pytest
 from pytest_lazyfixture import lazy_fixture
+from typing import Union
 
 from quantus.functions.loss_func import mse
 from quantus.functions.similarity_func import *
@@ -160,21 +161,9 @@ def test_distance_manhattan(
     "data,params,expected",
     [
         (lazy_fixture("atts_same"), {}, 0.0),
-        (lazy_fixture("atts_diff"), {}, 4.0),
-        (lazy_fixture("atts_half"), {}, 3.0),
+        (lazy_fixture("atts_diff"), {}, 1.0),
+        (lazy_fixture("atts_half"), {}, 1.0),
     ],
-)
-def test_distance_chebyshev(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
-    out = distance_chebyshev(a=data["a"], b=data["b"])
-    assert round(out, 2) == expected, "Test failed."
-
-
-@pytest.mark.similar_func
-@pytest.mark.parametrize(
-    "data,params,expected",
-    [(lazy_fixture("atts_same"), {}, 0.0), (lazy_fixture("atts_diff"), {}, 1.0)],
 )
 def test_distance_chebyshev(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]

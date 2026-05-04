@@ -239,32 +239,32 @@ class Infidelity(Metric[List[float]]):
         Examples:
         --------
             # Minimal imports.
-            >> import quantus
-            >> from quantus import LeNet
-            >> import torch
+            >>> import quantus
+            >>> from quantus import LeNet
+            >>> import torch
 
             # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >>> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
+            >>> model = LeNet()
+            >>> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >>> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >>> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            >>> x_batch, y_batch = iter(test_loader).next()
+            >>> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
             # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            >>> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >>> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
+            >>> metric = Metric(abs=True, normalise=False)
+            >>> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
         return super().__call__(
             model=model,
@@ -282,6 +282,101 @@ class Infidelity(Metric[List[float]]):
             batch_size=batch_size,
             **kwargs,
         )
+
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInterface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        results = []
+
+        for _ in range(self.n_perturb_samples):
+            sub_results = []
+
+            for patch_size in self.perturb_patch_sizes:
+                pred_deltas = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                a_sums = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                x_perturbed = x.copy()
+                pad_width = patch_size - 1
+
+                for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
+                    for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
+
+                        # Perturb input patch-wise.
+                        x_perturbed_pad = utils._pad_array(
+                            x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
+                        )
+                        patch_slice = utils.create_patch_slice(
+                            patch_size=patch_size,
+                            coords=[top_left_x, top_left_y],
+                        )
+
+                        x_perturbed_pad = self.perturb_func(
+                            arr=x_perturbed_pad,
+                            indices=patch_slice,
+                            indexed_axes=self.a_axes,
+                        )
+
+                        # Remove padding.
+                        x_perturbed = utils._unpad_array(
+                            x_perturbed_pad, pad_width, padded_axes=self.a_axes
+                        )
+
+                        # Predict on perturbed input x_perturbed.
+                        x_input = model.shape_input(
+                            x_perturbed, x.shape, channel_first=True
+                        )
+                        warn.warn_perturbation_caused_no_change(
+                            x=x, x_perturbed=x_input
+                        )
+                        y_pred_perturb = float(model.predict(x_input)[:, y])
+
+                        x_diff = x - x_perturbed
+                        a_diff = np.dot(
+                            np.repeat(a, repeats=self.nr_channels, axis=0), x_diff
+                        )
+
+                        pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
+                        a_sums[i_x][i_y] = np.sum(a_diff)
+
+                assert callable(self.loss_func)
+                sub_results.append(
+                    self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
+                )
+
+            results.append(np.mean(sub_results))
+
+        return np.mean(results)
 
     def custom_preprocess(
         self,
