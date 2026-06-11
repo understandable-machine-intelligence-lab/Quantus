@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from quantus.functions.perturb_func import batch_baseline_replacement_by_indices
-from quantus.helpers import asserts, utils, warn
+from quantus.helpers import asserts, warn
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
@@ -39,7 +39,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
     its exact reverse, least influential first (LIF). The per-sample score is the area
     between the two prediction curves,
 
-        SRG = AUC(LIF curve) − AUC(MIF curve),
+        SRG = AUC(LIF curve) - AUC(MIF curve),
 
     which equals the sum of the two relevance gains MRG and LRG; the AUC of the random
     ordering baseline cancels in the difference and never has to be estimated. SRG
@@ -47,17 +47,22 @@ class SymmetricRelevanceGain(Metric[List[float]]):
     size), which resolves the disagreement problem between the MIF and LIF benchmarks.
 
     Higher is better; a random attribution scores 0 in expectation, and with
-    softmax outputs (default) scores lie in [−1, 1].
+    softmax outputs (default) scores lie in [-1, 1].
 
     Deviations from the paper, following Quantus conventions:
         - Features are flattened input entries grouped by the sorted attribution order
-          (`n_steps`/`features_in_step`), not superpixels. Attributions are broadcast
-          over the channel axis, so each pixel of a (C, H, W) image appears as C tied
+          (`features_in_step`), not superpixels. Attributions are broadcast over the
+          channel axis, so each pixel of a (C, H, W) image appears as C tied
           features; with `features_in_step >= C` this closely matches flipping whole
           pixels.
         - The tracked class is the user-supplied `y_batch`, not the model's prediction
           on the unoccluded input. For an exact paper replication pass
           `y_batch=model(x).argmax(1)`.
+        - The imputer is constant: `perturb_func` is applied once per batch to the
+          unperturbed input and every occlusion step copies values from this snapshot,
+          so stochastic baselines (e.g. "uniform", "random") are drawn once per batch.
+          Imputers whose values depend on which features are masked (e.g. inpainting)
+          are not supported.
 
     References:
         1) Stefan Blücher et al.: "Decoupling Pixel Flipping and Occlusion Strategy for
@@ -77,20 +82,19 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
     name = "Symmetric Relevance Gain"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.FAITHFULNESS
 
     def __init__(
         self,
-        n_steps: int = 28,
-        features_in_step: Optional[int] = None,
+        features_in_step: int = 1,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Optional[Callable] = None,
-        perturb_baseline: Union[float, int, str, np.ndarray] = "mean",
+        perturb_baseline: Union[float, str, np.ndarray] = "mean",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = None,
@@ -102,13 +106,9 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         """
         Parameters
         ----------
-        n_steps: integer
-            The number of occlusion steps per curve; the group size is derived as
-            ceil(n_features / n_steps) and the last group may be smaller, default=28.
-            Ignored if features_in_step is given.
-        features_in_step: integer, optional
-            The exact number of flattened features occluded per step (must divide the
-            number of features). Overrides n_steps, default=None.
+        features_in_step: integer
+            The size of the step, default=1. Note that SRG is designed for coarse
+            stepping; the paper uses 25-5000 superpixel groups per image.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution,
             default=False. Note that SRG is designed for signed attributions;
@@ -122,12 +122,12 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
             Input perturbation function. If None, the default value is used,
-            default=batch_baseline_replacement_by_indices. With the default, the
-            baseline is computed once per batch from the unperturbed input; a custom
-            function is called per step on the partially perturbed input and disables
-            the torch fast path.
-        perturb_baseline: float, int, str, np.ndarray
-            Indicates the type of baseline: "mean", "uniform", "black" or "white",
+            default=batch_baseline_replacement_by_indices. The function is applied
+            once per batch to the unperturbed input to compute a constant imputation
+            snapshot from which all occlusion steps copy; imputers whose values
+            depend on which features are masked (e.g. inpainting) are not supported.
+        perturb_baseline: float, str, np.ndarray
+            Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="mean".
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
@@ -157,34 +157,23 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             **kwargs,
         )
 
-        # Save metric-specific attributes.
-        self.n_steps = n_steps
-        self.features_in_step = features_in_step
-        self.perturb_baseline = perturb_baseline
-        self.use_default_perturb_func = (
-            perturb_func is None and perturb_func_kwargs is None
-        )
         if perturb_func is None:
             perturb_func = batch_baseline_replacement_by_indices
+
+        # Save metric-specific attributes.
+        self.features_in_step = features_in_step
         self.perturb_func = make_perturb_func(
             perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
         )
-
-        # Resolved per call in custom_preprocess (depends on the input shape).
-        self.features_in_step_: int = features_in_step or 0
-
-        # Per-call curve storage, populated by evaluate_batch (see last_mif_curves/last_lif_curves).
-        self._mif_curves_batches: List[np.ndarray] = []
-        self._lif_curves_batches: List[np.ndarray] = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "baseline value 'perturb_baseline' and the step granularity "
-                    "'n_steps'/'features_in_step' (SRG rankings are designed to be "
-                    "robust to both); also note that 'abs=True' discards the signed "
+                    "baseline value 'perturb_baseline' and the step size "
+                    "'features_in_step' (SRG rankings are designed to be robust to "
+                    "both); also note that 'abs=True' discards the signed "
                     "attribution information SRG evaluates symmetrically"
                 ),
                 citation=(
@@ -213,7 +202,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
-        output labels (y_batch) and a torch model (model).
+        output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
         () on each instance, and saves results to evaluation_scores.
@@ -221,8 +210,8 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
         Parameters
         ----------
-        model: torch.nn.Module
-            A torch model that is subject to explanation.
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
         y_batch: np.ndarray
@@ -308,10 +297,6 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         """
         Implementation of custom_preprocess_batch.
 
-        Resolves the per-step group size from n_steps (or validates an explicitly
-        passed features_in_step against the flattened feature count) and resets the
-        per-call curve storage.
-
         Parameters
         ----------
         x_batch: np.ndarray
@@ -323,32 +308,11 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         -------
         None
         """
-        n_features = int(np.prod(x_batch.shape[1:]))
-        if self.features_in_step is not None:
-            asserts.assert_features_in_step(
-                features_in_step=self.features_in_step,
-                input_shape=x_batch.shape[1:],
-            )
-            self.features_in_step_ = self.features_in_step
-        else:
-            self.features_in_step_ = math.ceil(n_features / self.n_steps)
-
-        self._mif_curves_batches = []
-        self._lif_curves_batches = []
-
-    @property
-    def last_mif_curves(self) -> Optional[np.ndarray]:
-        """MIF prediction curves of the last call, shape (n_samples, n_steps + 1) incl. the unoccluded point."""
-        if not self._mif_curves_batches:
-            return None
-        return np.concatenate(self._mif_curves_batches, axis=0)
-
-    @property
-    def last_lif_curves(self) -> Optional[np.ndarray]:
-        """LIF prediction curves of the last call, shape (n_samples, n_steps + 1) incl. the unoccluded point."""
-        if not self._lif_curves_batches:
-            return None
-        return np.concatenate(self._lif_curves_batches, axis=0)
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
 
     def evaluate_batch(
         self,
@@ -386,22 +350,32 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
         batch_size = a_batch.shape[0]
         a_flat = a_batch.reshape(batch_size, -1)
+        n_features = a_flat.shape[-1]
 
         # One descending sort; the LIF ordering is its exact reverse so that ties are
         # broken consistently between the two curves.
         order_mif = np.argsort(-a_flat, axis=1, kind="stable")
 
+        # The paper's constant imputer: perturb every feature once on the unperturbed
+        # input; each occlusion step copies values from this snapshot.
+        x_flat = x_batch.reshape(batch_size, -1).astype(float)
+        all_indices = np.tile(np.arange(n_features), (batch_size, 1))
+        x_imputed = self.perturb_func(arr=x_flat, indices=all_indices)
+
+        # Check if the perturbation caused change
+        for x_element, x_imputed_element in zip(x_flat, x_imputed):
+            warn.warn_perturbation_caused_no_change(
+                x=x_element, x_perturbed=x_imputed_element
+            )
+
         if self._can_use_torch_fast_path(model):
             curves_mif, curves_lif = self._compute_curves_torch(
-                model, x_batch, y_batch, order_mif
+                model, x_batch, y_batch, order_mif, x_imputed
             )
         else:
             curves_mif, curves_lif = self._compute_curves_numpy(
-                model, x_batch, y_batch, order_mif
+                model, x_batch, y_batch, order_mif, x_imputed
             )
-
-        self._mif_curves_batches.append(curves_mif)
-        self._lif_curves_batches.append(curves_lif)
 
         # The shared endpoints (unoccluded and fully occluded) cancel in the AUC
         # difference, so SRG reduces to the mean over the after-step differences.
@@ -410,7 +384,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
     def _step_slices(self, n_features: int) -> List[slice]:
         """Contiguous chunks of the sorted feature order, one per occlusion step."""
-        fis = self.features_in_step_
+        fis = self.features_in_step
         n_steps = math.ceil(n_features / fis)
         return [
             slice(step * fis, min((step + 1) * fis, n_features))
@@ -423,6 +397,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         order_mif: np.ndarray,
+        x_imputed: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute the MIF and LIF prediction curves with numpy-side perturbation,
@@ -436,17 +411,6 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         x_mif = x_batch.reshape(batch_size, -1).astype(float)
         x_lif = x_mif.copy()
 
-        baseline = None
-        if self.use_default_perturb_func:
-            # Compute the baseline once from the unperturbed input and reuse it for all
-            # steps and both curves (the paper's constant imputer).
-            baseline = utils.get_baseline_value(
-                value=self.perturb_baseline,
-                arr=x_mif,
-                return_shape=x_mif.shape,
-                batched=True,
-            )
-
         # Shared unoccluded curve point.
         x_input = model.shape_input(
             x_batch, x_batch.shape, channel_first=True, batched=True
@@ -456,16 +420,12 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
         for sl in self._step_slices(n_features):
             ix_mif, ix_lif = order_mif[:, sl], order_lif[:, sl]
-            if baseline is not None:
-                np.put_along_axis(
-                    x_mif, ix_mif, np.take_along_axis(baseline, ix_mif, axis=1), axis=1
-                )
-                np.put_along_axis(
-                    x_lif, ix_lif, np.take_along_axis(baseline, ix_lif, axis=1), axis=1
-                )
-            else:
-                x_mif = self.perturb_func(arr=x_mif, indices=ix_mif)
-                x_lif = self.perturb_func(arr=x_lif, indices=ix_lif)
+            np.put_along_axis(
+                x_mif, ix_mif, np.take_along_axis(x_imputed, ix_mif, axis=1), axis=1
+            )
+            np.put_along_axis(
+                x_lif, ix_lif, np.take_along_axis(x_imputed, ix_lif, axis=1), axis=1
+            )
 
             # One forward pass per step for both curves.
             x_cat = np.concatenate([x_mif, x_lif]).reshape(
@@ -483,9 +443,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         return np.stack(preds_mif, axis=1), np.stack(preds_lif, axis=1)
 
     def _can_use_torch_fast_path(self, model: ModelInterface) -> bool:
-        """The torch-resident fast path applies to plain torch modules with the default perturbation."""
-        if not self.use_default_perturb_func:
-            return False
+        """The torch-resident fast path applies to plain torch modules."""
         try:
             from quantus.helpers.model.pytorch_model import (
                 PyTorchModel,
@@ -503,11 +461,12 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         order_mif: np.ndarray,
+        x_imputed: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Torch-resident equivalent of _compute_curves_numpy: the running perturbed
-        inputs, baseline and orderings stay on-device, with one H2D copy up front and
-        one D2H copy at the end.
+        inputs, imputation snapshot and orderings stay on-device, with one H2D copy
+        up front and one D2H copy at the end.
         """
         import torch
 
@@ -518,21 +477,15 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         single_shape = x_batch.shape[1:]
         n_features = int(np.prod(single_shape))
 
-        x_flat = x_batch.reshape(batch_size, -1)
-        baseline = utils.get_baseline_value(
-            value=self.perturb_baseline,
-            arr=x_flat,
-            return_shape=x_flat.shape,
-            batched=True,
-        )
-
         device = model.device
         forward = model.get_softmax_arg_model()
         predict_kwargs = model.model_predict_kwargs
 
         with torch.no_grad():
-            x = torch.as_tensor(x_flat, dtype=torch.float32, device=device)
-            base = torch.as_tensor(baseline, dtype=torch.float32, device=device)
+            x = torch.as_tensor(
+                x_batch.reshape(batch_size, -1), dtype=torch.float32, device=device
+            )
+            base = torch.as_tensor(x_imputed, dtype=torch.float32, device=device)
             idx_mif = torch.as_tensor(
                 np.ascontiguousarray(order_mif, dtype=np.int64), device=device
             )

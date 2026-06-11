@@ -293,7 +293,9 @@ def test_faithfulness_correlation(
         **call_params,
     )[0]
 
-    assert np.all(((scores >= expected["min"]) & (scores <= expected["max"]))), "Test failed."
+    assert np.all(
+        ((scores >= expected["min"]) & (scores <= expected["max"]))
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -461,7 +463,9 @@ def test_faithfulness_estimate(
         **call_params,
     )
 
-    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -595,7 +599,9 @@ def test_iterative_removal_of_features(
         **call_params,
     )
 
-    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1061,7 +1067,13 @@ def test_pixel_flipping(
         **call_params,
     )
 
-    assert all([(s >= expected["min"] and s <= expected["max"]) for s_list in scores for s in s_list]), "Test failed."
+    assert all(
+        [
+            (s >= expected["min"] and s <= expected["max"])
+            for s_list in scores
+            for s in s_list
+        ]
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1229,7 +1241,13 @@ def test_region_perturbation(
         **call_params,
     )
 
-    assert all([(s >= expected["min"] and s <= expected["max"]) for s_list in scores for s in s_list]), "Test failed."
+    assert all(
+        [
+            (s >= expected["min"] and s <= expected["max"])
+            for s_list in scores
+            for s in s_list
+        ]
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1598,7 +1616,9 @@ def test_sensitivity_n(
         **call_params,
     )
 
-    assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1909,7 +1929,7 @@ def test_sufficiency(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_steps": 28,
+                    "features_in_step": 28,
                     "normalise": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -1950,7 +1970,7 @@ def test_sufficiency(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_steps": 14,
+                    "features_in_step": 56,
                     "perturb_func": batch_baseline_replacement_by_indices,
                     "perturb_func_kwargs": {},
                     "perturb_baseline": "mean",
@@ -1973,7 +1993,7 @@ def test_sufficiency(
             {
                 "a_batch_generate": True,
                 "init": {
-                    "n_steps": 28,
+                    "features_in_step": 28,
                     "normalise": True,
                     "return_aggregate": True,
                     "aggregate_func": np.mean,
@@ -1995,7 +2015,7 @@ def test_sufficiency(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "n_steps": 10,
+                    "features_in_step": 10,
                     "normalise": False,
                     "perturb_baseline": "mean",
                     "disable_warnings": True,
@@ -2058,7 +2078,7 @@ def test_symmetric_relevance_gain_sign_flip(load_mnist_model, load_mnist_images)
     a_batch = np.random.randn(*x_batch.shape)
 
     metric = SymmetricRelevanceGain(
-        n_steps=28, normalise=False, abs=False, disable_warnings=True
+        features_in_step=28, normalise=False, abs=False, disable_warnings=True
     )
     scores = metric(
         model=load_mnist_model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch
@@ -2071,11 +2091,24 @@ def test_symmetric_relevance_gain_sign_flip(load_mnist_model, load_mnist_images)
 
 
 @pytest.mark.faithfulness
-def test_symmetric_relevance_gain_endpoints(load_mnist_model, load_mnist_images):
+def test_symmetric_relevance_gain_endpoints(
+    load_mnist_model, load_mnist_images, monkeypatch
+):
     """Both curves share the unoccluded and the fully occluded points."""
     x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
 
-    metric = SymmetricRelevanceGain(n_steps=28, disable_warnings=True)
+    mif_curves_batches, lif_curves_batches = [], []
+    compute_curves = SymmetricRelevanceGain._compute_curves_torch
+
+    def spy(self, *args, **kwargs):
+        curves_mif, curves_lif = compute_curves(self, *args, **kwargs)
+        mif_curves_batches.append(curves_mif)
+        lif_curves_batches.append(curves_lif)
+        return curves_mif, curves_lif
+
+    monkeypatch.setattr(SymmetricRelevanceGain, "_compute_curves_torch", spy)
+
+    metric = SymmetricRelevanceGain(features_in_step=28, disable_warnings=True)
     metric(
         model=load_mnist_model,
         x_batch=x_batch,
@@ -2085,7 +2118,8 @@ def test_symmetric_relevance_gain_endpoints(load_mnist_model, load_mnist_images)
         explain_func_kwargs={"method": "Saliency"},
     )
 
-    mif_curves, lif_curves = metric.last_mif_curves, metric.last_lif_curves
+    mif_curves = np.concatenate(mif_curves_batches, axis=0)
+    lif_curves = np.concatenate(lif_curves_batches, axis=0)
     assert mif_curves.shape == (len(x_batch), 29), "Test failed."
     assert lif_curves.shape == (len(x_batch), 29), "Test failed."
     assert np.allclose(mif_curves[:, 0], lif_curves[:, 0]), "Test failed."
@@ -2100,7 +2134,9 @@ def test_symmetric_relevance_gain_torch_path_equals_numpy_path(
     x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
     a_batch = np.random.randn(*x_batch.shape)
 
-    metric = SymmetricRelevanceGain(n_steps=28, normalise=False, disable_warnings=True)
+    metric = SymmetricRelevanceGain(
+        features_in_step=28, normalise=False, disable_warnings=True
+    )
     scores_torch = metric(
         model=load_mnist_model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch
     )
@@ -2123,12 +2159,43 @@ def test_symmetric_relevance_gain_random_attribution(
     x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
     a_batch = np.random.randn(*x_batch.shape)
 
-    metric = SymmetricRelevanceGain(n_steps=28, normalise=False, disable_warnings=True)
+    metric = SymmetricRelevanceGain(
+        features_in_step=28, normalise=False, disable_warnings=True
+    )
     scores = metric(
         model=load_mnist_model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch
     )
 
     assert np.abs(np.mean(scores)) < 0.1, "Test failed."
+
+
+@pytest.mark.faithfulness
+def test_symmetric_relevance_gain_explicit_default_perturb_func(
+    load_mnist_model, load_mnist_images
+):
+    """Passing the default perturb_func explicitly behaves like perturb_func=None."""
+    x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
+    a_batch = np.random.randn(*x_batch.shape)
+
+    metric_default = SymmetricRelevanceGain(
+        features_in_step=28, normalise=False, disable_warnings=True
+    )
+    metric_explicit = SymmetricRelevanceGain(
+        features_in_step=28,
+        perturb_func=batch_baseline_replacement_by_indices,
+        perturb_func_kwargs={},
+        normalise=False,
+        disable_warnings=True,
+    )
+
+    scores_default = metric_default(
+        model=load_mnist_model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch
+    )
+    scores_explicit = metric_explicit(
+        model=load_mnist_model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch
+    )
+
+    assert np.allclose(scores_default, scores_explicit, atol=1e-6), "Test failed."
 
 
 @pytest.mark.faithfulness
