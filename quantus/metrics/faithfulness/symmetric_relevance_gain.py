@@ -60,7 +60,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
           `y_batch=model(x).argmax(1)`.
         - The imputer is constant: `perturb_func` is applied once per batch to the
           unperturbed input and every occlusion step copies values from this snapshot,
-          so stochastic baselines (e.g. "uniform", "random") are drawn once per batch.
+          so stochastic baselines (e.g. "uniform") are drawn once per batch.
           Imputers whose values depend on which features are masked (e.g. inpainting)
           are not supported.
         - The default baseline `perturb_baseline=0.0` reproduces the paper's
@@ -114,8 +114,12 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             stepping; the paper uses 25-5000 superpixel groups per image.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution,
-            default=False. Note that SRG is designed for signed attributions;
-            abs=True changes the semantics of the metric.
+            default=False. SRG's symmetric design assumes the attribution's sign
+            encodes evidence for/against the class (e.g. LRP, Shapley, IG). For
+            sensitivity maps whose sign reflects a direction in color space
+            (e.g. raw gradients), use abs=True or channel-aggregated
+            attributions; this changes the LIF ordering to "least salient
+            first" and hence the meaning of the score.
         normalise: boolean
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
@@ -130,12 +134,13 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             snapshot from which all occlusion steps copy; imputers whose values
             depend on which features are masked (e.g. inpainting) are not supported.
         perturb_baseline: float, str, np.ndarray
-            Indicates the type of baseline: a constant value, "mean", "random",
-            "uniform", "black" or "white", default=0.0. The default assumes inputs
-            normalized to zero channel mean (e.g. standard ImageNet preprocessing),
-            where imputing zeros equals the paper's channel-wise data set mean
-            imputer; for unnormalized inputs pass e.g. "mean" or an array of
-            channel means.
+            Indicates the type of baseline: a constant value, "mean", "uniform",
+            "black" or "white", default=0.0. An np.ndarray must be 0-dimensional
+            (a scalar). The default assumes inputs normalized to zero channel
+            mean (e.g. standard ImageNet preprocessing), where imputing zeros
+            equals the paper's channel-wise data set mean imputer; for
+            unnormalized inputs pass e.g. "mean" (the per-sample mean over all
+            features) or a constant baseline value.
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
@@ -180,8 +185,11 @@ class SymmetricRelevanceGain(Metric[List[float]]):
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the step size "
                     "'features_in_step' (SRG rankings are designed to be robust to "
-                    "both); also note that 'abs=True' discards the signed "
-                    "attribution information SRG evaluates symmetrically"
+                    "both); also note that 'abs' should match the attribution "
+                    "method: keep abs=False where the sign encodes evidence "
+                    "for/against the class (e.g. LRP, Shapley, IG), set abs=True "
+                    "for sensitivity maps whose sign reflects a direction in "
+                    "color space (e.g. raw gradients)"
                 ),
                 citation=(
                     "Blücher, Stefan, Vielhaben, Johanna, and Strodthoff, Nils. 'Decoupling Pixel "
