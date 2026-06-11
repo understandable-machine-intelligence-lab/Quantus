@@ -183,13 +183,14 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "baseline value 'perturb_baseline' and the step size "
-                    "'features_in_step' (SRG rankings are designed to be robust to "
-                    "both); also note that 'abs' should match the attribution "
-                    "method: keep abs=False where the sign encodes evidence "
-                    "for/against the class (e.g. LRP, Shapley, IG), set abs=True "
-                    "for sensitivity maps whose sign reflects a direction in "
-                    "color space (e.g. raw gradients)"
+                    "'abs', which should match the attribution method: keep "
+                    "abs=False where the sign encodes evidence for/against the "
+                    "class (e.g. LRP, Shapley, IG), set abs=True for sensitivity "
+                    "maps whose sign reflects a direction in color space (e.g. "
+                    "raw gradients). Unlike plain MIF/LIF pixel-flipping, SRG "
+                    "rankings are designed to be robust to the baseline value "
+                    "'perturb_baseline' and the step size 'features_in_step', "
+                    "though absolute scores still vary with both"
                 ),
                 citation=(
                     "Blücher, Stefan, Vielhaben, Johanna, and Strodthoff, Nils. 'Decoupling Pixel "
