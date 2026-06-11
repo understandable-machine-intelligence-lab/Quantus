@@ -63,6 +63,9 @@ class SymmetricRelevanceGain(Metric[List[float]]):
           so stochastic baselines (e.g. "uniform", "random") are drawn once per batch.
           Imputers whose values depend on which features are masked (e.g. inpainting)
           are not supported.
+        - The default baseline `perturb_baseline=0.0` reproduces the paper's
+          channel-wise data set mean imputer for inputs normalized to zero channel
+          mean; pass a different `perturb_baseline` for unnormalized inputs.
 
     References:
         1) Stefan Blücher et al.: "Decoupling Pixel Flipping and Occlusion Strategy for
@@ -94,7 +97,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_func: Optional[Callable] = None,
-        perturb_baseline: Union[float, str, np.ndarray] = "mean",
+        perturb_baseline: Union[float, str, np.ndarray] = 0.0,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = None,
@@ -127,8 +130,12 @@ class SymmetricRelevanceGain(Metric[List[float]]):
             snapshot from which all occlusion steps copy; imputers whose values
             depend on which features are masked (e.g. inpainting) are not supported.
         perturb_baseline: float, str, np.ndarray
-            Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
+            Indicates the type of baseline: a constant value, "mean", "random",
+            "uniform", "black" or "white", default=0.0. The default assumes inputs
+            normalized to zero channel mean (e.g. standard ImageNet preprocessing),
+            where imputing zeros equals the paper's channel-wise data set mean
+            imputer; for unnormalized inputs pass e.g. "mean" or an array of
+            channel means.
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
