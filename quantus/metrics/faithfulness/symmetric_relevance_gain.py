@@ -345,7 +345,7 @@ class SymmetricRelevanceGain(Metric[List[float]]):
         Parameters
         ----------
         model: ModelInterface
-            A ModelInteface that is subject to explanation.
+            A ModelInterface that is subject to explanation.
         x_batch: np.ndarray
             The input to be evaluated on a batch-basis.
         y_batch: np.ndarray
