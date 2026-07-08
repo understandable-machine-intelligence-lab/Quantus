@@ -128,7 +128,9 @@ def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 
-def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
+def assert_attributions(
+    x_batch: np.array, a_batch: np.array, check_all_negative: bool = True
+) -> None:
     """
     Asserts on attributions, assumes channel first layout.
 
@@ -138,6 +140,12 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
          The batch of input to compare the shape of the attributions with.
     a_batch: np.ndarray
          The batch of attributions.
+    check_all_negative: boolean
+         Indicates whether to assert that the attributions are not all
+         negative. Some metrics (e.g. Infidelity) use attributions in a
+         signed dot product and have no mathematical requirement for
+         non-negative values, so this check can be disabled for them via
+         `Metric.allow_negative_attributions`. Default=True.
 
     Returns
     -------
@@ -193,7 +201,10 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "metrics rely on ordering."
         "Recompute the explanations."
     )
-    assert not np.all((a_batch < 0.0)), "Attributions should not all be less than zero."
+    if check_all_negative:
+        assert not np.all(
+            (a_batch < 0.0)
+        ), "Attributions should not all be less than zero."
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
