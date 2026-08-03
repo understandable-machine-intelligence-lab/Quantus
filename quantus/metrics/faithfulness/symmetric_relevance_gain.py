@@ -36,8 +36,9 @@ class SymmetricRelevanceGain(Metric[List[float]]):
 
     SRG runs two pixel-flipping experiments (Bach et al., 2015; Samek et al., 2017) that
     share one feature ordering: most influential first (MIF, descending attribution) and
-    its exact reverse, least influential first (LIF). The per-sample score is the area
-    between the two prediction curves,
+    its exact reverse, least influential first (LIF). Both prediction curves are
+    traced over the occluded feature fraction on [0, 1], and the per-sample score
+    is the area between them,
 
         SRG = AUC(LIF curve) - AUC(MIF curve),
 
@@ -47,7 +48,8 @@ class SymmetricRelevanceGain(Metric[List[float]]):
     size), which resolves the disagreement problem between the MIF and LIF benchmarks.
 
     Higher is better; a random attribution scores 0 in expectation, and with
-    softmax outputs (default) scores lie in [-1, 1].
+    softmax outputs (default) scores lie in [-1, 1] independent of the number of
+    occlusion steps.
 
     Deviations from the paper, following Quantus conventions:
         - Features are flattened input entries grouped by the sorted attribution order
