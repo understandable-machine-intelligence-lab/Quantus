@@ -269,3 +269,30 @@ def warn_max_size() -> None:
     None
     """
     warnings.warn("Ratio is smaller than max size.")
+
+def warn_disconnected_graph(n_components: int) -> None:
+    """
+    Warn that the k-NN graph is disconnected and MST-C will be computed
+    on the resulting minimum spanning forest.
+    """
+    warnings.warn(
+        "The k-NN graph used for MST-C is disconnected "
+        f"({n_components} connected components). "
+        "The score will be computed on the resulting minimum spanning forest. "
+        "Increase `k` or set `auto_increase_k=True` to enforce a connected graph.",
+        UserWarning,
+    )
+
+def warn_mst_c_invalid(reason: str) -> None:
+    """
+    Warn that MST-C could not be computed and NaN will be returned.
+
+    Parameters
+    ----------
+    reason: str
+        Explanation of why MST-C is invalid.
+    """
+    warnings.warn(
+        f"MST-C cannot be computed: {reason}. Returning NaN.",
+        UserWarning,
+    )
