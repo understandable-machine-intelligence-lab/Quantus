@@ -305,9 +305,7 @@ class MSTC(Metric[List[float]]):
         """Compute MST-C for one two-dimensional attribution map."""
 
         # MST-C is sign-invariant: discard attribution polarity first.
-        attribution = np.abs(
-            np.asarray(attribution, dtype=np.float64)
-        )
+        attribution = np.abs(np.asarray(attribution, dtype=np.float64))
 
         height, width = attribution.shape
         image_diagonal = float(np.hypot(height, width))
@@ -317,9 +315,7 @@ class MSTC(Metric[List[float]]):
 
         if finite_values.size == 0:
             if not self.disable_warnings:
-                warn.warn_mst_c_invalid(
-                    "attribution map contains no finite values"
-                )
+                warn.warn_mst_c_invalid("attribution map contains no finite values")
             return float("nan")
 
         # An all-zero attribution map contains no salient structure.
@@ -331,9 +327,9 @@ class MSTC(Metric[List[float]]):
             self.threshold,
         )
 
-        coordinates = np.argwhere(
-            finite_mask & (attribution >= cutoff)
-        ).astype(np.float64)
+        coordinates = np.argwhere(finite_mask & (attribution >= cutoff)).astype(
+            np.float64
+        )
 
         n_points = coordinates.shape[0]
 
@@ -355,27 +351,14 @@ class MSTC(Metric[List[float]]):
         # -----------------------------------------------------
         sqrt_hull_area = image_diagonal
 
-        if (
-                n_points >= 3
-                and np.linalg.matrix_rank(
-            coordinates - coordinates[0]
-        )
-                >= 2
-        ):
+        if n_points >= 3 and np.linalg.matrix_rank(coordinates - coordinates[0]) >= 2:
             try:
                 # In two dimensions, ConvexHull.volume is the
                 # enclosed area; ConvexHull.area is the perimeter.
-                hull_area = float(
-                    ConvexHull(coordinates).volume
-                )
+                hull_area = float(ConvexHull(coordinates).volume)
 
-                if (
-                        np.isfinite(hull_area)
-                        and hull_area > 1e-12
-                ):
-                    sqrt_hull_area = float(
-                        np.sqrt(hull_area)
-                    )
+                if np.isfinite(hull_area) and hull_area > 1e-12:
+                    sqrt_hull_area = float(np.sqrt(hull_area))
 
             except QhullError:
                 # Retain the image-diagonal fallback.
@@ -388,30 +371,16 @@ class MSTC(Metric[List[float]]):
         #
         # q_cohesion = |V| / L_T
         # -----------------------------------------------------
-        graph, n_components = self._construct_knn_graph(
-            coordinates
-        )
+        graph, n_components = self._construct_knn_graph(coordinates)
 
-        if (
-                n_components != 1
-                and not self.disable_warnings
-        ):
-            warn.warn_disconnected_graph(
-                n_components=n_components
-            )
+        if n_components != 1 and not self.disable_warnings:
+            warn.warn_disconnected_graph(n_components=n_components)
 
-        mst_length = float(
-            minimum_spanning_tree(graph).sum()
-        )
+        mst_length = float(minimum_spanning_tree(graph).sum())
 
-        if (
-                not np.isfinite(mst_length)
-                or mst_length <= 0.0
-        ):
+        if not np.isfinite(mst_length) or mst_length <= 0.0:
             if not self.disable_warnings:
-                warn.warn_mst_c_invalid(
-                    f"MST length is invalid: {mst_length}"
-                )
+                warn.warn_mst_c_invalid(f"MST length is invalid: {mst_length}")
             return float("nan")
 
         q_cohesion = n_points / mst_length
@@ -448,11 +417,7 @@ class MSTC(Metric[List[float]]):
             )
         )
 
-        while (
-            self.auto_increase_k
-            and n_components != 1
-            and k_current < n_points - 1
-        ):
+        while self.auto_increase_k and n_components != 1 and k_current < n_points - 1:
             k_current += 1
             graph = self._make_symmetric_knn_graph(points, k_current)
             n_components = int(
