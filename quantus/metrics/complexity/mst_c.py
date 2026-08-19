@@ -48,6 +48,11 @@ class MSTC(Metric[List[float]]):
     The absolute value of the attribution map is taken before salient points
     are selected and the spread and cohesion components are calculated.
 
+    References:
+        1) MM. Mesgari et al.: "Structural Compactness as a Complementary Criterion for Explanation Quality".
+        "arXiv:2603.29491 (2026)."
+    
+                     
     The spread component is defined as::
 
         q_spread = 1 / sqrt(A_hull)
