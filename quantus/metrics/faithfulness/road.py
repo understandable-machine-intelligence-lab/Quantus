@@ -313,14 +313,9 @@ class ROAD(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        # Prepare shapes. Expand a_batch if not the same shape
-        if x_batch.shape != a_batch.shape:
-            a_batch = np.broadcast_to(a_batch, x_batch.shape)
-
         # Flatten the attributions.
         batch_size = a_batch.shape[0]
         a_batch = a_batch.reshape(batch_size, -1)
-        n_features = a_batch.shape[-1]
 
         # Get indices of sorted attributions (descending).
         ordered_indices = np.argsort(-a_batch, axis=1)
