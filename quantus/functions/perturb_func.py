@@ -811,3 +811,62 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
          Array unperturbed.
     """
     return arr
+
+
+def baseline_replacement_by_indices_excluding(
+    arr: np.ndarray,
+    indices: Union[Tuple[slice, ...], Sequence[int], np.ndarray],
+    indexed_axes: Sequence[int],
+    perturb_baseline: Union[float, int, str, np.ndarray],
+    exclude_mask: Optional[np.ndarray] = None,
+    seed: Optional[int] = None,
+    **kwargs,
+) -> np.ndarray:
+    """Replace the same NUMBER of positions as `indices`, drawn only from outside
+    `exclude_mask`.
+
+    Parameters
+    ----------
+    arr, indices, indexed_axes, perturb_baseline
+        As in `quantus.functions.perturb_func.baseline_replacement_by_indices`.
+    exclude_mask
+        Boolean array broadcastable to the indexed axes of `arr`, True where the
+        control must NOT be placed -- normally the object.  If None, this is
+        exactly the stock whole-frame behaviour and a warning is not raised;
+        passing None is the caller saying they want no placement constraint.
+    seed
+        Seed for the placement draw, so a control is reproducible.
+
+    Raises
+    ------
+    ControlUnplaceable
+        If fewer positions are available outside the mask than are required.
+    """
+    from quantus.functions.perturb_func import baseline_replacement_by_indices
+
+    if exclude_mask is None:
+        return baseline_replacement_by_indices(
+            arr, indices, indexed_axes, perturb_baseline, **kwargs
+        )
+
+    idx = np.asarray(indices)
+    if idx.dtype == bool:
+        n_needed = int(idx.sum())
+    else:
+        n_needed = int(idx.size)
+
+    ex = np.asarray(exclude_mask, dtype=bool).reshape(-1)
+    outside = np.flatnonzero(~ex)
+    if outside.size < n_needed:
+        raise ValueError(
+            f"need {n_needed} positions outside the excluded region but only "
+            f"{outside.size} exist (object covers "
+            f"{ex.mean():.1%} of the frame; the control exists only while "
+            f"coverage <= 50%). Refusing to fall back to an unperturbed array."
+        )
+
+    rng = np.random.default_rng(seed)
+    picked = rng.permutation(outside)[:n_needed]
+    return baseline_replacement_by_indices(
+        arr, picked, indexed_axes, perturb_baseline, **kwargs
+    )

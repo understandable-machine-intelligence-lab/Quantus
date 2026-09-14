@@ -524,3 +524,107 @@ def test_no_perturbation(
 ):
     out = no_perturbation(arr=data, **params)
     assert (out == data).all() == expected, "Test failed."
+
+
+@pytest.mark.perturb_func
+@pytest.mark.parametrize(
+    "coverage,expect_raises",
+    [(0.10, False), (0.30, False), (0.50, False), (0.55, True), (0.80, True)],
+)
+def test_baseline_replacement_by_indices_excluding_feasibility(coverage, expect_raises):
+    """The control exists only while the excluded region covers at most half the
+    frame: one cannot draw N distinct positions from fewer than N available ones.
+    Above the bound the function must RAISE rather than silently perturbing fewer
+    positions, because a short draw returns a number that looks like a measurement
+    and is not one."""
+    side = 100
+    arr = np.zeros((3, side, side))
+    n_ex = int(coverage * side * side)
+    ex = np.zeros(side * side, dtype=bool)
+    ex[:n_ex] = True
+    ex = ex.reshape(side, side)
+    indices = np.arange(n_ex)  # same count as the excluded region
+    if expect_raises:
+        with pytest.raises(ValueError):
+            baseline_replacement_by_indices_excluding(
+                arr=arr,
+                indices=indices,
+                indexed_axes=[1, 2],
+                perturb_baseline=1.0,
+                exclude_mask=ex,
+                seed=0,
+            )
+    else:
+        out = baseline_replacement_by_indices_excluding(
+            arr=arr,
+            indices=indices,
+            indexed_axes=[1, 2],
+            perturb_baseline=1.0,
+            exclude_mask=ex,
+            seed=0,
+        )
+        assert out.shape == arr.shape
+
+
+@pytest.mark.perturb_func
+def test_baseline_replacement_by_indices_excluding_never_overlaps():
+    """No perturbed position may fall inside the excluded region. This is the whole
+    point of the function: a control that overlaps the object it is a control for
+    destroys, in expectation, a fraction `coverage` of that object."""
+    side = 64
+    arr = np.zeros((3, side, side))
+    ex = np.zeros((side, side), dtype=bool)
+    ex[:20, :20] = True
+    indices = np.arange(150)
+    for seed in range(5):
+        out = baseline_replacement_by_indices_excluding(
+            arr=arr,
+            indices=indices,
+            indexed_axes=[1, 2],
+            perturb_baseline=1.0,
+            exclude_mask=ex,
+            seed=seed,
+        )
+        changed = np.flatnonzero((out != arr).any(axis=0))
+        assert len(changed) == len(indices)
+        assert not ex.reshape(-1)[changed].any()
+
+
+@pytest.mark.perturb_func
+def test_baseline_replacement_by_indices_excluding_matches_stock_when_mask_is_none():
+    """With no excluded region the function must be the stock behaviour, so it is a
+    drop-in and cannot change existing results."""
+    arr = np.zeros((3, 32, 32))
+    indices = np.arange(40)
+    a = baseline_replacement_by_indices(
+        arr=arr, indices=indices, indexed_axes=[1, 2], perturb_baseline=1.0
+    )
+    b = baseline_replacement_by_indices_excluding(
+        arr=arr,
+        indices=indices,
+        indexed_axes=[1, 2],
+        perturb_baseline=1.0,
+        exclude_mask=None,
+    )
+    assert np.array_equal(a, b)
+
+
+@pytest.mark.perturb_func
+def test_baseline_replacement_by_indices_excluding_is_seeded():
+    """Same seed, same draw; different seed, different draw. A control that cannot
+    be reproduced cannot be audited."""
+    arr = np.zeros((3, 32, 32))
+    ex = np.zeros((32, 32), dtype=bool)
+    ex[:8] = True
+    kw = dict(
+        arr=arr,
+        indices=np.arange(30),
+        indexed_axes=[1, 2],
+        perturb_baseline=1.0,
+        exclude_mask=ex,
+    )
+    p = baseline_replacement_by_indices_excluding(seed=7, **kw)
+    q = baseline_replacement_by_indices_excluding(seed=7, **kw)
+    r = baseline_replacement_by_indices_excluding(seed=8, **kw)
+    assert np.array_equal(p, q)
+    assert not np.array_equal(p, r)
