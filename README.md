@@ -139,6 +139,7 @@ captures to what extent explanations are concise i.e., that few features are use
     <li><b>Sparseness </b><a href="https://arxiv.org/abs/1810.06583">(Chalasani et al., 2020)</a>: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
     <li><b>Complexity </b><a href="https://arxiv.org/abs/2005.00631">(Bhatt et al., 2020)</a>: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
     <li><b>Effective Complexity </b><a href="https://arxiv.org/abs/2007.07584">(Nguyen at el., 2020)</a>: measures how many attributions in absolute values are exceeding a certain threshold
+    <li><b>Minimum Spanning Tree Compactness </b><a href="https://arxiv.org/abs/2603.29491">(MM. Mesgari et al., 2026)</a>: quantifies the higher-order spatial structure of attribution maps by jointly capturing their spread and cohesion, providing a measure of explanation compactness and legibility.
 </ul>
 </details>
 
