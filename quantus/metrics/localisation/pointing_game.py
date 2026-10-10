@@ -287,12 +287,17 @@ class PointingGame(Metric[List[float]]):
         max_attribution = a_batch == a_batch.max(axis=-1, keepdims=True)
 
         # Check if maximum of explanation is on target object class.
-        hit = np.any(s_batch * max_attribution, axis=-1)
+        is_hit = np.any(s_batch * max_attribution, axis=-1)
+        hit = is_hit.astype(float)
 
         if self.weighted:
-            hit[hit] = 1 - np.sum(s_batch[hit], axis=-1, keepdims=True) / s_batch[0].size
+            hit[is_hit] = 1 - np.sum(s_batch[is_hit], axis=-1) / s_batch[0].size
 
         # Return NaN if segmentation is empty
-        hit[s_batch.sum(axis=-1) == 0] = np.nan
+        sum_zero = s_batch.sum(axis=-1) == 0
+        hit[sum_zero] = np.nan
+
+        if np.any(sum_zero):
+            warn.warn_empty_segmentation()
 
         return hit
