@@ -516,6 +516,41 @@ def test_pointing_game(
 
 
 @pytest.mark.localisation
+def test_pointing_game_empty_segmentation():
+    a_batch = np.random.uniform(0, 0.1, size=(2, 1, 8, 8))
+    a_batch[:, :, 3, 3] = 1.0
+    s_batch = np.zeros((2, 1, 8, 8))
+    s_batch[0, :, 2:5, 2:5] = 1.0
+
+    metric = PointingGame(disable_warnings=True)
+    with pytest.warns(UserWarning, match="segmentation map is empty"):
+        scores = metric.evaluate_batch(a_batch=a_batch, s_batch=s_batch)
+
+    assert scores[0] == 1.0
+    assert np.isnan(scores[1])
+
+
+@pytest.mark.localisation
+@pytest.mark.parametrize(
+    "peak,expected",
+    [
+        ((3, 3), 1 - 9 / 64),
+        ((7, 7), 0.0),
+    ],
+)
+def test_pointing_game_weighted(peak, expected):
+    a_batch = np.random.uniform(0, 0.1, size=(1, 1, 8, 8))
+    a_batch[:, :, peak[0], peak[1]] = 1.0
+    s_batch = np.zeros((1, 1, 8, 8))
+    s_batch[:, :, 2:5, 2:5] = 1.0
+
+    metric = PointingGame(weighted=True, disable_warnings=True)
+    scores = metric.evaluate_batch(a_batch=a_batch, s_batch=s_batch)
+
+    assert scores == pytest.approx([expected])
+
+
+@pytest.mark.localisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
