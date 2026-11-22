@@ -408,7 +408,11 @@ class SensitivityN(Metric[List[float]]):
             y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
             pred_deltas.append(y_pred - y_pred_perturb)
         pred_deltas = np.stack(pred_deltas, axis=1)
-        att_sums = np.stack(att_sums, axis=1)
+        # The perturbation is cumulative (x_perturbed keeps all removed features), so
+        # pred_deltas[:, k] is the effect of removing the top (k + 1) * features_in_step
+        # features. Sensitivity-n compares it with the attribution sum over that same
+        # removed set, hence the cumulative sum over steps.
+        att_sums = np.cumsum(np.stack(att_sums, axis=1), axis=1)
 
         # Each list-element of self.evaluation_scores will be such a dictionary
         # We will unpack that later in custom_postprocess().

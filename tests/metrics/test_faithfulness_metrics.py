@@ -3,6 +3,7 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
+import torch
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.perturb_func import (
@@ -1598,6 +1599,45 @@ def test_sensitivity_n(
     )
 
     assert all(((s >= expected["min"]) & (s <= expected["max"])) for s in scores), "Test failed."
+
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize("features_in_step", [1, 4])
+def test_sensitivity_n_linear_model_exact_attributions(features_in_step: int):
+    """
+    For a linear model f(x) = w.x with exact attributions a = w * x and a zero baseline,
+    removing any set of features changes the logit by exactly the sum of their
+    attributions, so Sensitivity-n (Ancona et al., 2018) must be 1 for every n.
+    """
+    torch.manual_seed(0)
+    rng = np.random.default_rng(0)
+
+    model = torch.nn.Sequential(
+        torch.nn.Flatten(), torch.nn.Linear(16, 2, bias=False)
+    ).eval()
+    w = model[1].weight.detach().numpy()[0]
+    x_batch = rng.uniform(0.5, 1.5, (16, 1, 4, 4)).astype(np.float32)
+    y_batch = np.zeros(16, dtype=np.int64)
+    a_batch = x_batch * w.reshape(1, 1, 4, 4)
+
+    scores = SensitivityN(
+        features_in_step=features_in_step,
+        perturb_baseline=0.0,
+        normalise=False,
+        abs=False,
+        return_aggregate=False,
+        disable_warnings=True,
+        display_progressbar=False,
+    )(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        device="cpu",
+        softmax=False,
+    )
+
+    assert np.allclose(scores, 1.0, atol=1e-4), f"Expected 1.0 for all n, got {scores}"
 
 
 @pytest.mark.faithfulness
