@@ -288,7 +288,7 @@ class TopKIntersection(Metric[List[float]]):
         sum_zero = s_sums == 0
 
         # Sort in descending order and calculate hits mask.
-        a_sorted = np.argsort(-a_batch, axis=-1)
+        a_sorted = np.argsort(-a_batch, axis=-1, kind="stable")
         choice_s_batch = s_batch[np.arange(batch_size)[:, None], a_sorted[:, : self.k]]
         tki = choice_s_batch.mean(-1)
 

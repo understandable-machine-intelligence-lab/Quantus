@@ -697,7 +697,7 @@ def test_pointing_game_weighted(peak, expected):
             lazy_fixture("half_in_gt_zeros_2d_3ch"),
             {
                 "init": {
-                    "k": 1250,
+                    "k": 1500,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
