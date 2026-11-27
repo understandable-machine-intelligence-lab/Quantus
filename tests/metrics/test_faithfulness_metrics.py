@@ -1714,6 +1714,14 @@ def test_infidelity(
 
 
 @pytest.mark.faithfulness
+def test_infidelity_allows_negative_attributions():
+    """Infidelity uses a_batch in a signed dot product (see evaluate_batch), so
+    an all-negative explanation is not a validation error, unlike most metrics."""
+    assert Infidelity.allow_negative_attributions is True
+    assert FaithfulnessCorrelation.allow_negative_attributions is False
+
+
+@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [

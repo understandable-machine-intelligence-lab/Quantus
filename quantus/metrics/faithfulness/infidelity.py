@@ -59,6 +59,8 @@ class Infidelity(Metric[List[float]]):
         - _models: The model types that this metric can work with.
         - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
         - evaluation_category: What property/ explanation quality that this metric measures.
+        - allow_negative_attributions: Infidelity uses a_batch in a signed dot product
+          (see evaluate_batch), so an all-negative explanation is not a validation error.
     """
 
     name = "Infidelity"
@@ -66,6 +68,7 @@ class Infidelity(Metric[List[float]]):
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.FAITHFULNESS
+    allow_negative_attributions = True
 
     def __init__(
         self,

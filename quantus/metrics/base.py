@@ -70,6 +70,10 @@ class Metric(Generic[R]):
     model_applicability: ClassVar[Set[ModelType]]
     score_direction: ClassVar[ScoreDirection]
     evaluation_category: ClassVar[EvaluationCategory]
+    # Most metrics only make sense for non-negative attributions; metrics whose
+    # computation is well-defined for signed attributions (e.g. Infidelity, which
+    # uses a_batch in a signed dot product) opt out by overriding this to True.
+    allow_negative_attributions: ClassVar[bool] = False
 
     # Instance attributes.
     explain_func: Callable
@@ -445,7 +449,11 @@ class Metric(Generic[R]):
 
         if a_batch is not None:
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-            asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+            asserts.assert_attributions(
+                x_batch=x_batch,
+                a_batch=a_batch,
+                check_all_negative=not self.allow_negative_attributions,
+            )
             self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
             # Normalise with specified keyword arguments if requested.
@@ -928,7 +936,11 @@ class Metric(Generic[R]):
             model=model, inputs=x_batch, targets=y_batch, **self.explain_func_kwargs
         )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        asserts.assert_attributions(
+            x_batch=x_batch,
+            a_batch=a_batch,
+            check_all_negative=not self.allow_negative_attributions,
+        )
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:
