@@ -102,5 +102,5 @@ tests = [
 ]
 
 [build-system]
-requires = ["flit-core >= 3.4"]
+requires = ["flit-core >= 3.4, < 3.11"]
 build-backend = "flit_core.buildapi"
