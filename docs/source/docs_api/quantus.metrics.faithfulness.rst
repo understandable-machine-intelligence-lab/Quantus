@@ -24,3 +24,4 @@ Submodules
    quantus.metrics.faithfulness.selectivity
    quantus.metrics.faithfulness.sensitivity_n
    quantus.metrics.faithfulness.sufficiency
+   quantus.metrics.faithfulness.symmetric_relevance_gain

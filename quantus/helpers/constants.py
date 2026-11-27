@@ -36,6 +36,7 @@ AVAILABLE_METRICS: Final[Mapping[str, Mapping[str, Type[Metric]]]] = {
         "ROAD": ROAD,
         "Infidelity": Infidelity,
         "Sufficiency": Sufficiency,
+        "Symmetric Relevance Gain": SymmetricRelevanceGain,
     },
     "Robustness": {
         "Continuity Test": Continuity,
