@@ -7,3 +7,4 @@
 from quantus.metrics.complexity.complexity import Complexity
 from quantus.metrics.complexity.effective_complexity import EffectiveComplexity
 from quantus.metrics.complexity.sparseness import Sparseness
+from quantus.metrics.complexity.mst_c import MSTC
