@@ -43,7 +43,7 @@ def assert_patch_size(patch_size: Union[int, tuple], shape: Tuple[int, ...]) -> 
     ----------
     patch_size: integer
         The size of the patch_size, assumed to tbe squared.
-    input_shape: Tuple[int...]
+    shape: Tuple[int...]
         the shape of the input.
 
     Returns

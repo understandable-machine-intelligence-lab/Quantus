@@ -668,7 +668,7 @@ def _unpad_array(
     ----------
     arr: np.ndarray
          A numpy array of the input to be unpaded.
-    pad_witdh: int, sequence
+    pad_width: int, sequence
         The width of the padding for the different dimensions.
     padded_axes: sequence
         The axes for padding.

@@ -25,8 +25,6 @@ def normalise_by_max(
          the array to normalise, e.g., an image or an explanation.
     normalise_axes: optional, sequence
         the axes to normalise over.
-    kwargs: optional
-        Keyword arguments.
 
     Returns
     -------
@@ -63,8 +61,6 @@ def normalise_by_negative(
          the array to normalise, e.g., an image or an explanation.
     normalise_axes: optional, sequence
             the axes to normalise over.
-    kwargs: optional
-        Keyword arguments.
 
     Returns
     -------
@@ -173,8 +169,6 @@ def denormalise(
          The mean points to sample from, len(mean) = nr_channels.
     std: np.ndarray
          The standard deviations to sample from, len(mean) = nr_channels.
-    kwargs: optional
-        Keyword arguments.
 
     Returns
     -------
@@ -209,8 +203,6 @@ def normalise_by_average_second_moment_estimate(
          the array to normalise, e.g., an image or an explanation.
     normalise_axes: optional, sequence
         the axes to normalise over.
-    kwargs: optional
-        Keyword arguments.
 
     Returns
     -------
