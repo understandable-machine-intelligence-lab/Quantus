@@ -484,8 +484,6 @@ class MPRT(Metric):
             A np.ndarray which contains the input data that are explained.
         y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-        kwargs: optional, dict
-            List of hyperparameters.
 
         Returns
         -------
